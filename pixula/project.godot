@@ -11,9 +11,9 @@ config_version=5
 [application]
 
 config/name="Pixula"
-run/main_scene="res://World.tscn"
+run/main_scene="res://Scenes/World.tscn"
 config/features=PackedStringArray("4.3", "Forward Plus")
-config/icon="res://icon.svg"
+config/icon="res://Images/icon.svg"
 
 [input]
 
