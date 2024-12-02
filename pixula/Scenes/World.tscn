@@ -74,7 +74,7 @@ tile_set = SubResource("TileSet_ppps5")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 anchor_mode = 0
-zoom = Vector2(8, 8)
+zoom = Vector2(12, 12)
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 visible = false
@@ -82,7 +82,7 @@ material = SubResource("ShaderMaterial_na28p")
 texture = ExtResource("4_mfbjo")
 
 [node name="Timer" type="Timer" parent="."]
-wait_time = 0.004
+wait_time = 0.001
 autostart = true
 
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
