@@ -63,10 +63,9 @@ sources/1 = SubResource("TileSetAtlasSource_5hc4w")
 shader = ExtResource("3_owpbh")
 shader_parameter/scale = 5.007
 
-[node name="Main" type="Node2D" node_paths=PackedStringArray("map", "timer", "camera")]
+[node name="Main" type="Node2D" node_paths=PackedStringArray("map", "camera")]
 script = ExtResource("1_wjcw8")
 map = NodePath("TileMapLayer")
-timer = NodePath("Timer")
 camera = NodePath("Camera2D")
 
 [node name="TileMapLayer" type="TileMapLayer" parent="."]
@@ -75,7 +74,7 @@ tile_set = SubResource("TileSet_ppps5")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 anchor_mode = 0
-zoom = Vector2(12, 12)
+zoom = Vector2(16, 16)
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 visible = false
@@ -83,7 +82,7 @@ material = SubResource("ShaderMaterial_na28p")
 texture = ExtResource("4_mfbjo")
 
 [node name="Timer" type="Timer" parent="."]
-wait_time = 0.001
+wait_time = 0.05
 autostart = true
 
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
