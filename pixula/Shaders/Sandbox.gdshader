@@ -13,4 +13,3 @@ void fragment() {
 	vec4 pixelColor = texture(TEXTURE, UV * scale * mySine());
 	COLOR = pixelColor * mySine();
 }
-
