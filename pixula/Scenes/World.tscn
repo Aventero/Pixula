@@ -75,7 +75,7 @@ tile_set = SubResource("TileSet_ppps5")
 
 [node name="Camera2D" type="Camera2D" parent="."]
 anchor_mode = 0
-zoom = Vector2(16, 16)
+zoom = Vector2(8, 8)
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 visible = false
