@@ -26,7 +26,7 @@ enum MaterialType {
 const COLOR_RANGES = {
 	MaterialType.AIR: [36, 37],
 	MaterialType.SAND: [19, 23],
-	MaterialType.WATER: [0, 5],
+	MaterialType.WATER: [1, 5],
 	MaterialType.STONE: [3, 3]
 }
 
@@ -46,13 +46,13 @@ func _on_timer_timeout() -> void:
 		for x in range(0, width):
 			simulate(x, y)
 
-	#var water_count = 0
-	#for y in range(0, height):
-		#for x in range(0, width):
-			#if get_process_material_at(x, y) == MaterialType.WATER:
-				#water_count += 1
-	#print("Water: ", water_count)
-	#water_count = 0
+	var water_count = 0
+	for y in range(0, height):
+		for x in range(0, width):
+			if get_process_material_at(x, y) == MaterialType.WATER:
+				water_count += 1
+	print("Water: ", water_count)
+	water_count = 0
 	transfer_to_tilemap()
 
 ### Setup, Input
@@ -152,7 +152,7 @@ func move_horizontal(x: int, y: int, process_material: MaterialType) -> bool:
 	if not is_valid_position(x + x_direction, y):
 		return false
 
-	if get_process_material_at(x + x_direction, y) == MaterialType.AIR:
+	if can_swap(process_material, get_process_material_at(x + x_direction, y)):
 		swap_particle(x, y, x + x_direction, y)
 		return true
 
@@ -162,7 +162,7 @@ func move_down(x: int, y: int, process_material: MaterialType) -> bool:
 	if not is_valid_position(x, y + 1):
 		return false
 
-	if can_swap(get_process_material_at(x, y), get_process_material_at(x, y + 1)) && is_valid_position(x, y + 1):
+	if can_swap(process_material, get_process_material_at(x, y + 1)):
 		swap_particle(x, y, x, y + 1)
 		return true
 
@@ -175,7 +175,7 @@ func move_diagonal(x: int, y: int, process_material: MaterialType) -> bool:
 	if not is_valid_position(new_x, y + 1):
 		return false
 
-	if get_process_material_at(new_x, y + 1) == MaterialType.AIR:
+	if can_swap(process_material, get_process_material_at(new_x, y + 1)):
 		swap_particle(x, y, new_x, y + 1)
 		return true
 
