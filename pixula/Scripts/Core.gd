@@ -24,20 +24,35 @@ enum MaterialType {
 }
 
 const COLOR_RANGES = {
-	MaterialType.AIR: [37, 37],
+	MaterialType.AIR: [36, 37],
 	MaterialType.SAND: [19, 23],
-	MaterialType.WATER: [2, 2],
+	MaterialType.WATER: [0, 5],
 	MaterialType.STONE: [3, 3]
+}
+
+const SWAP_RULES = {
+	MaterialType.STONE: [],
+	MaterialType.AIR: [],
+	MaterialType.SAND: [MaterialType.AIR, MaterialType.WATER],
+	MaterialType.WATER: [MaterialType.AIR],
 }
 
 func _ready() -> void:
 	setup_pixels()
 
 func _on_timer_timeout() -> void:
-
+	var sand_count = 0
 	for y in range(0, height):
 		for x in range(0, width):
 			simulate(x, y)
+
+	#var water_count = 0
+	#for y in range(0, height):
+		#for x in range(0, width):
+			#if get_process_material_at(x, y) == MaterialType.WATER:
+				#water_count += 1
+	#print("Water: ", water_count)
+	#water_count = 0
 	transfer_to_tilemap()
 
 ### Setup, Input
@@ -48,11 +63,11 @@ func setup_pixels() -> void:
 		pixel_array_2d[y].resize(width) # make space
 		for x in width:
 			set_pixel_state_at(x, y, MaterialType.AIR, get_random_variant(MaterialType.AIR))
-	
+
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("SPAWN_SAND") || event.is_action_released("SPAWN_WATER"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		
+
 	#if event.is_action_pressed("CHECK_MATERIAL"):
 		#var atlas_coord = map.get_cell_atlas_coords(get_mouse_tile_pos())
 		#print(atlas_to_material(atlas_coord))
@@ -61,10 +76,10 @@ func _process(_delta: float) -> void:
 	if Input.is_action_pressed("SPAWN_SAND"):
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
 		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 2, MaterialType.SAND)
-	
-	#if Input.is_action_pressed("SPAWN_WATER"):
-		#Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
-		#set_particle(get_mouse_tile_pos().x, get_mouse_tile_pos().y, get_random_variant(MaterialType.WATER))
+
+	if Input.is_action_pressed("SPAWN_WATER"):
+		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 3, MaterialType.WATER)
 
 func spawn_in_radius(center_x: int, center_y: int, radius: int, material: MaterialType) -> void:
 	for y in range(max(0, center_y - radius), min(height, center_y + radius + 1)):
@@ -73,17 +88,17 @@ func spawn_in_radius(center_x: int, center_y: int, radius: int, material: Materi
 				set_pixel_state_at(x, y, material, get_random_variant(material))
 
 func set_pixel_state_at(x: int, y: int, material_type: MaterialType, variant: int, has_processed: bool = false) -> void:
-	if x < 0 or x >= width or y < 0 or y >= height:
+	if not is_valid_position(x,y):
 		return
-	
-	var state = ((has_processed as int) << PROCESSED_BIT) | (material_type << MATERIAL_BITS_START) | (variant << VARIANT_BITS_START)
-	#print("Material: ", material_type, " State: ", state)  
-	pixel_array_2d[y][x] = state
-	
+
+	pixel_array_2d[y][x] = ((has_processed as int) << PROCESSED_BIT) | \
+							(material_type << MATERIAL_BITS_START) | \
+							(variant << VARIANT_BITS_START)
+
 func set_pixel_processed_at(x: int, y: int, has_processed: bool) -> void:
 	pixel_array_2d[y][x] = (pixel_array_2d[y][x] & ~1) | (has_processed as int) # clear first bit and set it
 
-func get_pixel_material_at(x: int, y: int) -> MaterialType:
+func get_process_material_at(x: int, y: int) -> MaterialType:
 	return (pixel_array_2d[y][x] >> MATERIAL_BITS_START) & MATERIAL_BITS_MASK as MaterialType
 
 func get_pixel_variant_at(x: int, y: int) -> int:
@@ -102,68 +117,86 @@ func transfer_to_tilemap() -> void:
 			var mat_variant = get_pixel_variant_at(x, y)
 			map.set_cell(Vector2i(x, y), 1, Vector2i(mat_variant, 0), 0)
 			set_pixel_processed_at(x, y, false)
-			
+
+func is_valid_position(x: int, y: int) -> bool:
+	return x >= 0 and x < width and y >= 0 and y < height
+
 ### Mechanics
 func simulate(x: int, y: int) -> void:
 	if is_pixel_processed_at(x, y):
 		return
-	
-	var pixel_material: MaterialType = get_pixel_material_at(x, y)
-	
+
+	var current_material: MaterialType = get_process_material_at(x, y)
+
 	# Is some sand material
-	if pixel_material == MaterialType.SAND && (y + 1 < height):
-		sand_mechanic(x, y)
-	
+	if current_material == MaterialType.SAND:
+		sand_mechanic(x, y, current_material)
+
 	# Is some water material
-	#if pixel_material == MATERIAL.WATER && (y + 1 < height):
-		#water_mechanic(x, y)
-		
+	if current_material == MaterialType.WATER:
+		water_mechanic(x, y, current_material)
+
 	set_pixel_processed_at(x, y, true) # Mark as processed
 
-func sand_mechanic(x: int, y: int) -> bool:
-	# Check Below
-	if get_pixel_material_at(x, y + 1) == MaterialType.AIR:
-		swap_particle(x, y, x, y + 1)
+func sand_mechanic(x: int, y: int, process_material: MaterialType) -> void:
+	if not move_down(x, y, process_material):
+		move_diagonal(x, y, process_material)
+
+func water_mechanic(x: int, y: int, process_material: MaterialType) -> void:
+	if not move_down(x, y, process_material):
+		if not move_diagonal(x, y, process_material):
+			move_horizontal(x, y, process_material)
+
+func move_horizontal(x: int, y: int, process_material: MaterialType) -> bool:
+	var x_direction: int = 1 if y % 2 == 0 else -1
+	if not is_valid_position(x + x_direction, y):
+		return false
+
+	if get_process_material_at(x + x_direction, y) == MaterialType.AIR:
+		swap_particle(x, y, x + x_direction, y)
 		return true
-	
-	# Below Left
-	if (x > 0) && get_pixel_material_at(x - 1, y + 1) == MaterialType.AIR && (x + y) % 2 == 0: 
-		swap_particle(x, y, x - 1, y + 1)
-		return true
-	# Below Right
-	if (x + 1 < width) && get_pixel_material_at(x + 1, y + 1) == MaterialType.AIR && (x + y) % 2 == 1: 
-		swap_particle(x, y, x + 1, y + 1)
-		return true
-	# No change!
+
 	return false
 
-# TODO: Fix boundary problem,
-# TODO: Fix water sliding around
-func water_mechanic(x: int, y: int) -> void:
-	if not sand_mechanic(x, y):
-		if pixel_array_2d[y][x - 1] == MaterialType.AIR && randi_range(0, 1) == 0:
-			swap_particle(x, y, x - 1, y)
-			return
-		elif pixel_array_2d[y][x + 1] == MaterialType.AIR && randi_range(0, 1) == 0:
-			swap_particle(x, y, x + 1, y)
-			return
+func move_down(x: int, y: int, process_material: MaterialType) -> bool:
+	if not is_valid_position(x, y + 1):
+		return false
+
+	if can_swap(get_process_material_at(x, y), get_process_material_at(x, y + 1)) && is_valid_position(x, y + 1):
+		swap_particle(x, y, x, y + 1)
+		return true
+
+	return false
+
+func move_diagonal(x: int, y: int, process_material: MaterialType) -> bool:
+	var x_direction: int = 1 if (x + y) % 2 == 0 else -1
+	var new_x = x + x_direction
+
+	if not is_valid_position(new_x, y + 1):
+		return false
+
+	if get_process_material_at(new_x, y + 1) == MaterialType.AIR:
+		swap_particle(x, y, new_x, y + 1)
+		return true
+
+	return false
+
+func can_swap(source: MaterialType, swapping_partner: MaterialType) -> bool:
+	return swapping_partner in SWAP_RULES.get(source, [])
 
 func swap_particle(source_x: int, source_y: int, destination_x: int, destination_y: int) -> void:
+	if not can_swap(get_process_material_at(source_x, source_y), get_process_material_at(destination_x, destination_y)):
+		return
+
 	var tmp = pixel_array_2d[destination_y][destination_x]
 	pixel_array_2d[destination_y][destination_x] = pixel_array_2d[source_y][source_x]
 	pixel_array_2d[source_y][source_x] = tmp
-	
+
 	# The destination pixel is processed, otherwise it would get re-processed
 	set_pixel_processed_at(destination_x, destination_y, true)
 	set_pixel_processed_at(source_x, source_y, false)
-### Helper 
+### Helper
 
 func get_mouse_tile_pos() -> Vector2i:
 	var tilemap_pos = map.local_to_map(get_local_mouse_position()).abs()
 	return tilemap_pos.clamp(Vector2i(0, 0), Vector2i(width - 1, height - 1))
-	
-func map_coord_to_material(map_coord : Vector2i) -> MaterialType:
-	return atlas_to_material(map.get_cell_atlas_coords(map_coord))
-
-func atlas_to_material(atlas_coord : Vector2i) -> MaterialType:
-	return atlas_coord.x as MaterialType
