@@ -3,14 +3,16 @@ extends Node2D
 @export var map: TileMapLayer
 @export var timer: Timer
 @export var camera: Camera2D
-@onready var pixel_size = camera.zoom.x
+@export var pixel_size = 16
 
 var pixels: Array[Array] = []
 var active_pixels: Dictionary = {}
 var next_active_pixels: Dictionary = {}
 
-@onready var width: int = get_viewport_rect().size.x / pixel_size
-@onready var height: int = get_viewport_rect().size.y / pixel_size
+@export var window_width: int = 1600
+@export var window_height: int = 900
+@onready var grid_width: int = window_width / pixel_size
+@onready var grid_height: int = window_height / pixel_size
 
 const PROCESSED_BIT_START = 0
 const ACTIVE_BIT_START = 1
@@ -44,7 +46,8 @@ const SWAP_RULES = {
 }
 
 func _ready() -> void:
-	get_window().size = Vector2(width * pixel_size, height * pixel_size)
+	get_window().size = Vector2(window_width, window_height)
+	map.scale = Vector2(pixel_size, pixel_size)
 	setup_pixels()
 
 func _on_timer_timeout() -> void:
@@ -60,16 +63,16 @@ func simulate_active() -> void:
 
 ### Setup, Input
 func setup_pixels() -> void:
-	pixels.resize(height)
-	for y in height:
+	pixels.resize(grid_height)
+	for y in grid_height:
 		pixels[y] = [] # new array
-		pixels[y].resize(width) # make space
-		for x in width:
+		pixels[y].resize(grid_width) # make space
+		for x in grid_width:
 			set_state_at(x, y, MaterialType.AIR, get_random_variant(MaterialType.AIR), false, false)
 
 	# First Draw
-	for y in range(height):
-		for x in range(width):
+	for y in range(grid_height):
+		for x in range(grid_width):
 			var mat_variant = get_pixel_variant_at(x, y)
 			map.set_cell(Vector2i(x, y), 1, Vector2i(mat_variant, 0), 0)
 
@@ -82,17 +85,18 @@ func _input(event: InputEvent) -> void:
 		print("Active NEXT FRAME: ", next_active_pixels.size())
 
 func _process(_delta: float) -> void:
+	get_window().title = str(Engine.get_frames_per_second(), " | Active: ", active_pixels.size())
 	if Input.is_action_pressed("SPAWN_SAND"):
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
-		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 1, MaterialType.SAND)
+		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 3, MaterialType.SAND)
 
 	if Input.is_action_pressed("SPAWN_WATER"):
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
-		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 2, MaterialType.WATER)
+		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 3, MaterialType.WATER)
 
 func spawn_in_radius(center_x: int, center_y: int, radius: int, material_type: MaterialType) -> void:
-	for y in range(max(0, center_y - radius), min(height, center_y + radius + 1)):
-		for x in range(max(0, center_x - radius), min(width, center_x + radius + 1)):
+	for y in range(max(0, center_y - radius), min(grid_height, center_y + radius + 1)):
+		for x in range(max(0, center_x - radius), min(grid_width, center_x + radius + 1)):
 			if Vector2(center_x, center_y).distance_to(Vector2(x, y)) <= radius:
 				set_state_at(x, y, material_type, get_random_variant(material_type), false, true)
 
@@ -168,13 +172,6 @@ func move_horizontal(x: int, y: int, process_material: MaterialType) -> bool:
 		swap_particle(x, y, new_x, y)
 		return true
 
-	new_x += x_direction * 2
-	if not is_valid_position(new_x, y):
-		return false
-	if can_swap(process_material, get_material_at(new_x, y)):
-		swap_particle(x, y, new_x, y)
-		return true
-
 	return true
 
 func move_down(x: int, y: int, process_material: MaterialType) -> bool:
@@ -200,15 +197,25 @@ func move_diagonal(x: int, y: int, process_material: MaterialType) -> bool:
 
 	return false
 
+const directions = [
+	Vector2i(-1, -1),  # Top left
+	Vector2i(0, -1),   # Top
+	Vector2i(1, -1),   # Top right
+	Vector2i(-1, 0),   # Left
+	Vector2i(1, 0),    # Right
+	Vector2i(-1, 1),   # Bottom left
+	Vector2i(0, 1),    # Bottom
+	Vector2i(1, 1)     # Bottom right
+]
+
 func activate_surrounding_pixels(x: int, y: int) -> void:
-	for y_direction in range(-1, 2):
-		for x_direction in range(-1, 2):
-			var activate_pos_x = x + x_direction
-			var activate_pos_y = y + y_direction
-			if not is_valid_position(activate_pos_x, activate_pos_y):
-				continue
-			if get_material_at(activate_pos_x, activate_pos_y) != MaterialType.AIR:
-				set_active_at(activate_pos_x, activate_pos_y, true)
+	for dir in directions:
+		var activate_pos_x = x + dir.x
+		var activate_pos_y = y + dir.y
+		if not is_valid_position(activate_pos_x, activate_pos_y):
+			continue
+		if get_material_at(activate_pos_x, activate_pos_y) != MaterialType.AIR:
+			set_active_at(activate_pos_x, activate_pos_y, true)
 
 func draw_pixel_at(x: int, y: int) -> void:
 	var mat_variant = get_pixel_variant_at(x, y)
@@ -231,8 +238,7 @@ func can_swap(source: MaterialType, swapping_partner: MaterialType) -> bool:
 	return swapping_partner in SWAP_RULES.get(source, [])
 
 func is_valid_position(x: int, y: int) -> bool:
-	return x >= 0 and x < width and y >= 0 and y < height
+	return x >= 0 and x < grid_width and y >= 0 and y < grid_height
 
 func get_mouse_tile_pos() -> Vector2i:
-	var tilemap_pos = map.local_to_map(get_local_mouse_position()).abs()
-	return tilemap_pos.clamp(Vector2i(0, 0), Vector2i(width - 1, height - 1))
+	return Vector2i(get_local_mouse_position().abs() / pixel_size).clamp(Vector2i(0, 0), Vector2i(grid_width - 1, grid_height - 1))
