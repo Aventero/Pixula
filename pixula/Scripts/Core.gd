@@ -21,6 +21,10 @@ const MATERIAL_BITS_MASK = 0b1111 # 4 Bit = 16 materials
 const VARIANT_BITS_START = 13
 const VARIANT_BITS_MASK = 0b1111111 # 7 Bit "of color"
 
+var image: Image
+var texture: ImageTexture
+var sprite: Sprite2D
+
 # 0 - 31 -> 32 Possible Materials (Material Space)
 enum MaterialType {
 	AIR = 0,
@@ -99,6 +103,7 @@ func spawn_in_radius(center_x: int, center_y: int, radius: int, material_type: M
 		for x in range(max(0, center_x - radius), min(grid_width, center_x + radius + 1)):
 			if Vector2(center_x, center_y).distance_to(Vector2(x, y)) <= radius:
 				set_state_at(x, y, material_type, get_random_variant(material_type), false, true)
+				activate_surrounding_pixels(x, y)
 
 ### Low level pixel manipulation ###
 func set_state_at(x: int, y: int, material_type: MaterialType, variant: int, has_processed: bool = false, activate: bool = false) -> void:
@@ -172,7 +177,7 @@ func move_horizontal(x: int, y: int, process_material: MaterialType) -> bool:
 		swap_particle(x, y, new_x, y)
 		return true
 
-	return true
+	return false
 
 func move_down(x: int, y: int, process_material: MaterialType) -> bool:
 	if not is_valid_position(x, y + 1):
@@ -231,7 +236,7 @@ func swap_particle(source_x: int, source_y: int, destination_x: int, destination
 	draw_pixel_at(source_x, source_y)
 	draw_pixel_at(destination_x, destination_y)
 
-	activate_surrounding_pixels(destination_x, destination_y)
+	#activate_surrounding_pixels(destination_x, destination_y)
 	activate_surrounding_pixels(source_x, source_y)
 
 func can_swap(source: MaterialType, swapping_partner: MaterialType) -> bool:
