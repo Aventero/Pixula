@@ -10,7 +10,7 @@ var world_image: Image
 var world_texture: ImageTexture
 
 # Pixel State
-var pixels: Array[Array] = []
+var pixels: PackedInt32Array = []
 var active_pixels: Dictionary = {}
 var next_active_pixels: Dictionary = {}
 
@@ -126,12 +126,17 @@ func benchmark_particles() -> void:
 
 ### Setup, Input
 func setup_pixels() -> void:
-	pixels.resize(grid_height)
-	for y in grid_height:
-		pixels[y] = [] # new array
-		pixels[y].resize(grid_width) # make space
-		for x in grid_width:
-			set_state_at(x, y, MaterialType.AIR, get_random_variant(MaterialType.AIR), false, false)
+	pixels.resize(grid_width * grid_height)
+	for i in pixels.size():
+		var x: int = i % grid_width
+		var y: int = i / grid_width
+		set_state_at(x, y, MaterialType.AIR, get_random_variant(MaterialType.AIR), false, false)
+
+func get_pixel(x: int, y: int) -> int:
+	return pixels[y * grid_width + x]
+
+func set_pixel(x: int, y: int, pixel: int) -> void:
+	pixels[y * grid_width + x] = pixel
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("SPAWN_SAND") || event.is_action_released("SPAWN_WATER"):
@@ -162,10 +167,9 @@ func set_state_at(x: int, y: int, material_type: MaterialType, variant: int, has
 	if not is_valid_position(x,y):
 		return
 
-	# the "\" is for allowing linebreaks
-	pixels[y][x] = ((has_processed as int) << PROCESSED_BIT_START) | \
+	set_pixel(x, y, ((has_processed as int) << PROCESSED_BIT_START) | \
 							(material_type << MATERIAL_BITS_START) | \
-							(variant << VARIANT_BITS_START)
+							(variant << VARIANT_BITS_START))
 	set_active_at(x, y, activate)
 	draw_pixel_at(x, y)
 
@@ -257,9 +261,9 @@ func draw_pixel_at(x: int, y: int) -> void:
 
 func swap_particle(source_x: int, source_y: int, destination_x: int, destination_y: int) -> void:
 	# Swap the state
-	var tmp = pixels[destination_y][destination_x]
-	pixels[destination_y][destination_x] = pixels[source_y][source_x]
-	pixels[source_y][source_x] = tmp
+	var tmp = get_pixel(destination_x, destination_y)
+	set_pixel(destination_x, destination_y, get_pixel(source_x, source_y))
+	set_pixel(source_x, source_y, tmp)
 
 	# Draw only the changed cells
 	draw_pixel_at(source_x, source_y)
@@ -275,22 +279,22 @@ func set_active_at(x: int, y: int, active: bool) -> void:
 		next_active_pixels.erase(pos)
 
 	# Update the bit in pixel data
-	pixels[y][x] = (pixels[y][x] & ~(1 << ACTIVE_BIT_START)) | ((active as int) << ACTIVE_BIT_START)
+	set_pixel(x, y, (get_pixel(x, y) & ~(1 << ACTIVE_BIT_START)) | ((active as int) << ACTIVE_BIT_START))
 
 func set_processed_at(x: int, y: int, has_processed: bool) -> void:
-	pixels[y][x] = (pixels[y][x] & ~1) | (has_processed as int)
+	set_pixel(x, y, (get_pixel(x, y) & ~1) | (has_processed as int))
 
 func get_material_at(x: int, y: int) -> MaterialType:
-	return (pixels[y][x] >> MATERIAL_BITS_START) & MATERIAL_BITS_MASK as MaterialType
+	return (get_pixel(x, y) >> MATERIAL_BITS_START) & MATERIAL_BITS_MASK as MaterialType
 
 func get_pixel_variant_at(x: int, y: int) -> int:
-	return (pixels[y][x] >> VARIANT_BITS_START) & VARIANT_BITS_MASK
+	return (get_pixel(x, y) >> VARIANT_BITS_START) & VARIANT_BITS_MASK
 
 func is_processed_at(x: int, y: int) -> bool:
-	return (pixels[y][x] >> PROCESSED_BIT_START) & 0b1
+	return (get_pixel(x, y) >> PROCESSED_BIT_START) & 0b1
 
 func is_active_at(x: int, y: int) -> bool:
-	return (pixels[y][x] >> ACTIVE_BIT_START) & 0b1
+	return (get_pixel(x, y) >> ACTIVE_BIT_START) & 0b1
 
 func get_random_variant(material_type: MaterialType) -> int:
 	var variants = COLOR_RANGES[material_type]
