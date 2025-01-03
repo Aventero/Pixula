@@ -1,19 +1,27 @@
 extends Node2D
 
-@export var map: TileMapLayer
 @export var timer: Timer
 @export var camera: Camera2D
-@export var pixel_size = 16
+@export var pixel_size: int = 16
 
+@export var color_atlas: Texture2D
+@export var texture_rect : TextureRect
+var world_image: Image
+var world_texture: ImageTexture
+
+# Pixel State
 var pixels: Array[Array] = []
 var active_pixels: Dictionary = {}
 var next_active_pixels: Dictionary = {}
 
+# Window
 @export var window_width: int = 1600
 @export var window_height: int = 900
 @onready var grid_width: int = window_width / pixel_size
 @onready var grid_height: int = window_height / pixel_size
+@onready var color_atlas_image: Image = color_atlas.get_image()
 
+# Logic
 const PROCESSED_BIT_START = 0
 const ACTIVE_BIT_START = 1
 const MATERIAL_BITS_START = 5
@@ -21,10 +29,7 @@ const MATERIAL_BITS_MASK = 0b1111 # 4 Bit = 16 materials
 const VARIANT_BITS_START = 13
 const VARIANT_BITS_MASK = 0b1111111 # 7 Bit "of color"
 
-var image: Image
-var texture: ImageTexture
-var sprite: Sprite2D
-
+# Benchmarking
 var is_benchmark = false
 var highest_simulation_time = 0
 
@@ -53,15 +58,24 @@ const SWAP_RULES = {
 }
 
 func _ready() -> void:
+	setup_image()
 	get_window().size = Vector2(window_width, window_height)
-	map.scale = Vector2(pixel_size, pixel_size)
 	setup_pixels()
+
+func setup_image() -> void:
+	world_image = Image.create_empty(grid_width, grid_height, false, Image.FORMAT_RGBA8)
+	world_image.fill(Color(0, 0, 0, 0))
+	world_texture = ImageTexture.create_from_image(world_image)
+	texture_rect.texture = world_texture
+	texture_rect.custom_minimum_size = Vector2(window_width, window_height)
+
 
 func _on_timer_timeout() -> void:
 	simulate_active()
+	world_texture.update(world_image)
 
+### Benchmark
 func simulate_active() -> void:
-
 	if is_benchmark:
 		var start_time = Time.get_ticks_usec()
 		for pos in active_pixels:
@@ -79,7 +93,7 @@ func simulate_active() -> void:
 		#print("Simulation time: ", current_simulation_time, "ms", " Active: ", active_pixels.size())
 		if active_pixels.is_empty() == next_active_pixels.is_empty():
 			is_benchmark = false
-			print("HIGHEST TIME: ", highest_simulation_time, "ms")
+			print("HIGHEST TIME: ", highest_simulation_time, "ms", " FPS: ", Engine.get_frames_per_second())
 			return
 	else:
 		for pos in active_pixels:
@@ -118,12 +132,6 @@ func setup_pixels() -> void:
 		pixels[y].resize(grid_width) # make space
 		for x in grid_width:
 			set_state_at(x, y, MaterialType.AIR, get_random_variant(MaterialType.AIR), false, false)
-
-	# First Draw
-	for y in range(grid_height):
-		for x in range(grid_width):
-			var mat_variant = get_pixel_variant_at(x, y)
-			map.set_cell(Vector2i(x, y), 1, Vector2i(mat_variant, 0), 0)
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("SPAWN_SAND") || event.is_action_released("SPAWN_WATER"):
@@ -238,9 +246,14 @@ func activate_surrounding_pixels(x: int, y: int) -> void:
 		if get_material_at(activate_pos_x, activate_pos_y) != MaterialType.AIR:
 			set_active_at(activate_pos_x, activate_pos_y, true)
 
+func get_color_for_variant(variant: int) -> Color:
+	var atlas_coords = Vector2i(variant, 0)
+	return color_atlas_image.get_pixel(atlas_coords.x,  atlas_coords.y)
+
 func draw_pixel_at(x: int, y: int) -> void:
-	var mat_variant = get_pixel_variant_at(x, y)
-	map.set_cell(Vector2i(x, y), 1, Vector2i(mat_variant, 0), 0)
+	var variant = get_pixel_variant_at(x, y)
+	var color = get_color_for_variant(variant)
+	world_image.set_pixel(x, y, color)
 
 func swap_particle(source_x: int, source_y: int, destination_x: int, destination_y: int) -> void:
 	# Swap the state
@@ -252,7 +265,6 @@ func swap_particle(source_x: int, source_y: int, destination_x: int, destination
 	draw_pixel_at(source_x, source_y)
 	draw_pixel_at(destination_x, destination_y)
 
-	#activate_surrounding_pixels(destination_x, destination_y)
 	activate_surrounding_pixels(source_x, source_y)
 
 func set_active_at(x: int, y: int, active: bool) -> void:
@@ -283,7 +295,6 @@ func is_active_at(x: int, y: int) -> bool:
 func get_random_variant(material_type: MaterialType) -> int:
 	var variants = COLOR_RANGES[material_type]
 	return randi_range(variants[0], variants[1])
-
 
 func can_swap(source: MaterialType, swapping_partner: MaterialType) -> bool:
 	return swapping_partner in SWAP_RULES.get(source, [])
