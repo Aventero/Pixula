@@ -25,6 +25,9 @@ var image: Image
 var texture: ImageTexture
 var sprite: Sprite2D
 
+var is_benchmark = false
+var highest_simulation_time = 0
+
 # 0 - 31 -> 32 Possible Materials (Material Space)
 enum MaterialType {
 	AIR = 0,
@@ -58,12 +61,54 @@ func _on_timer_timeout() -> void:
 	simulate_active()
 
 func simulate_active() -> void:
-	for pos in active_pixels:
-		simulate(pos.x, pos.y)
 
-	# Move next frame
-	active_pixels = next_active_pixels.duplicate()
+	if is_benchmark:
+		var start_time = Time.get_ticks_usec()
+		for pos in active_pixels:
+			simulate(pos.x, pos.y)
+
+		# Move next frame
+		active_pixels = next_active_pixels.duplicate()
+		next_active_pixels.clear()
+
+		var end_time = Time.get_ticks_usec()
+		var current_simulation_time = (end_time - start_time) / 1000.0
+		if highest_simulation_time < current_simulation_time:
+			highest_simulation_time = current_simulation_time
+
+		#print("Simulation time: ", current_simulation_time, "ms", " Active: ", active_pixels.size())
+		if active_pixels.is_empty() == next_active_pixels.is_empty():
+			is_benchmark = false
+			print("HIGHEST TIME: ", highest_simulation_time, "ms")
+			return
+	else:
+		for pos in active_pixels:
+			simulate(pos.x, pos.y)
+
+		# Move next frame
+		active_pixels = next_active_pixels.duplicate()
+		next_active_pixels.clear()
+
+func benchmark_particles() -> void:
+	# Clear
+	highest_simulation_time = 0
+	setup_pixels()
+	active_pixels.clear()
 	next_active_pixels.clear()
+
+	# Spawn 2k particles
+	var particles_spawned = 0
+	var benchmark_particle_count = 8000
+	print("Benchmark with: ",benchmark_particle_count)
+	while particles_spawned < benchmark_particle_count:
+		var x = randi_range(0, grid_width - 1)
+		var y = randi_range(0, grid_height -1)
+		if get_material_at(x, y) == MaterialType.AIR:
+			set_state_at(x, y, MaterialType.SAND, get_random_variant(MaterialType.SAND), false, true)
+			activate_surrounding_pixels(x, y)
+			particles_spawned += 1
+
+	is_benchmark = true
 
 ### Setup, Input
 func setup_pixels() -> void:
@@ -85,8 +130,7 @@ func _input(event: InputEvent) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 	if event.is_action_released("STATS"):
-		print("Active: ", active_pixels.size())
-		print("Active NEXT FRAME: ", next_active_pixels.size())
+		benchmark_particles()
 
 func _process(_delta: float) -> void:
 	get_window().title = str(Engine.get_frames_per_second(), " | Active: ", active_pixels.size())
@@ -117,34 +161,6 @@ func set_state_at(x: int, y: int, material_type: MaterialType, variant: int, has
 	set_active_at(x, y, activate)
 	draw_pixel_at(x, y)
 
-func set_active_at(x: int, y: int, active: bool) -> void:
-	var pos = Vector2i(x, y)
-	if active:
-		next_active_pixels[pos] = true
-	else:
-		next_active_pixels.erase(pos)
-
-	# Update the bit in pixel data
-	pixels[y][x] = (pixels[y][x] & ~(1 << ACTIVE_BIT_START)) | ((active as int) << ACTIVE_BIT_START)
-
-func set_processed_at(x: int, y: int, has_processed: bool) -> void:
-	pixels[y][x] = (pixels[y][x] & ~1) | (has_processed as int)
-
-func get_material_at(x: int, y: int) -> MaterialType:
-	return (pixels[y][x] >> MATERIAL_BITS_START) & MATERIAL_BITS_MASK as MaterialType
-
-func get_pixel_variant_at(x: int, y: int) -> int:
-	return (pixels[y][x] >> VARIANT_BITS_START) & VARIANT_BITS_MASK
-
-func is_processed_at(x: int, y: int) -> bool:
-	return (pixels[y][x] >> PROCESSED_BIT_START) & 0b1
-
-func is_active_at(x: int, y: int) -> bool:
-	return (pixels[y][x] >> ACTIVE_BIT_START) & 0b1
-
-func get_random_variant(material_type: MaterialType) -> int:
-	var variants = COLOR_RANGES[material_type]
-	return randi_range(variants[0], variants[1])
 
 ### Mechanics
 func simulate(x: int, y: int) -> void:
@@ -238,6 +254,36 @@ func swap_particle(source_x: int, source_y: int, destination_x: int, destination
 
 	#activate_surrounding_pixels(destination_x, destination_y)
 	activate_surrounding_pixels(source_x, source_y)
+
+func set_active_at(x: int, y: int, active: bool) -> void:
+	var pos = Vector2i(x, y)
+	if active:
+		next_active_pixels[pos] = true
+	else:
+		next_active_pixels.erase(pos)
+
+	# Update the bit in pixel data
+	pixels[y][x] = (pixels[y][x] & ~(1 << ACTIVE_BIT_START)) | ((active as int) << ACTIVE_BIT_START)
+
+func set_processed_at(x: int, y: int, has_processed: bool) -> void:
+	pixels[y][x] = (pixels[y][x] & ~1) | (has_processed as int)
+
+func get_material_at(x: int, y: int) -> MaterialType:
+	return (pixels[y][x] >> MATERIAL_BITS_START) & MATERIAL_BITS_MASK as MaterialType
+
+func get_pixel_variant_at(x: int, y: int) -> int:
+	return (pixels[y][x] >> VARIANT_BITS_START) & VARIANT_BITS_MASK
+
+func is_processed_at(x: int, y: int) -> bool:
+	return (pixels[y][x] >> PROCESSED_BIT_START) & 0b1
+
+func is_active_at(x: int, y: int) -> bool:
+	return (pixels[y][x] >> ACTIVE_BIT_START) & 0b1
+
+func get_random_variant(material_type: MaterialType) -> int:
+	var variants = COLOR_RANGES[material_type]
+	return randi_range(variants[0], variants[1])
+
 
 func can_swap(source: MaterialType, swapping_partner: MaterialType) -> bool:
 	return swapping_partner in SWAP_RULES.get(source, [])
