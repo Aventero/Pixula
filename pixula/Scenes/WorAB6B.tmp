@@ -4652,6 +4652,7 @@ Button/styles/pressed = SubResource("StyleBoxFlat_t2ayf")
 script = ExtResource("1_wjcw8")
 timer = NodePath("Timer")
 camera = NodePath("Camera2D")
+pixel_size = 10
 color_atlas = ExtResource("2_lhhvn")
 texture_rect = NodePath("CanvasLayer/TextureRect")
 
