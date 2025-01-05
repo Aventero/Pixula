@@ -8,10 +8,12 @@ extends Node2D
 @export var texture_rect : TextureRect
 var world_image: Image
 var world_texture: ImageTexture
+var debug_image: Image
 
 # Pixel State
 var pixels: Array[PackedInt32Array] = []
 var active_pixels: Dictionary = {}
+var moved_pixels: Dictionary = {}
 var next_active_pixels: Dictionary = {}
 
 # Window
@@ -59,6 +61,7 @@ const SWAP_RULES: Dictionary = {
 
 func _ready() -> void:
 	setup_image()
+	setup_debug()
 	get_window().size = Vector2(window_width, window_height)
 	setup_pixels()
 
@@ -69,42 +72,67 @@ func setup_image() -> void:
 	texture_rect.texture = world_texture
 	texture_rect.custom_minimum_size = Vector2(window_width, window_height)
 
+func setup_debug() -> void:
+	debug_image = Image.create_empty(grid_width * pixel_size, grid_height * pixel_size, false, Image.FORMAT_RGBA8)
+	world_image.fill(Color(0, 0, 0, 0))
+	var debug_texture = ImageTexture.create_from_image(debug_image)
+	$World/DebugLayer/DebugTexture.texture = debug_texture
 
 func _on_timer_timeout() -> void:
 	simulate_active()
 	world_texture.update(world_image)
 
-### Benchmark
+func draw_active_cells() -> void:
+	debug_image.fill(Color(0, 0, 0, 0))
+	var red = Color.RED
+	red.a = 1
+	var blue = Color.BLUE
+	blue.a = 1
+	for pos in active_pixels:
+		draw_pixel_rect_debug(pos, red)
+	$World/DebugLayer/DebugTexture.texture.update(debug_image)
+
+func draw_pixel_rect_debug(pos: Vector2i, color: Color) -> void:
+	draw_rect_outline(debug_image, Rect2i(pos * pixel_size, Vector2i(1, 1) * pixel_size), color)
+
+func draw_rect_outline(image: Image, rect: Rect2i, color: Color) -> void:
+	# Draw horizontal lines
+	for x in range(rect.position.x, rect.position.x + rect.size.x):
+		image.set_pixel(x, rect.position.y, color)
+		image.set_pixel(x, rect.position.y + rect.size.y - 1, color)
+	# Draw vertical lines
+	for y in range(rect.position.y, rect.position.y + rect.size.y):
+		image.set_pixel(rect.position.x, y, color)
+		image.set_pixel(rect.position.x + rect.size.x - 1, y, color)
+
 func simulate_active() -> void:
+	var start_time: int = Time.get_ticks_usec()
+
+	# SIMULATE
+	for pos: Vector2i in active_pixels:
+		simulate(pos.x, pos.y)
+
+	# Reactivate processed pixels
+	for pos in next_active_pixels:
+		set_processed_at(pos.x, pos.y, false)
 
 	if is_benchmark:
-		var start_time: int = Time.get_ticks_usec()
-		for pos: Vector2i in active_pixels:
-			simulate(pos.x, pos.y)
-
-		# Move next frame
-		get_window().title = str(Engine.get_frames_per_second(), " | Active: ", active_pixels.size(), " | Next_Active: ", next_active_pixels.size(), " | Dif: ", next_active_pixels.size() - active_pixels.size())
-		active_pixels = next_active_pixels.duplicate()
-		next_active_pixels.clear()
-
 		var end_time: int = Time.get_ticks_usec()
 		var current_simulation_time: float = (end_time - start_time) / 1000.0
 		if highest_simulation_time < current_simulation_time:
 			highest_simulation_time = current_simulation_time
 
 		#print("Simulation time: ", current_simulation_time, "ms", " Active: ", active_pixels.size())
-		if active_pixels.is_empty() == next_active_pixels.is_empty():
+		if active_pixels.is_empty() and next_active_pixels.is_empty():
 			is_benchmark = false
 			print("HIGHEST TIME: ", highest_simulation_time, "ms", " FPS: ", Engine.get_frames_per_second())
 			return
-	else:
-		for pos: Vector2i in active_pixels:
-			simulate(pos.x, pos.y)
 
-		# Move next frame
-		get_window().title = str(Engine.get_frames_per_second(), " | Active: ", active_pixels.size(), " | Next_Active: ", next_active_pixels.size())
-		active_pixels = next_active_pixels.duplicate()
-		next_active_pixels.clear()
+	# Move next frame
+	get_window().title = str(Engine.get_frames_per_second(), " | Active: ", active_pixels.size(), " | Next_Active: ", next_active_pixels.size())
+	active_pixels = next_active_pixels.duplicate()
+	next_active_pixels.clear()
+	draw_active_cells()
 
 func benchmark_particles() -> void:
 	# Clear
@@ -113,7 +141,6 @@ func benchmark_particles() -> void:
 	active_pixels.clear()
 	next_active_pixels.clear()
 
-	# Spawn 2k particles
 	var particles_spawned: int = 0
 	var benchmark_particle_count: int = 8000
 	print("Benchmark with: ",benchmark_particle_count)
@@ -147,7 +174,7 @@ func _input(event: InputEvent) -> void:
 func _process(_delta: float) -> void:
 	if Input.is_action_pressed("SPAWN_SAND"):
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
-		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 3, MaterialType.SAND)
+		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 0, MaterialType.SAND)
 
 	if Input.is_action_pressed("SPAWN_WATER"):
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
@@ -172,14 +199,15 @@ func set_state_at(x: int, y: int, material_type: MaterialType, variant: int, has
 	set_active_at(x, y, activate)
 	draw_pixel_at(x, y)
 
-
 ### Mechanics
 func simulate(x: int, y: int) -> void:
 	var current_material: MaterialType = get_material_at(x, y)
+	if is_processed_at(x, y):
+		return
+	set_processed_at(x, y, true)
 
 	if current_material == MaterialType.SAND:
 		sand_mechanic(x, y, current_material)
-
 	if current_material == MaterialType.WATER:
 		water_mechanic(x, y, current_material)
 
@@ -230,14 +258,14 @@ func move_diagonal(x: int, y: int, process_material: MaterialType) -> bool:
 	return false
 
 const directions: Array[Vector2i] = [
-	Vector2i(-1, -1),
-	Vector2i(0, -1),
-	Vector2i(1, -1),
-	Vector2i(-1, 0),
-	Vector2i(1, 0),
 	Vector2i(-1, 1),
+	Vector2i(-1, 0),
+	Vector2i(-1, -1),
 	Vector2i(0, 1),
+	Vector2i(0, -1),
 	Vector2i(1, 1),
+	Vector2i(1, 0),
+	Vector2i(1, -1),
 ]
 
 func activate_surrounding_pixels(x: int, y: int) -> void:
@@ -248,6 +276,7 @@ func activate_surrounding_pixels(x: int, y: int) -> void:
 			continue
 		if get_material_at(activate_pos_x, activate_pos_y) != MaterialType.AIR:
 			set_active_at(activate_pos_x, activate_pos_y, true)
+
 
 func get_color_for_variant(variant: int) -> Color:
 	var atlas_coords: Vector2i = Vector2i(variant, 0)
@@ -269,6 +298,7 @@ func swap_particle(source_x: int, source_y: int, destination_x: int, destination
 	draw_pixel_at(destination_x, destination_y)
 
 	activate_surrounding_pixels(source_x, source_y)
+	#activate_surrounding_pixels(destination_x, destination_y)
 
 func set_active_at(x: int, y: int, active: bool) -> void:
 	var pos: Vector2i = Vector2i(x, y)
