@@ -1,4 +1,4 @@
-extends Node2D
+extends CanvasItem
 
 @export var timer: Timer
 @export var camera: Camera2D
@@ -10,9 +10,8 @@ var world_image: Image
 var world_texture: ImageTexture
 
 # Pixel State
-var pixels: Array[PackedInt32Array] = []
-var active_pixels: Dictionary = {}
-var next_active_pixels: Dictionary = {}
+var current_pixels: Array[PackedInt32Array] = []
+var next_pixels: Array[PackedInt32Array] = []
 
 # Window
 @export var window_width: int = 1600
@@ -32,6 +31,11 @@ const VARIANT_BITS_MASK: int = 0b1111111 # 7 Bit "of color"
 # Benchmarking
 var is_benchmark: bool = false
 var highest_simulation_time: float = 0
+
+# Constants for grid
+var current_active_cells: Dictionary = {}
+var next_active_cells: Dictionary = {}
+const CELL_SIZE: int = 4
 
 # 0 - 31 -> 32 Possible Materials (Material Space)
 enum MaterialType {
@@ -69,49 +73,80 @@ func setup_image() -> void:
 	texture_rect.texture = world_texture
 	texture_rect.custom_minimum_size = Vector2(window_width, window_height)
 
-
 func _on_timer_timeout() -> void:
 	simulate_active()
 	world_texture.update(world_image)
 
-### Benchmark
+func _draw() -> void:
+	draw_active_cells()
+
+func draw_active_cells() -> void:
+	var debug_color = Color(1, 0, 0, 1.0)
+	for cell in current_active_cells:
+		var rect = Rect2(
+			cell.x * CELL_SIZE * pixel_size,
+			cell.y * CELL_SIZE * pixel_size,
+			CELL_SIZE * pixel_size,
+			CELL_SIZE * pixel_size
+		)
+		draw_rect(rect, debug_color, false, 1, false)
+
+func get_cell(pos: Vector2i) -> Vector2i:
+	return Vector2i(pos.x / CELL_SIZE, pos.y / CELL_SIZE)
+
+func activate_cell(pos: Vector2i) -> void:
+	var cell_pos: Vector2i = get_cell(pos)
+	next_active_cells[cell_pos] = true
 func simulate_active() -> void:
+	var start_time: int = 0
+	if is_benchmark:
+		start_time = Time.get_ticks_usec()
+
+	next_pixels = current_pixels.duplicate(true)
+	for cell in current_active_cells:
+		var cell_x = cell.x * CELL_SIZE
+		var cell_y = cell.y * CELL_SIZE
+		for x in range(cell_x, cell_x + CELL_SIZE):
+			for y in range(cell_y, cell_y + CELL_SIZE):
+				if is_valid_position(x, y):
+					if simulate(x, y):  # If something changed
+						activate_neighboring_cells(x, y)
+
+	current_active_cells = next_active_cells.duplicate(true)
+	next_active_cells.clear()
+
+	var tmp = current_pixels
+	current_pixels = next_pixels
+	next_pixels = tmp
 
 	if is_benchmark:
-		var start_time: int = Time.get_ticks_usec()
-		for pos: Vector2i in active_pixels:
-			simulate(pos.x, pos.y)
-
-		# Move next frame
-		get_window().title = str(Engine.get_frames_per_second(), " | Active: ", active_pixels.size(), " | Next_Active: ", next_active_pixels.size(), " | Dif: ", next_active_pixels.size() - active_pixels.size())
-		active_pixels = next_active_pixels.duplicate()
-		next_active_pixels.clear()
-
 		var end_time: int = Time.get_ticks_usec()
 		var current_simulation_time: float = (end_time - start_time) / 1000.0
 		if highest_simulation_time < current_simulation_time:
 			highest_simulation_time = current_simulation_time
+			print("New highest simulation time: ", highest_simulation_time, "ms")
+			print("Active cells: ", current_active_cells.size())
 
-		#print("Simulation time: ", current_simulation_time, "ms", " Active: ", active_pixels.size())
-		if active_pixels.is_empty() == next_active_pixels.is_empty():
-			is_benchmark = false
-			print("HIGHEST TIME: ", highest_simulation_time, "ms", " FPS: ", Engine.get_frames_per_second())
-			return
-	else:
-		for pos: Vector2i in active_pixels:
-			simulate(pos.x, pos.y)
+	queue_redraw()
+	get_window().title = str(Engine.get_frames_per_second(), " | Active_cells: ", current_active_cells.size())
 
-		# Move next frame
-		get_window().title = str(Engine.get_frames_per_second(), " | Active: ", active_pixels.size(), " | Next_Active: ", next_active_pixels.size())
-		active_pixels = next_active_pixels.duplicate()
-		next_active_pixels.clear()
+func activate_neighboring_cells(x: int, y: int) -> void:
+	var cell_pos = get_cell(Vector2i(x, y))
+	for dx in range(-1, 2):
+		for dy in range(-1, 2):
+			var neighbor_cell = cell_pos + Vector2i(dx, dy)
+			# Check against both minimum and maximum bounds
+			if neighbor_cell.x >= 0 and neighbor_cell.y >= 0 and \
+			   neighbor_cell.x < grid_width/CELL_SIZE and neighbor_cell.y < grid_height/CELL_SIZE:
+				next_active_cells[neighbor_cell] = true
 
 func benchmark_particles() -> void:
 	# Clear
+
 	highest_simulation_time = 0
 	setup_pixels()
-	active_pixels.clear()
-	next_active_pixels.clear()
+	current_active_cells.clear()
+	next_active_cells.clear()
 
 	# Spawn 2k particles
 	var particles_spawned: int = 0
@@ -122,20 +157,20 @@ func benchmark_particles() -> void:
 		var y: int = randi_range(0, grid_height -1)
 		if get_material_at(x, y) == MaterialType.AIR:
 			set_state_at(x, y, MaterialType.SAND, get_random_variant(MaterialType.SAND), false, true)
-			activate_surrounding_pixels(x, y)
 			particles_spawned += 1
 
 	is_benchmark = true
 
 ### Setup, Input
 func setup_pixels() -> void:
-	pixels.resize(grid_height)
+	current_pixels.resize(grid_height)
 	for y: int in grid_height:
 		var row: PackedInt32Array = PackedInt32Array()
 		row.resize(grid_width)
-		pixels[y] = row
+		current_pixels[y] = row
 		for x: int in grid_width:
 			set_state_at(x, y, MaterialType.AIR, get_random_variant(MaterialType.AIR), false, false)
+	next_pixels = current_pixels.duplicate(true)
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("SPAWN_SAND") || event.is_action_released("SPAWN_WATER"):
@@ -144,10 +179,13 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_released("STATS"):
 		benchmark_particles()
 
+	if event.is_action_released("CHECK_MATERIAL"):
+		print(get_material_at(get_mouse_tile_pos().x, get_mouse_tile_pos().y))
+
 func _process(_delta: float) -> void:
 	if Input.is_action_pressed("SPAWN_SAND"):
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
-		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 3, MaterialType.SAND)
+		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 5, MaterialType.SAND)
 
 	if Input.is_action_pressed("SPAWN_WATER"):
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
@@ -158,35 +196,36 @@ func spawn_in_radius(center_x: int, center_y: int, radius: int, material_type: M
 		for x: int in range(max(0, center_x - radius), min(grid_width, center_x + radius + 1)):
 			if Vector2(center_x, center_y).distance_to(Vector2(x, y)) <= radius:
 				set_state_at(x, y, material_type, get_random_variant(material_type), false, true)
-				activate_surrounding_pixels(x, y)
+				set_active_at(x, y, true)
 
-### Low level pixel manipulation ###
 func set_state_at(x: int, y: int, material_type: MaterialType, variant: int, has_processed: bool = false, activate: bool = false) -> void:
 	if not is_valid_position(x,y):
 		return
 
 	# the "\" is for allowing linebreaks
-	pixels[y][x] = ((has_processed as int) << PROCESSED_BIT_START) | \
+	current_pixels[y][x] = ((has_processed as int) << PROCESSED_BIT_START) | \
 							(material_type << MATERIAL_BITS_START) | \
 							(variant << VARIANT_BITS_START)
-	set_active_at(x, y, activate)
 	draw_pixel_at(x, y)
-
+	activate_cell(Vector2i(x, y))
 
 ### Mechanics
-func simulate(x: int, y: int) -> void:
+func simulate(x: int, y: int) -> bool:
 	var current_material: MaterialType = get_material_at(x, y)
+	set_processed_at(x, y, true)
 
 	if current_material == MaterialType.SAND:
-		sand_mechanic(x, y, current_material)
+		return sand_mechanic(x, y, current_material)
 
 	if current_material == MaterialType.WATER:
 		water_mechanic(x, y, current_material)
 
-func sand_mechanic(x: int, y: int, process_material: MaterialType) -> void:
-	if not move_down(x, y, process_material):
-		if not move_diagonal(x, y, process_material):
-			set_active_at(x, y, false)
+	return false
+
+func sand_mechanic(x: int, y: int, process_material: MaterialType) -> bool:
+	if move_down(x, y, process_material) or move_diagonal(x, y, process_material):
+		return true
+	return false
 
 func water_mechanic(x: int, y: int, process_material: MaterialType) -> void:
 	if not move_down(x, y, process_material):
@@ -230,24 +269,10 @@ func move_diagonal(x: int, y: int, process_material: MaterialType) -> bool:
 	return false
 
 const directions: Array[Vector2i] = [
-	Vector2i(-1, -1),
-	Vector2i(0, -1),
-	Vector2i(1, -1),
-	Vector2i(-1, 0),
-	Vector2i(1, 0),
-	Vector2i(-1, 1),
-	Vector2i(0, 1),
-	Vector2i(1, 1),
+	Vector2i(-1, -1), Vector2i(0, 1), Vector2i(1, 1),
+	Vector2i(-1, 0), 				  Vector2i(1, 0),
+	Vector2i(-1, 1), Vector2i(0, -1), Vector2i(1, -1),
 ]
-
-func activate_surrounding_pixels(x: int, y: int) -> void:
-	for dir: Vector2i in directions:
-		var activate_pos_x: int = x + dir.x
-		var activate_pos_y: int = y + dir.y
-		if not is_valid_position(activate_pos_x, activate_pos_y):
-			continue
-		if get_material_at(activate_pos_x, activate_pos_y) != MaterialType.AIR:
-			set_active_at(activate_pos_x, activate_pos_y, true)
 
 func get_color_for_variant(variant: int) -> Color:
 	var atlas_coords: Vector2i = Vector2i(variant, 0)
@@ -258,42 +283,45 @@ func draw_pixel_at(x: int, y: int) -> void:
 	var color: Color = get_color_for_variant(variant)
 	world_image.set_pixel(x, y, color)
 
+func draw_pixel_at_new(x: int, y: int) -> void:
+	var variant: int = get_pixel_variant_at_new(x, y)
+	var color: Color = get_color_for_variant(variant)
+	world_image.set_pixel(x, y, color)
+
 func swap_particle(source_x: int, source_y: int, destination_x: int, destination_y: int) -> void:
-	# Swap the state
-	var tmp: int = pixels[destination_y][destination_x]
-	pixels[destination_y][destination_x] = pixels[source_y][source_x]
-	pixels[source_y][source_x] = tmp
+	# Swap in Next Simulation
+	next_pixels[destination_y][destination_x] = current_pixels[source_y][source_x]
+	next_pixels[source_y][source_x] = current_pixels[destination_y][destination_x]
 
 	# Draw only the changed cells
-	draw_pixel_at(source_x, source_y)
-	draw_pixel_at(destination_x, destination_y)
+	draw_pixel_at_new(source_x, source_y)
+	draw_pixel_at_new(destination_x, destination_y)
 
-	activate_surrounding_pixels(source_x, source_y)
+	set_active_at(source_x, source_y, true)
+	set_active_at(destination_x, destination_y, true)
 
 func set_active_at(x: int, y: int, active: bool) -> void:
 	var pos: Vector2i = Vector2i(x, y)
 	if active:
-		next_active_pixels[pos] = true
-	else:
-		next_active_pixels.erase(pos)
+		activate_cell(pos)
 
 	# Update the bit in pixel data
-	pixels[y][x] = (pixels[y][x] & ~(1 << ACTIVE_BIT_START)) | ((active as int) << ACTIVE_BIT_START)
+	current_pixels[y][x] = (current_pixels[y][x] & ~(1 << ACTIVE_BIT_START)) | ((active as int) << ACTIVE_BIT_START)
 
 func set_processed_at(x: int, y: int, has_processed: bool) -> void:
-	pixels[y][x] = (pixels[y][x] & ~1) | (has_processed as int)
+	current_pixels[y][x] = (current_pixels[y][x] & ~1) | (has_processed as int)
 
 func get_material_at(x: int, y: int) -> MaterialType:
-	return (pixels[y][x] >> MATERIAL_BITS_START) & MATERIAL_BITS_MASK as MaterialType
+	return (current_pixels[y][x] >> MATERIAL_BITS_START) & MATERIAL_BITS_MASK as MaterialType
 
 func get_pixel_variant_at(x: int, y: int) -> int:
-	return (pixels[y][x] >> VARIANT_BITS_START) & VARIANT_BITS_MASK
+	return (current_pixels[y][x] >> VARIANT_BITS_START) & VARIANT_BITS_MASK
+
+func get_pixel_variant_at_new(x: int, y: int) -> int:
+	return (next_pixels[y][x] >> VARIANT_BITS_START) & VARIANT_BITS_MASK
 
 func is_processed_at(x: int, y: int) -> bool:
-	return (pixels[y][x] >> PROCESSED_BIT_START) & 0b1
-
-func is_active_at(x: int, y: int) -> bool:
-	return (pixels[y][x] >> ACTIVE_BIT_START) & 0b1
+	return (current_pixels[y][x] >> PROCESSED_BIT_START) & 0b1
 
 func get_random_variant(material_type: MaterialType) -> int:
 	var variants: PackedInt32Array = COLOR_RANGES[material_type]
