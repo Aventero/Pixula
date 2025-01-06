@@ -1,11 +1,11 @@
 extends Node2D
-
-@export var timer: Timer
-@export var camera: Camera2D
+@onready var timer: Timer = $Timer
+@onready var camera: Camera2D
+@onready var texture_rect : TextureRect = $World/WorldTexture
+@onready var color_atlas: Texture = load("res://Images/apollo.png")
+@onready var color_atlas_image: Image = color_atlas.get_image()
 @export var pixel_size: int = 16
 
-@export var color_atlas: Texture2D
-@export var texture_rect : TextureRect
 var world_image: Image
 var world_texture: ImageTexture
 var debug_image: Image
@@ -21,7 +21,6 @@ var next_active_pixels: Dictionary = {}
 @export var window_height: int = 900
 @onready var grid_width: int = window_width / pixel_size
 @onready var grid_height: int = window_height / pixel_size
-@onready var color_atlas_image: Image = color_atlas.get_image()
 
 # Logic
 const PROCESSED_BIT_START: int = 0
@@ -34,6 +33,8 @@ const VARIANT_BITS_MASK: int = 0b1111111 # 7 Bit "of color"
 # Benchmarking
 var is_benchmark: bool = false
 var highest_simulation_time: float = 0
+var total_simulation_time: float = 0
+var total_frames: int = 0
 
 # 0 - 31 -> 32 Possible Materials (Material Space)
 enum MaterialType {
@@ -119,30 +120,35 @@ func simulate_active() -> void:
 	if is_benchmark:
 		var end_time: int = Time.get_ticks_usec()
 		var current_simulation_time: float = (end_time - start_time) / 1000.0
+		total_simulation_time += current_simulation_time
+		total_frames += 1
+
 		if highest_simulation_time < current_simulation_time:
 			highest_simulation_time = current_simulation_time
 
-		#print("Simulation time: ", current_simulation_time, "ms", " Active: ", active_pixels.size())
 		if active_pixels.is_empty() and next_active_pixels.is_empty():
 			is_benchmark = false
-			print("HIGHEST TIME: ", highest_simulation_time, "ms", " FPS: ", Engine.get_frames_per_second())
+			var average_time = total_simulation_time / total_frames
+			print("Total: ", total_simulation_time, "ms | Average: ", average_time, "ms | Highest: ", highest_simulation_time, "ms | FPS: ", Engine.get_frames_per_second())
 			return
 
 	# Move next frame
 	get_window().title = str(Engine.get_frames_per_second(), " | Active: ", active_pixels.size(), " | Next_Active: ", next_active_pixels.size())
 	active_pixels = next_active_pixels.duplicate()
 	next_active_pixels.clear()
-	draw_active_cells()
+	#draw_active_cells()
 
 func benchmark_particles() -> void:
 	# Clear
+	total_frames = 0
+	total_simulation_time = 0
 	highest_simulation_time = 0
 	setup_pixels()
 	active_pixels.clear()
 	next_active_pixels.clear()
 
 	var particles_spawned: int = 0
-	var benchmark_particle_count: int = 8000
+	var benchmark_particle_count: int = 2000
 	print("Benchmark with: ",benchmark_particle_count)
 	while particles_spawned < benchmark_particle_count:
 		var x: int = randi_range(0, grid_width - 1)

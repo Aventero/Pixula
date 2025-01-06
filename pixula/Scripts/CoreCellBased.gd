@@ -1,11 +1,12 @@
 extends CanvasItem
 
-@export var timer: Timer
-@export var camera: Camera2D
-@export var pixel_size: int = 16
+@onready var timer: Timer = $Timer
+@onready var camera: Camera2D
+@onready var texture_rect : TextureRect = $World/WorldTexture
+@onready var color_atlas: Texture = load("res://Images/apollo.png")
+@onready var color_atlas_image: Image = color_atlas.get_image()
 
-@export var color_atlas: Texture2D
-@export var texture_rect : TextureRect
+@export var pixel_size: int = 16
 var world_image: Image
 var world_texture: ImageTexture
 
@@ -18,7 +19,6 @@ var next_pixels: Array[PackedInt32Array] = []
 @export var window_height: int = 900
 @onready var grid_width: int = window_width / pixel_size
 @onready var grid_height: int = window_height / pixel_size
-@onready var color_atlas_image: Image = color_atlas.get_image()
 
 # Logic
 const PROCESSED_BIT_START: int = 0
@@ -31,11 +31,13 @@ const VARIANT_BITS_MASK: int = 0b1111111 # 7 Bit "of color"
 # Benchmarking
 var is_benchmark: bool = false
 var highest_simulation_time: float = 0
+var total_simulation_time: float = 0
+var total_frames: int = 0
 
 # Constants for grid
 var current_active_cells: Dictionary = {}
 var next_active_cells: Dictionary = {}
-const CELL_SIZE: int = 4
+const CELL_SIZE: int = 2
 
 # 0 - 31 -> 32 Possible Materials (Material Space)
 enum MaterialType {
@@ -62,11 +64,11 @@ const SWAP_RULES: Dictionary = {
 }
 
 func _ready() -> void:
-	setup_image()
+	setup_images()
 	get_window().size = Vector2(window_width, window_height)
 	setup_pixels()
 
-func setup_image() -> void:
+func setup_images() -> void:
 	world_image = Image.create_empty(grid_width, grid_height, false, Image.FORMAT_RGBA8)
 	world_image.fill(Color(0, 0, 0, 0))
 	world_texture = ImageTexture.create_from_image(world_image)
@@ -97,12 +99,28 @@ func get_cell(pos: Vector2i) -> Vector2i:
 func activate_cell(pos: Vector2i) -> void:
 	var cell_pos: Vector2i = get_cell(pos)
 	next_active_cells[cell_pos] = true
-func simulate_active() -> void:
-	var start_time: int = 0
-	if is_benchmark:
-		start_time = Time.get_ticks_usec()
+var total_particles: int = 0
+var last_particle_count: int = 0
 
+# Modify simulate_active() to count particles:
+func simulate_active() -> void:
+	var start_time: int = Time.get_ticks_usec()
 	next_pixels = current_pixels.duplicate(true)
+
+	## Reset counter
+	#total_particles = 0
+#
+	## Count all non-air particles
+	#for y in range(grid_height):
+		#for x in range(grid_width):
+			#if get_material_at(x, y) != MaterialType.AIR:
+				#total_particles += 1
+#
+	## Print if count changed
+	#if total_particles != last_particle_count:
+		#print("Particle count changed: ", last_particle_count, " -> ", total_particles)
+		#last_particle_count = total_particles
+
 	for cell in current_active_cells:
 		var cell_x = cell.x * CELL_SIZE
 		var cell_y = cell.y * CELL_SIZE
@@ -111,6 +129,7 @@ func simulate_active() -> void:
 				if is_valid_position(x, y):
 					if simulate(x, y):  # If something changed
 						activate_neighboring_cells(x, y)
+					draw_pixel_at(x, y)
 
 	current_active_cells = next_active_cells.duplicate(true)
 	next_active_cells.clear()
@@ -122,27 +141,34 @@ func simulate_active() -> void:
 	if is_benchmark:
 		var end_time: int = Time.get_ticks_usec()
 		var current_simulation_time: float = (end_time - start_time) / 1000.0
+		total_simulation_time += current_simulation_time
+		total_frames += 1
+
 		if highest_simulation_time < current_simulation_time:
 			highest_simulation_time = current_simulation_time
-			print("New highest simulation time: ", highest_simulation_time, "ms")
-			print("Active cells: ", current_active_cells.size())
+
+		if current_active_cells.is_empty() and next_active_cells.is_empty():
+			is_benchmark = false
+			var average_time = total_simulation_time / total_frames
+			print("Total: ", total_simulation_time, "ms | Average: ", average_time, "ms | Highest: ", highest_simulation_time, "ms | FPS: ", Engine.get_frames_per_second())
+			return
 
 	queue_redraw()
 	get_window().title = str(Engine.get_frames_per_second(), " | Active_cells: ", current_active_cells.size())
 
 func activate_neighboring_cells(x: int, y: int) -> void:
 	var cell_pos = get_cell(Vector2i(x, y))
-	for dx in range(-1, 2):
-		for dy in range(-1, 2):
-			var neighbor_cell = cell_pos + Vector2i(dx, dy)
-			# Check against both minimum and maximum bounds
-			if neighbor_cell.x >= 0 and neighbor_cell.y >= 0 and \
-			   neighbor_cell.x < grid_width/CELL_SIZE and neighbor_cell.y < grid_height/CELL_SIZE:
-				next_active_cells[neighbor_cell] = true
+	for dir in directions:
+		var neighbor_cell = cell_pos + dir
+		# Check against both minimum and maximum bounds
+		if neighbor_cell.x >= 0 and neighbor_cell.y >= 0 and \
+		   neighbor_cell.x < grid_width/CELL_SIZE and neighbor_cell.y < grid_height/CELL_SIZE:
+			next_active_cells[neighbor_cell] = true
 
 func benchmark_particles() -> void:
 	# Clear
-
+	total_frames = 0
+	total_simulation_time = 0
 	highest_simulation_time = 0
 	setup_pixels()
 	current_active_cells.clear()
@@ -150,7 +176,7 @@ func benchmark_particles() -> void:
 
 	# Spawn 2k particles
 	var particles_spawned: int = 0
-	var benchmark_particle_count: int = 8000
+	var benchmark_particle_count: int = 2000
 	print("Benchmark with: ",benchmark_particle_count)
 	while particles_spawned < benchmark_particle_count:
 		var x: int = randi_range(0, grid_width - 1)
@@ -218,7 +244,7 @@ func simulate(x: int, y: int) -> bool:
 		return sand_mechanic(x, y, current_material)
 
 	if current_material == MaterialType.WATER:
-		water_mechanic(x, y, current_material)
+		return water_mechanic(x, y, current_material)
 
 	return false
 
@@ -227,11 +253,10 @@ func sand_mechanic(x: int, y: int, process_material: MaterialType) -> bool:
 		return true
 	return false
 
-func water_mechanic(x: int, y: int, process_material: MaterialType) -> void:
-	if not move_down(x, y, process_material):
-		if not move_diagonal(x, y, process_material):
-			if not move_horizontal(x, y, process_material):
-				set_active_at(x, y, false)
+func water_mechanic(x: int, y: int, process_material: MaterialType) -> bool:
+	if move_down(x, y, process_material) or move_diagonal(x, y, process_material) or move_horizontal(x, y, process_material):
+		return true
+	return false
 
 func move_horizontal(x: int, y: int, process_material: MaterialType) -> bool:
 	var x_direction: int = 1 if y % 2 == 0 else -1
@@ -290,12 +315,9 @@ func draw_pixel_at_new(x: int, y: int) -> void:
 
 func swap_particle(source_x: int, source_y: int, destination_x: int, destination_y: int) -> void:
 	# Swap in Next Simulation
+	var temp = next_pixels[destination_y][destination_x]
 	next_pixels[destination_y][destination_x] = current_pixels[source_y][source_x]
-	next_pixels[source_y][source_x] = current_pixels[destination_y][destination_x]
-
-	# Draw only the changed cells
-	draw_pixel_at_new(source_x, source_y)
-	draw_pixel_at_new(destination_x, destination_y)
+	next_pixels[source_y][source_x] = temp
 
 	set_active_at(source_x, source_y, true)
 	set_active_at(destination_x, destination_y, true)
