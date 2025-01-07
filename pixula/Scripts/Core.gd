@@ -5,6 +5,7 @@ extends Node2D
 @onready var color_atlas: Texture = load("res://Images/apollo.png")
 @onready var color_atlas_image: Image = color_atlas.get_image()
 @export var pixel_size: int = 16
+@export var circle_size = 3
 
 var world_image: Image
 var world_texture: ImageTexture
@@ -35,6 +36,8 @@ var is_benchmark: bool = false
 var highest_simulation_time: float = 0
 var total_simulation_time: float = 0
 var total_frames: int = 0
+var total_particles: int = 0
+var last_particle_count: int = 0
 
 # 0 - 31 -> 32 Possible Materials (Material Space)
 enum MaterialType {
@@ -109,7 +112,23 @@ func draw_rect_outline(image: Image, rect: Rect2i, color: Color) -> void:
 func simulate_active() -> void:
 	var start_time: int = Time.get_ticks_usec()
 
+	# Reset counter
+	total_particles = 0
+
+	# Count all non-air particles
+	for y in range(grid_height):
+		for x in range(grid_width):
+			if get_material_at(x, y) != MaterialType.AIR:
+				total_particles += 1
+
+	# Print if count changed
+	if total_particles != last_particle_count:
+		print("Particle count changed: ", last_particle_count, " -> ", total_particles)
+		last_particle_count = total_particles
+
+
 	# SIMULATE
+	moved_pixels.clear()
 	for pos: Vector2i in active_pixels:
 		simulate(pos.x, pos.y)
 
@@ -136,7 +155,7 @@ func simulate_active() -> void:
 	get_window().title = str(Engine.get_frames_per_second(), " | Active: ", active_pixels.size(), " | Next_Active: ", next_active_pixels.size())
 	active_pixels = next_active_pixels.duplicate()
 	next_active_pixels.clear()
-	#draw_active_cells()
+	draw_active_cells()
 
 func benchmark_particles() -> void:
 	# Clear
@@ -180,18 +199,18 @@ func _input(event: InputEvent) -> void:
 func _process(_delta: float) -> void:
 	if Input.is_action_pressed("SPAWN_SAND"):
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
-		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 0, MaterialType.SAND)
+		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, circle_size, MaterialType.SAND)
 
 	if Input.is_action_pressed("SPAWN_WATER"):
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
-		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 3, MaterialType.WATER)
+		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, circle_size, MaterialType.WATER)
 
 func spawn_in_radius(center_x: int, center_y: int, radius: int, material_type: MaterialType) -> void:
 	for y: int in range(max(0, center_y - radius), min(grid_height, center_y + radius + 1)):
 		for x: int in range(max(0, center_x - radius), min(grid_width, center_x + radius + 1)):
 			if Vector2(center_x, center_y).distance_to(Vector2(x, y)) <= radius:
-				set_state_at(x, y, material_type, get_random_variant(material_type), false, true)
 				activate_surrounding_pixels(x, y)
+				set_state_at(x, y, material_type, get_random_variant(material_type), false, true)
 
 ### Low level pixel manipulation ###
 func set_state_at(x: int, y: int, material_type: MaterialType, variant: int, has_processed: bool = false, activate: bool = false) -> void:
@@ -208,9 +227,8 @@ func set_state_at(x: int, y: int, material_type: MaterialType, variant: int, has
 ### Mechanics
 func simulate(x: int, y: int) -> void:
 	var current_material: MaterialType = get_material_at(x, y)
-	if is_processed_at(x, y):
+	if has_moved(Vector2i(x, y)):
 		return
-	set_processed_at(x, y, true)
 
 	if current_material == MaterialType.SAND:
 		sand_mechanic(x, y, current_material)
@@ -234,7 +252,7 @@ func move_horizontal(x: int, y: int, process_material: MaterialType) -> bool:
 	if not is_valid_position(new_x, y):
 		return false
 
-	if can_swap(process_material, get_material_at(new_x, y)):
+	if can_swap(process_material, Vector2i(new_x, y), get_material_at(new_x, y)):
 		swap_particle(x, y, new_x, y)
 		return true
 
@@ -244,7 +262,7 @@ func move_down(x: int, y: int, process_material: MaterialType) -> bool:
 	if not is_valid_position(x, y + 1):
 		return false
 
-	if can_swap(process_material, get_material_at(x, y + 1)):
+	if can_swap(process_material, Vector2i(x, y + 1), get_material_at(x, y + 1)):
 		swap_particle(x, y, x, y + 1)
 		return true
 
@@ -257,7 +275,7 @@ func move_diagonal(x: int, y: int, process_material: MaterialType) -> bool:
 	if not is_valid_position(new_x, y + 1):
 		return false
 
-	if can_swap(process_material, get_material_at(new_x, y + 1)):
+	if can_swap(process_material, Vector2i(new_x, y + 1), get_material_at(new_x, y + 1)):
 		swap_particle(x, y, new_x, y + 1)
 		return true
 
@@ -268,6 +286,7 @@ const directions: Array[Vector2i] = [
 	Vector2i(-1, 0),
 	Vector2i(-1, -1),
 	Vector2i(0, 1),
+	Vector2i(0, 0),
 	Vector2i(0, -1),
 	Vector2i(1, 1),
 	Vector2i(1, 0),
@@ -303,6 +322,9 @@ func swap_particle(source_x: int, source_y: int, destination_x: int, destination
 	draw_pixel_at(source_x, source_y)
 	draw_pixel_at(destination_x, destination_y)
 
+	moved_pixels[(Vector2i(source_x, source_y))] = true
+	moved_pixels[(Vector2i(destination_x, destination_y))] = true
+
 	activate_surrounding_pixels(source_x, source_y)
 	#activate_surrounding_pixels(destination_x, destination_y)
 
@@ -335,8 +357,14 @@ func get_random_variant(material_type: MaterialType) -> int:
 	var variants: PackedInt32Array = COLOR_RANGES[material_type]
 	return randi_range(variants[0], variants[1])
 
-func can_swap(source: MaterialType, swapping_partner: MaterialType) -> bool:
+func can_swap(source: MaterialType, swap_partner_pos: Vector2i, swapping_partner: MaterialType) -> bool:
+	if has_moved(swap_partner_pos):
+		return false
+
 	return swapping_partner in SWAP_RULES.get(source, [])
+
+func has_moved(moved_position: Vector2i) -> bool:
+	return moved_pixels.has(moved_position)
 
 func is_valid_position(x: int, y: int) -> bool:
 	return x >= 0 and x < grid_width and y >= 0 and y < grid_height

@@ -7,12 +7,14 @@ extends CanvasItem
 @onready var color_atlas_image: Image = color_atlas.get_image()
 
 @export var pixel_size: int = 16
+@export var circle_size = 3
 var world_image: Image
 var world_texture: ImageTexture
 
 # Pixel State
-var current_pixels: Array[PackedInt32Array] = []
-var next_pixels: Array[PackedInt32Array] = []
+var current_pixels: Array[PackedInt32Array] = [] # Pixels in the CURRENT frame
+var next_pixels: Array[PackedInt32Array] = [] # Pixels in the NEXT frame
+var moved_pixels: Dictionary = {} # Pixels that moved in the CURRENT FRAME
 
 # Window
 @export var window_width: int = 1600
@@ -37,7 +39,7 @@ var total_frames: int = 0
 # Constants for grid
 var current_active_cells: Dictionary = {}
 var next_active_cells: Dictionary = {}
-const CELL_SIZE: int = 2
+const CELL_SIZE: int = 10
 
 # 0 - 31 -> 32 Possible Materials (Material Space)
 enum MaterialType {
@@ -99,6 +101,7 @@ func get_cell(pos: Vector2i) -> Vector2i:
 func activate_cell(pos: Vector2i) -> void:
 	var cell_pos: Vector2i = get_cell(pos)
 	next_active_cells[cell_pos] = true
+
 var total_particles: int = 0
 var last_particle_count: int = 0
 
@@ -129,10 +132,10 @@ func simulate_active() -> void:
 				if is_valid_position(x, y):
 					if simulate(x, y):  # If something changed
 						activate_neighboring_cells(x, y)
-					draw_pixel_at(x, y)
 
 	current_active_cells = next_active_cells.duplicate(true)
 	next_active_cells.clear()
+	moved_pixels.clear()
 
 	var tmp = current_pixels
 	current_pixels = next_pixels
@@ -158,12 +161,37 @@ func simulate_active() -> void:
 
 func activate_neighboring_cells(x: int, y: int) -> void:
 	var cell_pos = get_cell(Vector2i(x, y))
-	for dir in directions:
-		var neighbor_cell = cell_pos + dir
-		# Check against both minimum and maximum bounds
-		if neighbor_cell.x >= 0 and neighbor_cell.y >= 0 and \
-		   neighbor_cell.x < grid_width/CELL_SIZE and neighbor_cell.y < grid_height/CELL_SIZE:
-			next_active_cells[neighbor_cell] = true
+	# Calculate position within the cell (0-3 for a 4x4 cell)
+	var local_x = x % CELL_SIZE
+	var local_y = y % CELL_SIZE
+	# Check if pixel is at cell borders and activate only relevant neighbors
+	var cells_to_activate = []
+	# Left border
+	if local_x == 0 and cell_pos.x > 0:
+		cells_to_activate.append(Vector2i(-1, 0))
+	# Right border
+	elif local_x == CELL_SIZE - 1 and cell_pos.x < grid_width/CELL_SIZE - 1:
+		cells_to_activate.append(Vector2i(1, 0))
+	# Top border
+	if local_y == 0 and cell_pos.y > 0:
+		cells_to_activate.append(Vector2i(0, -1))
+		# Add diagonals if also on left/right border
+		if local_x == 0 and cell_pos.x > 0:
+			cells_to_activate.append(Vector2i(-1, -1))
+		if local_x == CELL_SIZE - 1 and cell_pos.x < grid_width/CELL_SIZE - 1:
+			cells_to_activate.append(Vector2i(1, -1))
+	# Bottom border
+	if local_y == CELL_SIZE - 1 and cell_pos.y < grid_height/CELL_SIZE - 1:
+		cells_to_activate.append(Vector2i(0, 1))
+		# Add diagonals if also on left/right border
+		if local_x == 0 and cell_pos.x > 0:
+			cells_to_activate.append(Vector2i(-1, 1))
+		if local_x == CELL_SIZE - 1 and cell_pos.x < grid_width/CELL_SIZE - 1:
+			cells_to_activate.append(Vector2i(1, 1))
+	# Activate the necessary neighboring cells
+	for offset in cells_to_activate:
+		var neighbor_cell = cell_pos + offset
+		next_active_cells[neighbor_cell] = true
 
 func benchmark_particles() -> void:
 	# Clear
@@ -211,18 +239,18 @@ func _input(event: InputEvent) -> void:
 func _process(_delta: float) -> void:
 	if Input.is_action_pressed("SPAWN_SAND"):
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
-		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 5, MaterialType.SAND)
+		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, circle_size, MaterialType.SAND)
 
 	if Input.is_action_pressed("SPAWN_WATER"):
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
-		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, 3, MaterialType.WATER)
+		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, circle_size, MaterialType.WATER)
 
 func spawn_in_radius(center_x: int, center_y: int, radius: int, material_type: MaterialType) -> void:
 	for y: int in range(max(0, center_y - radius), min(grid_height, center_y + radius + 1)):
 		for x: int in range(max(0, center_x - radius), min(grid_width, center_x + radius + 1)):
 			if Vector2(center_x, center_y).distance_to(Vector2(x, y)) <= radius:
 				set_state_at(x, y, material_type, get_random_variant(material_type), false, true)
-				set_active_at(x, y, true)
+				set_cell_active_at(x, y, true)
 
 func set_state_at(x: int, y: int, material_type: MaterialType, variant: int, has_processed: bool = false, activate: bool = false) -> void:
 	if not is_valid_position(x,y):
@@ -236,9 +264,15 @@ func set_state_at(x: int, y: int, material_type: MaterialType, variant: int, has
 	activate_cell(Vector2i(x, y))
 
 ### Mechanics
+func has_moved(moved_position: Vector2i) -> bool:
+	return moved_pixels.has(moved_position)
+
 func simulate(x: int, y: int) -> bool:
 	var current_material: MaterialType = get_material_at(x, y)
-	set_processed_at(x, y, true)
+
+	# Will still be true, a pixel might be moving
+	if has_moved(Vector2i(x, y)):
+		return true
 
 	if current_material == MaterialType.SAND:
 		return sand_mechanic(x, y, current_material)
@@ -319,10 +353,16 @@ func swap_particle(source_x: int, source_y: int, destination_x: int, destination
 	next_pixels[destination_y][destination_x] = current_pixels[source_y][source_x]
 	next_pixels[source_y][source_x] = temp
 
-	set_active_at(source_x, source_y, true)
-	set_active_at(destination_x, destination_y, true)
+	draw_pixel_at_new(source_x, source_y)
+	draw_pixel_at_new(destination_x, destination_y)
 
-func set_active_at(x: int, y: int, active: bool) -> void:
+	moved_pixels[Vector2i(source_x, source_y)] = true
+	moved_pixels[Vector2i(destination_x, destination_y)] = true
+
+	set_cell_active_at(source_x, source_y, true)
+	set_cell_active_at(destination_x, destination_y, true)
+
+func set_cell_active_at(x: int, y: int, active: bool) -> void:
 	var pos: Vector2i = Vector2i(x, y)
 	if active:
 		activate_cell(pos)

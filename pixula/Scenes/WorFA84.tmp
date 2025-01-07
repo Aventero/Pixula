@@ -1,6 +1,6 @@
 [gd_scene load_steps=24 format=4 uid="uid://cxcvn0k2w0x3u"]
 
-[ext_resource type="Script" path="res://Scripts/CoreCellBased.gd" id="1_qkn36"]
+[ext_resource type="Script" path="res://Scripts/Core.gd" id="1_wjcw8"]
 [ext_resource type="Shader" path="res://Shaders/Sandbox.gdshader" id="3_owpbh"]
 [ext_resource type="Texture2D" uid="uid://dj1dgkklcky1s" path="res://Images/icon.svg" id="4_mfbjo"]
 
@@ -4648,7 +4648,7 @@ shader = ExtResource("3_owpbh")
 shader_parameter/scale = 5.007
 
 [node name="Main" type="Node2D"]
-script = ExtResource("1_qkn36")
+script = ExtResource("1_wjcw8")
 pixel_size = 10
 
 [node name="World" type="CanvasLayer" parent="."]
@@ -4697,7 +4697,6 @@ material = SubResource("ShaderMaterial_na28p")
 texture = ExtResource("4_mfbjo")
 
 [node name="Timer" type="Timer" parent="."]
-wait_time = 0.001
 autostart = true
 
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
