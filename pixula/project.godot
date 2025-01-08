@@ -28,6 +28,10 @@ window/size/viewport_height=1080
 
 enabled=PackedStringArray("res://addons/script-ide/plugin.cfg")
 
+[gui]
+
+theme/custom="res://Scenes/TheTheme.tres"
+
 [input]
 
 SPAWN_SAND={
