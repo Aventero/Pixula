@@ -126,40 +126,46 @@ func draw_rect_outline(image: Image, rect: Rect2i, color: Color) -> void:
 # Simulation Start
 func _on_timer_timeout() -> void:
 	timer.wait_time = sim_speed_seconds
+	var start_time: int = Time.get_ticks_usec()
+
 	simulate_active()
+
+	if is_benchmark:
+		benchmark_active(start_time)
+
+	if enable_debug:
+		draw_active_cells()
 	world_texture.update(world_image)
+	get_window().title = str(Engine.get_frames_per_second())
 
 func simulate_active() -> void:
-	var start_time: int = Time.get_ticks_usec()
-	next_pixels = current_pixels.duplicate(true)
-	queue_redraw()
 
 	# Move cells with information as current frame
+	next_pixels = current_pixels.duplicate(true)
 	current_active_cells = next_active_cells.duplicate(true)
 	next_active_cells.clear()
-	moved_pixels.clear()
 
-	# Simulate frame
+	var pixels_to_simulate: Array[Vector2i] = []
 	for cell in current_active_cells:
 		var cell_x = cell.x * cell_size
 		var cell_y = cell.y * cell_size
 		for x in range(cell_x, cell_x + cell_size):
 			for y in range(cell_y, cell_y + cell_size):
 				if is_valid_position(x, y):
-					if simulate(x, y):
-						# If something changed in the current cell then:
-						activate_neighboring_cells(x, y)
+					pixels_to_simulate.append(Vector2i(x, y))
 
-	if enable_debug:
-		draw_active_cells()
+	# Randomize to avoid directional bias
+	pixels_to_simulate.shuffle()
 
-	if is_benchmark:
-		benchmark_active(start_time)
+	# Simulate.
+	for pixel_pos in pixels_to_simulate:
+		if simulate(pixel_pos.x, pixel_pos.y):
+			activate_neighboring_cells(pixel_pos.x, pixel_pos.y)
+	moved_pixels.clear()
 
 	var tmp = current_pixels
 	current_pixels = next_pixels
 	next_pixels = tmp
-	get_window().title = str(Engine.get_frames_per_second(), " | Active_cells: ", current_active_cells.size())
 
 func activate_neighboring_cells(x: int, y: int) -> void:
 	var cell_pos = get_cell(Vector2i(x, y))
@@ -193,40 +199,6 @@ func activate_neighboring_cells(x: int, y: int) -> void:
 		var neighbor = cell_pos + diagonal
 		if is_valid_cell(neighbor):
 			next_active_cells[neighbor] = true
-
-func activate_neighboring_cells_(x: int, y: int) -> void:
-	var cell_pos = get_cell(Vector2i(x, y))
-	# Calculate position within the cell (0-3 for a 4x4 cell)
-	var local_x = x % cell_size
-	var local_y = y % cell_size
-	# Check if pixel is at cell borders and activate only relevant neighbors
-	var cells_to_activate = []
-	# Left border
-	if local_x == 0 and cell_pos.x > 0:
-		cells_to_activate.append(Vector2i(-1, 0))
-	# Right border
-	elif local_x == cell_size - 1 and cell_pos.x < grid_width/cell_size - 1:
-		cells_to_activate.append(Vector2i(1, 0))
-	# Top border
-	if local_y == 0 and cell_pos.y > 0:
-		cells_to_activate.append(Vector2i(0, -1))
-		# Add diagonals if also on left/right border
-		if local_x == 0 and cell_pos.x > 0:
-			cells_to_activate.append(Vector2i(-1, -1))
-		if local_x == cell_size - 1 and cell_pos.x < grid_width/cell_size - 1:
-			cells_to_activate.append(Vector2i(1, -1))
-	# Bottom border
-	if local_y == cell_size - 1 and cell_pos.y < grid_height/cell_size - 1:
-		cells_to_activate.append(Vector2i(0, 1))
-		# Add diagonals if also on left/right border
-		if local_x == 0 and cell_pos.x > 0:
-			cells_to_activate.append(Vector2i(-1, 1))
-		if local_x == cell_size - 1 and cell_pos.x < grid_width/cell_size - 1:
-			cells_to_activate.append(Vector2i(1, 1))
-	# Activate the necessary neighboring cells
-	for offset in cells_to_activate:
-		var neighbor_cell = cell_pos + offset
-		next_active_cells[neighbor_cell] = true
 
 func is_valid_cell(cell_pos: Vector2i) -> bool:
 	return cell_pos.x >= 0 and cell_pos.x < grid_width/cell_size and \

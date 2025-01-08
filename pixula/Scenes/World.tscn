@@ -4649,8 +4649,7 @@ shader_parameter/scale = 5.007
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_qkn36")
-cell_size = 3
-circle_size = 10
+cell_size = 2
 pixel_size = 10
 
 [node name="World" type="CanvasLayer" parent="."]
