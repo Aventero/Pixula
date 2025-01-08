@@ -155,7 +155,7 @@ func simulate_active() -> void:
 	get_window().title = str(Engine.get_frames_per_second(), " | Active: ", active_pixels.size(), " | Next_Active: ", next_active_pixels.size())
 	active_pixels = next_active_pixels.duplicate()
 	next_active_pixels.clear()
-	draw_active_cells()
+	#draw_active_cells()
 
 func benchmark_particles() -> void:
 	# Clear
@@ -167,7 +167,7 @@ func benchmark_particles() -> void:
 	next_active_pixels.clear()
 
 	var particles_spawned: int = 0
-	var benchmark_particle_count: int = 2000
+	var benchmark_particle_count: int = 8000
 	print("Benchmark with: ",benchmark_particle_count)
 	while particles_spawned < benchmark_particle_count:
 		var x: int = randi_range(0, grid_width - 1)

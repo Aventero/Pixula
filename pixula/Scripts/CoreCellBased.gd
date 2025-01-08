@@ -154,6 +154,7 @@ func simulate_active() -> void:
 				if is_valid_position(x, y):
 					pixels_to_simulate.append(Vector2i(x, y))
 
+
 	# Randomize to avoid directional bias
 	pixels_to_simulate.shuffle()
 
@@ -161,6 +162,7 @@ func simulate_active() -> void:
 	for pixel_pos in pixels_to_simulate:
 		if simulate(pixel_pos.x, pixel_pos.y):
 			activate_neighboring_cells(pixel_pos.x, pixel_pos.y)
+
 	moved_pixels.clear()
 
 	var tmp = current_pixels
@@ -238,7 +240,7 @@ func initialize_benchmark_particles() -> void:
 
 	# Spawn 2k particles
 	var particles_spawned: int = 0
-	var benchmark_particle_count: int = 1000
+	var benchmark_particle_count: int = 8000
 	print("Benchmark with: ",benchmark_particle_count)
 	while particles_spawned < benchmark_particle_count:
 		var x: int = randi_range(0, grid_width - 1)
@@ -308,7 +310,7 @@ func set_state_at(x: int, y: int, material_type: MaterialType, variant: int) -> 
 	# the "\" is for allowing linebreaks
 	current_pixels[y][x] =  (material_type << MATERIAL_BITS_START) | \
 							(variant << VARIANT_BITS_START)
-	draw_pixel_at(x, y)
+	draw_pixel_at(x, y, current_pixels)
 	activate_cell(Vector2i(x, y))
 
 ### Mechanics
@@ -382,8 +384,8 @@ func swap_particle(source_x: int, source_y: int, destination_x: int, destination
 	next_pixels[destination_y][destination_x] = current_pixels[source_y][source_x]
 	next_pixels[source_y][source_x] = temp
 
-	draw_pixel_at_new(source_x, source_y)
-	draw_pixel_at_new(destination_x, destination_y)
+	draw_pixel_at(source_x, source_y, next_pixels)
+	draw_pixel_at(destination_x, destination_y, next_pixels)
 
 	var source: Vector2i = Vector2i(source_x, source_y)
 	var destination: Vector2i = Vector2i(destination_x, destination_y)
@@ -402,13 +404,8 @@ func get_color_for_variant(variant: int) -> Color:
 	var atlas_coords: Vector2i = Vector2i(variant, 0)
 	return color_atlas_image.get_pixel(atlas_coords.x,  atlas_coords.y)
 
-func draw_pixel_at(x: int, y: int) -> void:
-	var variant: int = get_pixel_variant_at(x, y)
-	var color: Color = get_color_for_variant(variant)
-	world_image.set_pixel(x, y, color)
-
-func draw_pixel_at_new(x: int, y: int) -> void:
-	var variant: int = get_pixel_variant_at_new(x, y)
+func draw_pixel_at(x: int, y: int, array_to_pick: Array) -> void:
+	var variant: int = get_pixel_variant_at(x, y, array_to_pick)
 	var color: Color = get_color_for_variant(variant)
 	world_image.set_pixel(x, y, color)
 
@@ -422,8 +419,8 @@ func set_processed_at(x: int, y: int, has_processed: bool) -> void:
 func get_material_at(x: int, y: int) -> MaterialType:
 	return (current_pixels[y][x] >> MATERIAL_BITS_START) & MATERIAL_BITS_MASK as MaterialType
 
-func get_pixel_variant_at(x: int, y: int) -> int:
-	return (current_pixels[y][x] >> VARIANT_BITS_START) & VARIANT_BITS_MASK
+func get_pixel_variant_at(x: int, y: int, array_to_pick: Array) -> int:
+	return (array_to_pick[y][x] >> VARIANT_BITS_START) & VARIANT_BITS_MASK
 
 func get_pixel_variant_at_new(x: int, y: int) -> int:
 	return (next_pixels[y][x] >> VARIANT_BITS_START) & VARIANT_BITS_MASK
