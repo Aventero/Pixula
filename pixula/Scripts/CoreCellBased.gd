@@ -7,6 +7,7 @@ extends CanvasItem
 @onready var color_atlas: Texture = load("res://Images/apollo.png")
 @onready var color_atlas_image: Image = color_atlas.get_image()
 
+
 # Drawing
 var world_image: Image
 var world_texture: ImageTexture
@@ -21,6 +22,12 @@ var moved_pixels: Dictionary = {} # Pixels that moved in the CURRENT FRAME
 @export var enable_debug: bool = false
 @export_range(0.001, 2) var sim_speed_seconds = 0.001
 @export_range(2, 32) var cell_size: int = 5
+
+# UI
+@onready var spawn_radius_label = $Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/Panel/SpawnRadius
+@onready var spawn_radius_slider = $Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/HSlider
+@onready var main_container = $Overlay/MainPanelContainer
+var is_pressing_ui: bool = false
 
 # Window
 @export var window_width: int = 1600
@@ -75,10 +82,39 @@ const SWAP_RULES: Dictionary = {
 }
 
 func _ready() -> void:
+	setup_UI()
 	setup_images()
 	setup_debug()
 	get_window().size = Vector2(window_width, window_height)
 	setup_pixels()
+
+func setup_UI() -> void:
+	spawn_radius_slider.value_changed.connect(_on_value_changed)
+
+	#main_container.mouse_filter = Control.MOUSE_FILTER_STOP
+	set_mouse_filter_on_ui(main_container)
+
+func set_mouse_filter_on_ui(node: Node) -> void:
+	if node is Button or node is Slider:
+		node.gui_input.connect(_on_gui_input)
+		node.mouse_exited.connect(_on_mouse_exit)
+
+	for child in node.get_children():
+		set_mouse_filter_on_ui(child)
+
+func _on_value_changed(value: float) -> void:
+	circle_size = int(value)
+	spawn_radius_label.text = str(circle_size)
+
+func _on_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.pressed:
+			is_pressing_ui = true
+		else:
+			is_pressing_ui = false
+
+func _on_mouse_exit() -> void:
+	is_pressing_ui = false
 
 func setup_images() -> void:
 	world_image = Image.create_empty(grid_width, grid_height, false, Image.FORMAT_RGBA8)
@@ -278,16 +314,21 @@ func setup_pixels() -> void:
 	next_pixels = current_pixels.duplicate(true)
 
 func _input(event: InputEvent) -> void:
+	if event.is_action_released("CHECK_MATERIAL"):
+		print(get_material_at(get_mouse_tile_pos().x, get_mouse_tile_pos().y))
+
 	if event.is_action_released("SPAWN_SAND") || event.is_action_released("SPAWN_WATER"):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 	if event.is_action_released("STATS"):
 		initialize_benchmark_particles()
 
-	if event.is_action_released("CHECK_MATERIAL"):
-		print(get_material_at(get_mouse_tile_pos().x, get_mouse_tile_pos().y))
+
 
 func _process(_delta: float) -> void:
+	if is_pressing_ui:
+		return
+
 	if Input.is_action_pressed("SPAWN_SAND"):
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
 		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, circle_size, MaterialType.SAND)

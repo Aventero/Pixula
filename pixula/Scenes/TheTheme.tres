@@ -1,4 +1,4 @@
-[gd_resource type="Theme" load_steps=9 format=3 uid="uid://x4ngw312h2qp"]
+[gd_resource type="Theme" load_steps=10 format=3 uid="uid://x4ngw312h2qp"]
 
 [ext_resource type="FontFile" uid="uid://cjslra7aagn7g" path="res://Fonts/8bitlim.ttf" id="1_sgbsl"]
 
@@ -71,6 +71,18 @@ corner_radius_bottom_right = 3
 corner_radius_bottom_left = 3
 corner_detail = 5
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_g80ug"]
+content_margin_left = 4.0
+content_margin_top = 4.0
+content_margin_right = 4.0
+content_margin_bottom = 4.0
+bg_color = Color(0.1, 0.1, 0.1, 0.6)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+corner_detail = 6
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_xgf8h"]
 bg_color = Color(0, 0, 0, 0.313726)
 corner_radius_top_left = 20
@@ -95,7 +107,7 @@ Button/colors/icon_pressed_color = Color(1, 1, 1, 1)
 Button/constants/align_to_largest_stylebox = 0
 Button/constants/h_separation = 10
 Button/constants/icon_max_width = 30
-Button/constants/outline_size = 10
+Button/constants/outline_size = 5
 Button/font_sizes/font_size = 35
 Button/fonts/font = SubResource("FontVariation_icif2")
 Button/styles/disabled = SubResource("StyleBoxFlat_ndha5")
@@ -103,6 +115,8 @@ Button/styles/focus = SubResource("StyleBoxFlat_td5eb")
 Button/styles/hover = SubResource("StyleBoxFlat_bihfv")
 Button/styles/normal = SubResource("StyleBoxFlat_ywf31")
 Button/styles/pressed = SubResource("StyleBoxFlat_cus60")
+HSlider/styles/slider = SubResource("StyleBoxFlat_g80ug")
+Label/constants/outline_size = 5
 Label/font_sizes/font_size = 35
 Label/fonts/font = ExtResource("1_sgbsl")
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_xgf8h")
