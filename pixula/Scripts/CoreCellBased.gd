@@ -28,12 +28,14 @@ var moved_pixels: Dictionary = {} # Pixels that moved in the CURRENT FRAME
 @onready var spawn_radius_slider = $Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/HSlider
 @onready var main_container = $Overlay/MainPanelContainer
 var is_pressing_ui: bool = false
+var selected_material: MaterialType = MaterialType.SAND
 
 # Window
 @export var window_width: int = 1600
 @export var window_height: int = 900
 @onready var grid_width: int = window_width / pixel_size
 @onready var grid_height: int = window_height / pixel_size
+@onready var base_window_size: Vector2 = Vector2(window_width, window_height)
 
 # Pixel Logic
 const MATERIAL_BITS_START: int = 5
@@ -62,23 +64,24 @@ enum MaterialType {
 	AIR = 0,
 	SAND = 1,
 	WATER = 2,
-	STONE = 3,
-	DEBUG = 4
+	ROCK = 3,
+	WALL = 4,
 }
 
 const COLOR_RANGES: Dictionary = {
-	MaterialType.AIR: [36, 37],
+	MaterialType.AIR: [36, 38],
 	MaterialType.SAND: [19, 23],
 	MaterialType.WATER: [1, 5],
-	MaterialType.STONE: [3, 3],
-	MaterialType.DEBUG: [27, 27],
+	MaterialType.ROCK: [12, 16],
+	MaterialType.WALL: [40, 44],
 }
 
 const SWAP_RULES: Dictionary = {
-	MaterialType.STONE: [],
 	MaterialType.AIR: [],
 	MaterialType.SAND: [MaterialType.AIR, MaterialType.WATER],
 	MaterialType.WATER: [MaterialType.AIR],
+	MaterialType.ROCK: [MaterialType.AIR, MaterialType.SAND, MaterialType.WATER],
+	MaterialType.WALL: [],
 }
 
 func _ready() -> void:
@@ -90,8 +93,11 @@ func _ready() -> void:
 
 func setup_UI() -> void:
 	spawn_radius_slider.value_changed.connect(_on_value_changed)
-
-	#main_container.mouse_filter = Control.MOUSE_FILTER_STOP
+	$Overlay/MainPanelContainer/MarginContainer/VBoxContainer/AirButton.pressed.connect(func(): selected_material = MaterialType.AIR)
+	$Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SandButton.pressed.connect(func(): selected_material = MaterialType.SAND)
+	$Overlay/MainPanelContainer/MarginContainer/VBoxContainer/WaterButton.pressed.connect(func(): selected_material = MaterialType.WATER)
+	$Overlay/MainPanelContainer/MarginContainer/VBoxContainer/RockButton.pressed.connect(func(): selected_material = MaterialType.ROCK)
+	$Overlay/MainPanelContainer/MarginContainer/VBoxContainer/WallButton.pressed.connect(func(): selected_material = MaterialType.WALL)
 	set_mouse_filter_on_ui(main_container)
 
 func set_mouse_filter_on_ui(node: Node) -> void:
@@ -129,17 +135,16 @@ func setup_debug() -> void:
 	var debug_texture = ImageTexture.create_from_image(debug_image)
 	$World/DebugLayer/DebugTexture.texture = debug_texture
 
-func draw_active_cells() -> void:
+func debug_draw_active_cells() -> void:
 	debug_image.fill(Color(0, 0, 0, 0))
 	var red = Color.RED
 	red.a = 1
 	var blue = Color.BLUE
 	blue.a = 1
 	for pos in next_active_cells:
-		draw_cell_debug(pos, red)
-	$World/DebugLayer/DebugTexture.texture.update(debug_image)
+		debug_draw_cell(pos, red)
 
-func draw_cell_debug(cell_pos: Vector2i, color: Color) -> void:
+func debug_draw_cell(cell_pos: Vector2i, color: Color) -> void:
 	var pixel_draw_pos = cell_pos * cell_size * pixel_size
 	var cell_draw_size = cell_size * pixel_size
 
@@ -159,20 +164,32 @@ func draw_rect_outline(image: Image, rect: Rect2i, color: Color) -> void:
 		image.set_pixel(r.position.x, y, color)
 		image.set_pixel(r.position.x + r.size.x - 1, y, color)
 
+func draw_rect_filled(pos: Vector2i, color: Color) -> void:
+	var rect = Rect2i(pos * pixel_size, Vector2i(pixel_size, pixel_size))
+	rect = rect.intersection(Rect2i(0, 0, debug_image.get_width(), debug_image.get_height()))
+	debug_image.fill_rect(rect, color)
+
 # Simulation Start
 func _on_timer_timeout() -> void:
+	debug_image.fill(Color(0, 0, 0, 0))
 	timer.wait_time = sim_speed_seconds
 	var start_time: int = Time.get_ticks_usec()
 
+	# Actual Simualtion
 	simulate_active()
+	world_texture.update(world_image)
 
+	# Benchmark
 	if is_benchmark:
 		benchmark_active(start_time)
 
+	# Debug
 	if enable_debug:
-		draw_active_cells()
-	world_texture.update(world_image)
+		debug_draw_active_cells()
 	get_window().title = str(Engine.get_frames_per_second())
+	$World/DebugLayer/DebugTexture.texture.update(debug_image)
+	var mouse_pos = get_mouse_tile_pos()
+	draw_spawn_radius_preview(mouse_pos.x, mouse_pos.y, circle_size)
 
 func simulate_active() -> void:
 
@@ -189,7 +206,6 @@ func simulate_active() -> void:
 			for y in range(cell_y, cell_y + cell_size):
 				if is_valid_position(x, y):
 					pixels_to_simulate.append(Vector2i(x, y))
-
 
 	# Randomize to avoid directional bias
 	pixels_to_simulate.shuffle()
@@ -248,6 +264,18 @@ func get_cell(pos: Vector2i) -> Vector2i:
 func activate_cell(pos: Vector2i) -> void:
 	var cell_pos: Vector2i = get_cell(pos)
 	next_active_cells[cell_pos] = true
+
+func draw_spawn_radius_preview(center_x: int, center_y: int, radius: int) -> void:
+	# Draw circle
+	for y: int in range(max(0, center_y - radius), min(grid_height, center_y + radius + 1)):
+			for x: int in range(max(0, center_x - radius), min(grid_width, center_x + radius + 1)):
+				if Vector2(center_x, center_y).distance_to(Vector2(x, y)) <= radius:
+					draw_rect_filled(Vector2i(x, y), Color(Color.WHITE, 0.2))
+	# Dot at the center
+	draw_rect_filled(Vector2i(center_x, center_y), Color(Color.WHITE, 0.9))
+
+	# Update the debug texture
+	$World/DebugLayer/DebugTexture.texture.update(debug_image)
 
 # Benchmark
 func benchmark_active(start_time: int) -> void:
@@ -314,28 +342,23 @@ func setup_pixels() -> void:
 	next_pixels = current_pixels.duplicate(true)
 
 func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton:
+		if event.pressed:  # When mouse button is pressed
+			Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+
 	if event.is_action_released("CHECK_MATERIAL"):
 		print(get_material_at(get_mouse_tile_pos().x, get_mouse_tile_pos().y))
 
-	if event.is_action_released("SPAWN_SAND") || event.is_action_released("SPAWN_WATER"):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-
 	if event.is_action_released("STATS"):
 		initialize_benchmark_particles()
-
-
 
 func _process(_delta: float) -> void:
 	if is_pressing_ui:
 		return
 
-	if Input.is_action_pressed("SPAWN_SAND"):
-		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
-		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, circle_size, MaterialType.SAND)
 
-	if Input.is_action_pressed("SPAWN_WATER"):
-		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
-		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, circle_size, MaterialType.WATER)
+	if Input.is_action_pressed("SPAWN_SAND"):
+		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, circle_size, selected_material)
 
 func spawn_in_radius(center_x: int, center_y: int, radius: int, material_type: MaterialType) -> void:
 	for y: int in range(max(0, center_y - radius), min(grid_height, center_y + radius + 1)):
@@ -362,11 +385,17 @@ func simulate(x: int, y: int) -> bool:
 	if has_moved(Vector2i(x, y)):
 		return false
 
+	# Down, Diagonal
 	if current_material == MaterialType.SAND:
 		return sand_mechanic(x, y, current_material)
 
+	# Down, Diagonal, Horizontal
 	if current_material == MaterialType.WATER:
 		return water_mechanic(x, y, current_material)
+
+	# Down.
+	if current_material == MaterialType.ROCK:
+		return move_down(x, y, MaterialType.ROCK)
 
 	return false
 
@@ -473,4 +502,10 @@ func is_valid_position(x: int, y: int) -> bool:
 	return x >= 0 and x < grid_width and y >= 0 and y < grid_height
 
 func get_mouse_tile_pos() -> Vector2i:
-	return Vector2i(get_local_mouse_position().abs() / pixel_size).clamp(Vector2i(0, 0), Vector2i(grid_width - 1, grid_height - 1))
+	var current_size = DisplayServer.window_get_size()
+	var scale_factor = Vector2(
+		float(base_window_size.x) / current_size.x,
+		float(base_window_size.y) / current_size.y
+	)
+	var mouse_pos = get_viewport().get_mouse_position() * scale_factor
+	return Vector2i(mouse_pos / pixel_size).clamp(Vector2i.ZERO, Vector2i(grid_width - 1, grid_height - 1))

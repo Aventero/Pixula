@@ -1,4 +1,4 @@
-[gd_scene load_steps=14 format=3 uid="uid://cxcvn0k2w0x3u"]
+[gd_scene load_steps=12 format=3 uid="uid://cxcvn0k2w0x3u"]
 
 [ext_resource type="Script" path="res://Scripts/CoreCellBased.gd" id="1_qkn36"]
 [ext_resource type="Theme" uid="uid://x4ngw312h2qp" path="res://Scenes/TheTheme.tres" id="2_ci6gu"]
@@ -6,11 +6,9 @@
 [ext_resource type="Texture2D" uid="uid://cydsabxv8780s" path="res://Sprites/Sand_Icon.png" id="3_bio33"]
 [ext_resource type="Shader" path="res://Shaders/Sandbox.gdshader" id="3_owpbh"]
 [ext_resource type="Texture2D" uid="uid://bon0k40pry2rx" path="res://Sprites/Water_Icon.png" id="4_i45gh"]
-[ext_resource type="Texture2D" uid="uid://dili5fe4u1uet" path="res://Sprites/Air.png" id="4_j3e56"]
 [ext_resource type="Texture2D" uid="uid://dj1dgkklcky1s" path="res://Images/icon.svg" id="4_mfbjo"]
 [ext_resource type="Texture2D" uid="uid://dyqwfh5jvgas1" path="res://Sprites/Rock_Icon.png" id="5_mlxb5"]
 [ext_resource type="Texture2D" uid="uid://vso6awjwcax" path="res://Sprites/Wall_Icon.png" id="6_4fydn"]
-[ext_resource type="Texture2D" uid="uid://bsc6urywf5gu" path="res://Images/Background.png" id="8_8gxj2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_exg3k"]
 bg_color = Color(0.0807833, 0.0807833, 0.0807833, 0.313726)
@@ -25,7 +23,6 @@ shader_parameter/scale = 5.007
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_qkn36")
-enable_debug = true
 pixel_size = 10
 
 [node name="Overlay" type="CanvasLayer" parent="."]
@@ -59,15 +56,6 @@ alignment = 1
 layout_mode = 2
 texture = ExtResource("2_mw3xw")
 
-[node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-theme = ExtResource("2_ci6gu")
-text = "Air"
-icon = ExtResource("4_j3e56")
-alignment = 0
-expand_icon = true
-
 [node name="SandButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -85,7 +73,7 @@ icon = ExtResource("4_i45gh")
 alignment = 0
 expand_icon = true
 
-[node name="RockButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+[node name="SandButton3" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_ci6gu")
 text = "Rock"
@@ -93,7 +81,7 @@ icon = ExtResource("5_mlxb5")
 alignment = 0
 expand_icon = true
 
-[node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+[node name="SandButton4" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme = ExtResource("2_ci6gu")
 text = "Wall"
@@ -158,10 +146,8 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
-texture = ExtResource("8_8gxj2")
-expand_mode = 2
+texture = ExtResource("4_mfbjo")
+expand_mode = 3
 stretch_mode = 5
 metadata/_edit_use_anchors_ = true
 
