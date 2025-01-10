@@ -1,0 +1,27 @@
+[gd_scene load_steps=4 format=3 uid="uid://b5wlrbxkoqxr5"]
+
+[ext_resource type="Shader" path="res://Shaders/Wobble.gdshader" id="1_xok2n"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_n5imt"]
+render_priority = 0
+shader = ExtResource("1_xok2n")
+shader_parameter/shine_color = Color(1, 1, 1, 1)
+shader_parameter/cycle_interval = 1.993
+shader_parameter/shine_speed = 2.0
+shader_parameter/shine_width = 7.372
+shader_parameter/shine_smoothness = 0.019
+shader_parameter/emission_strength = 3.143
+shader_parameter/view_falloff = 0.0
+shader_parameter/do_abs = true
+shader_parameter/do_quantize = true
+shader_parameter/quantize_to = 0.09
+shader_parameter/sine_amplitude = Vector2(1, 0)
+shader_parameter/sine_speed = Vector2(2.155, 0)
+
+[sub_resource type="SphereMesh" id="SphereMesh_ctu76"]
+material = SubResource("ShaderMaterial_n5imt")
+
+[node name="Testing" type="Node3D"]
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_ctu76")

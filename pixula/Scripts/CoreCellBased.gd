@@ -171,25 +171,7 @@ func draw_rect_filled(pos: Vector2i, color: Color) -> void:
 
 # Simulation Start
 func _on_timer_timeout() -> void:
-	debug_image.fill(Color(0, 0, 0, 0))
-	timer.wait_time = sim_speed_seconds
-	var start_time: int = Time.get_ticks_usec()
-
-	# Actual Simualtion
-	simulate_active()
-	world_texture.update(world_image)
-
-	# Benchmark
-	if is_benchmark:
-		benchmark_active(start_time)
-
-	# Debug
-	if enable_debug:
-		debug_draw_active_cells()
-	get_window().title = str(Engine.get_frames_per_second())
-	$World/DebugLayer/DebugTexture.texture.update(debug_image)
-	var mouse_pos = get_mouse_tile_pos()
-	draw_spawn_radius_preview(mouse_pos.x, mouse_pos.y, circle_size)
+	return
 
 func simulate_active() -> void:
 
@@ -353,12 +335,34 @@ func _input(event: InputEvent) -> void:
 		initialize_benchmark_particles()
 
 func _process(_delta: float) -> void:
-	if is_pressing_ui:
-		return
 
-
-	if Input.is_action_pressed("SPAWN_SAND"):
+	if Input.is_action_pressed("SPAWN_SAND") and not is_pressing_ui:
 		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, circle_size, selected_material)
+
+	if Input.is_action_pressed("SPAWN_WATER") and not is_pressing_ui:
+		spawn_in_radius(get_mouse_tile_pos().x, get_mouse_tile_pos().y, circle_size, MaterialType.AIR)
+
+
+	debug_image.fill(Color(0, 0, 0, 0))
+	timer.wait_time = sim_speed_seconds
+	var start_time: int = Time.get_ticks_usec()
+
+	# Actual Simualtion
+	simulate_active()
+	world_texture.update(world_image)
+
+	# Benchmark
+	if is_benchmark:
+		benchmark_active(start_time)
+
+	# Debug
+	if enable_debug:
+		debug_draw_active_cells()
+	get_window().title = str(Engine.get_frames_per_second())
+	$World/DebugLayer/DebugTexture.texture.update(debug_image)
+	var mouse_pos = get_mouse_tile_pos()
+	draw_spawn_radius_preview(mouse_pos.x, mouse_pos.y, circle_size)
+
 
 func spawn_in_radius(center_x: int, center_y: int, radius: int, material_type: MaterialType) -> void:
 	for y: int in range(max(0, center_y - radius), min(grid_height, center_y + radius + 1)):
@@ -380,6 +384,9 @@ func set_state_at(x: int, y: int, material_type: MaterialType, variant: int) -> 
 ### Mechanics
 func simulate(x: int, y: int) -> bool:
 	var current_material: MaterialType = get_material_at(x, y)
+
+	if current_material == MaterialType.AIR:
+		return false
 
 	## Will still be true, a pixel might be moving
 	if has_moved(Vector2i(x, y)):

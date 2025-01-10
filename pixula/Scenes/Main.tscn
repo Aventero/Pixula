@@ -1,16 +1,14 @@
-[gd_scene load_steps=14 format=3 uid="uid://cxcvn0k2w0x3u"]
+[gd_scene load_steps=11 format=3 uid="uid://cxcvn0k2w0x3u"]
 
-[ext_resource type="Script" path="res://Scripts/CoreCellBased.gd" id="1_qkn36"]
-[ext_resource type="Theme" uid="uid://x4ngw312h2qp" path="res://Scenes/TheTheme.tres" id="2_ci6gu"]
-[ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://Sprites/Pixula_Icon.png" id="2_mw3xw"]
-[ext_resource type="Texture2D" uid="uid://cydsabxv8780s" path="res://Sprites/Sand_Icon.png" id="3_bio33"]
-[ext_resource type="Shader" path="res://Shaders/Sandbox.gdshader" id="3_owpbh"]
-[ext_resource type="Texture2D" uid="uid://bon0k40pry2rx" path="res://Sprites/Water_Icon.png" id="4_i45gh"]
-[ext_resource type="Texture2D" uid="uid://dili5fe4u1uet" path="res://Sprites/Air.png" id="4_j3e56"]
-[ext_resource type="Texture2D" uid="uid://dj1dgkklcky1s" path="res://Images/icon.svg" id="4_mfbjo"]
-[ext_resource type="Texture2D" uid="uid://dyqwfh5jvgas1" path="res://Sprites/Rock_Icon.png" id="5_mlxb5"]
-[ext_resource type="Texture2D" uid="uid://vso6awjwcax" path="res://Sprites/Wall_Icon.png" id="6_4fydn"]
-[ext_resource type="Texture2D" uid="uid://bsc6urywf5gu" path="res://Images/Background.png" id="8_8gxj2"]
+[ext_resource type="Script" path="res://Scripts/MainSharp.cs" id="1_gixc6"]
+[ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://Sprites/Pixula_Icon.png" id="2_yt66i"]
+[ext_resource type="Theme" uid="uid://x4ngw312h2qp" path="res://Scenes/TheTheme.tres" id="3_r6eas"]
+[ext_resource type="Texture2D" uid="uid://dili5fe4u1uet" path="res://Sprites/Air.png" id="4_we8p7"]
+[ext_resource type="Texture2D" uid="uid://cydsabxv8780s" path="res://Sprites/Sand_Icon.png" id="5_tremm"]
+[ext_resource type="Texture2D" uid="uid://bon0k40pry2rx" path="res://Sprites/Water_Icon.png" id="6_hco3j"]
+[ext_resource type="Texture2D" uid="uid://dyqwfh5jvgas1" path="res://Sprites/Rock_Icon.png" id="7_pb25d"]
+[ext_resource type="Texture2D" uid="uid://vso6awjwcax" path="res://Sprites/Wall_Icon.png" id="8_aswaw"]
+[ext_resource type="Texture2D" uid="uid://bsc6urywf5gu" path="res://Images/Background.png" id="9_hfhlx"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_exg3k"]
 bg_color = Color(0.0807833, 0.0807833, 0.0807833, 0.313726)
@@ -19,14 +17,8 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_na28p"]
-shader = ExtResource("3_owpbh")
-shader_parameter/scale = 5.007
-
 [node name="Main" type="Node2D"]
-script = ExtResource("1_qkn36")
-enable_debug = true
-pixel_size = 10
+script = ExtResource("1_gixc6")
 
 [node name="Overlay" type="CanvasLayer" parent="."]
 layer = 2
@@ -57,47 +49,47 @@ alignment = 1
 
 [node name="TextureRect" type="TextureRect" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-texture = ExtResource("2_mw3xw")
+texture = ExtResource("2_yt66i")
 
 [node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-theme = ExtResource("2_ci6gu")
+theme = ExtResource("3_r6eas")
 text = "Air"
-icon = ExtResource("4_j3e56")
+icon = ExtResource("4_we8p7")
 alignment = 0
 expand_icon = true
 
 [node name="SandButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
-theme = ExtResource("2_ci6gu")
+theme = ExtResource("3_r6eas")
 text = "Sand"
-icon = ExtResource("3_bio33")
+icon = ExtResource("5_tremm")
 alignment = 0
 expand_icon = true
 
 [node name="WaterButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme = ExtResource("2_ci6gu")
+theme = ExtResource("3_r6eas")
 text = "Water"
-icon = ExtResource("4_i45gh")
+icon = ExtResource("6_hco3j")
 alignment = 0
 expand_icon = true
 
 [node name="RockButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme = ExtResource("2_ci6gu")
+theme = ExtResource("3_r6eas")
 text = "Rock"
-icon = ExtResource("5_mlxb5")
+icon = ExtResource("7_pb25d")
 alignment = 0
 expand_icon = true
 
 [node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
-theme = ExtResource("2_ci6gu")
+theme = ExtResource("3_r6eas")
 text = "Wall"
-icon = ExtResource("6_4fydn")
+icon = ExtResource("8_aswaw")
 alignment = 0
 expand_icon = true
 
@@ -108,7 +100,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(0, 42.785)
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.3
+size_flags_stretch_ratio = 2.0
 theme_override_styles/panel = SubResource("StyleBoxFlat_exg3k")
 
 [node name="SpawnRadius" type="Label" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/Panel"]
@@ -120,17 +112,16 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 30
-text = "3
-"
+text = "10"
 horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="HSlider" type="HSlider" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
 custom_minimum_size = Vector2(115.35, 0)
 layout_mode = 2
-size_flags_horizontal = 2
+size_flags_horizontal = 3
 size_flags_vertical = 1
-size_flags_stretch_ratio = 3.0
+size_flags_stretch_ratio = 4.0
 max_value = 20.0
 rounded = true
 
@@ -160,7 +151,7 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-texture = ExtResource("8_8gxj2")
+texture = ExtResource("9_hfhlx")
 expand_mode = 2
 stretch_mode = 5
 metadata/_edit_use_anchors_ = true
@@ -168,12 +159,7 @@ metadata/_edit_use_anchors_ = true
 [node name="Camera2D" type="Camera2D" parent="."]
 anchor_mode = 0
 
-[node name="Sprite2D" type="Sprite2D" parent="."]
-material = SubResource("ShaderMaterial_na28p")
-texture = ExtResource("4_mfbjo")
-
 [node name="Timer" type="Timer" parent="."]
-wait_time = 0.001
 autostart = true
 
 [connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
