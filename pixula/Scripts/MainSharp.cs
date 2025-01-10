@@ -5,364 +5,381 @@ using System.Linq;
 
 public partial class MainSharp : Node2D
 {
-    // External nodes
-    private Timer timer;
-    private Camera2D camera;
-    private TextureRect textureRect;
-    private Texture2D colorAtlas;
-    private Image colorAtlasImage;
+	// External nodes
+	private Timer timer;
+	private Camera2D camera;
+	private TextureRect textureRect;
+	private Texture2D colorAtlas;
+	private Image colorAtlasImage;
 
-    // Drawing
-    private Image worldImage;
-    private ImageTexture worldTexture;
-    private Image debugImage;
+	// Drawing
+	private Image worldImage;
+	private ImageTexture worldTexture;
+	private Image debugImage;
 
-    // Pixel State
-    private int[][] currentPixels;
-    private int[][] nextPixels;
-    private HashSet<Vector2I> movedPixels = new();
+	// Pixel State
+	private int[][] currentPixels;
+	private int[][] nextPixels;
+	private HashSet<Vector2I> movedPixels = new();
 
-    // Simulation
-    [Export] public bool EnableDebug { get; set; } = false;
-    [Export(PropertyHint.Range, "0.001,2")] public float SimSpeedSeconds { get; set; } = 0.001f;
-    [Export(PropertyHint.Range, "2,32")] public int CellSize { get; set; } = 5;
+	// Simulation
+	[Export] public bool EnableDebug { get; set; } = false;
+	[Export(PropertyHint.Range, "0.001,2")] public float SimSpeedSeconds { get; set; } = 0.001f;
+	[Export(PropertyHint.Range, "2,32")] public int CellSize { get; set; } = 5;
 
-    // UI
-    private Label spawnRadiusLabel;
-    private HSlider spawnRadiusSlider;
-    private Control mainContainer;
-    private bool isPressingUi = false;
-    private MaterialType selectedMaterial = MaterialType.Sand;
+	// UI
+	private Label spawnRadiusLabel;
+	private HSlider spawnRadiusSlider;
+	private Label cellSizeLabel;
+	private HSlider cellSizeSlider;
+	private Control mainContainer;
+	private bool isPressingUi = false;
+	private MaterialType selectedMaterial = MaterialType.Sand;
 
-    // Window
-    [Export] public int WindowWidth { get; set; } = 1600;
-    [Export] public int WindowHeight { get; set; } = 900;
-    private int gridWidth;
-    private int gridHeight;
-    private Vector2 baseWindowSize;
+	// Window
+	[Export] public int WindowWidth { get; set; } = 1600;
+	[Export] public int WindowHeight { get; set; } = 900;
+	private int gridWidth;
+	private int gridHeight;
+	private Vector2 baseWindowSize;
 
-    // Pixel Logic
-    private const int MaterialBitsStart = 5;
-    private const int MaterialBitsMask = 0b1111; // 4 Bit = 16 materials
-    private const int VariantBitsStart = 13;
-    private const int VariantBitsMask = 0b1111111; // 7 Bit "of color"
+	// Pixel Logic
+	private const int MaterialBitsStart = 5;
+	private const int MaterialBitsMask = 0b1111; // 4 Bit = 16 materials
+	private const int VariantBitsStart = 13;
+	private const int VariantBitsMask = 0b1111111; // 7 Bit "of color"
 
-    // Benchmarking
-    private bool isBenchmark = false;
-    private float highestSimulationTime = 0;
-    private float totalSimulationTime = 0;
-    private int totalFrames = 0;
+	// Benchmarking
+	private bool isBenchmark = false;
+	private float highestSimulationTime = 0;
+	private float totalSimulationTime = 0;
+	private int totalFrames = 0;
 
-    // Debug
-    private int totalParticles = 0;
-    private int lastParticleCount = 0;
+	// Debug
+	private int totalParticles = 0;
+	private int lastParticleCount = 0;
 
-    // Grid cells
-    [Export] public int CircleSize { get; set; } = 3;
-    [Export] public int PixelSize { get; set; } = 5;
-    private Dictionary<Vector2I, bool> currentActiveCells = new();
-    private Dictionary<Vector2I, bool> nextActiveCells = new();
+	// Grid cells
+	[Export] public int CircleSize { get; set; } = 3;
+	[Export] public int PixelSize { get; set; } = 5;
+	private Dictionary<Vector2I, bool> currentActiveCells = new();
+	private Dictionary<Vector2I, bool> nextActiveCells = new();
 
-    public enum MaterialType
-    {
-        Air = 0,
-        Sand = 1,
-        Water = 2,
-        Rock = 3,
-        Wall = 4
-    }
+	public enum MaterialType
+	{
+		Air = 0,
+		Sand = 1,
+		Water = 2,
+		Rock = 3,
+		Wall = 4
+	}
 
-    private readonly Dictionary<MaterialType, int[]> ColorRanges = new()
-    {
-        { MaterialType.Air, new[] { 36, 38 } },
-        { MaterialType.Sand, new[] { 19, 23 } },
-        { MaterialType.Water, new[] { 1, 5 } },
-        { MaterialType.Rock, new[] { 12, 16 } },
-        { MaterialType.Wall, new[] { 40, 44 } }
-    };
+	private readonly Dictionary<MaterialType, int[]> ColorRanges = new()
+	{
+		{ MaterialType.Air, new[] { 36, 38 } },
+		{ MaterialType.Sand, new[] { 19, 23 } },
+		{ MaterialType.Water, new[] { 1, 5 } },
+		{ MaterialType.Rock, new[] { 12, 16 } },
+		{ MaterialType.Wall, new[] { 40, 44 } }
+	};
 
-    private readonly Dictionary<MaterialType, MaterialType[]> SwapRules = new()
-    {
-        { MaterialType.Air, Array.Empty<MaterialType>() },
-        { MaterialType.Sand, new[] { MaterialType.Air, MaterialType.Water } },
-        { MaterialType.Water, new[] { MaterialType.Air } },
-        { MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Sand, MaterialType.Water } },
-        { MaterialType.Wall, Array.Empty<MaterialType>() }
-    };
+	private readonly Dictionary<MaterialType, MaterialType[]> SwapRules = new()
+	{
+		{ MaterialType.Air, Array.Empty<MaterialType>() },
+		{ MaterialType.Sand, new[] { MaterialType.Air, MaterialType.Water } },
+		{ MaterialType.Water, new[] { MaterialType.Air } },
+		{ MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Sand, MaterialType.Water } },
+		{ MaterialType.Wall, Array.Empty<MaterialType>() }
+	};
 
-    public override void _Ready()
-    {
-        timer = GetNode<Timer>("Timer");
-        textureRect = GetNode<TextureRect>("World/WorldTexture");
-        colorAtlas = GD.Load<Texture2D>("res://Images/apollo.png");
-        colorAtlasImage = colorAtlas.GetImage();
-        
-        gridWidth = WindowWidth / PixelSize;
-        gridHeight = WindowHeight / PixelSize;
-        baseWindowSize = new Vector2(WindowWidth, WindowHeight);
+	public override void _Ready()
+	{
+		timer = GetNode<Timer>("Timer");
+		textureRect = GetNode<TextureRect>("World/WorldTexture");
+		colorAtlas = GD.Load<Texture2D>("res://Images/apollo.png");
+		colorAtlasImage = colorAtlas.GetImage();
 
-        SetupUI();
-        SetupImages();
-        SetupDebug();
-        GetWindow().Size = new Vector2I(WindowWidth, WindowHeight);
-        SetupPixels();
-    }
+		gridWidth = WindowWidth / PixelSize;
+		gridHeight = WindowHeight / PixelSize;
+		baseWindowSize = new Vector2(WindowWidth, WindowHeight);
 
-    private void SetupUI()
-    {
-        spawnRadiusLabel = GetNode<Label>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/Panel/SpawnRadius");
-        spawnRadiusSlider = GetNode<HSlider>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/HSlider");
-        mainContainer = GetNode<Control>("Overlay/MainPanelContainer");
+		SetupUI();
+		SetupImages();
+		SetupDebug();
+		GetWindow().Size = new Vector2I(WindowWidth, WindowHeight);
+		SetupPixels();
+	}
 
-        spawnRadiusSlider.ValueChanged += OnValueChanged;
-        
-        // Setup material buttons
-        GetNode<Button>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/AirButton").Pressed += () => selectedMaterial = MaterialType.Air;
-        GetNode<Button>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SandButton").Pressed += () => selectedMaterial = MaterialType.Sand;
-        GetNode<Button>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/WaterButton").Pressed += () => selectedMaterial = MaterialType.Water;
-        GetNode<Button>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/RockButton").Pressed += () => selectedMaterial = MaterialType.Rock;
-        GetNode<Button>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/WallButton").Pressed += () => selectedMaterial = MaterialType.Wall;
+	private void SetupUI()
+	{
+		spawnRadiusLabel = GetNode<Label>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius/Panel/SpawnRadius");
+		spawnRadiusSlider = GetNode<HSlider>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius/SpawnRadiusSlider");
+		cellSizeLabel = GetNode<Label>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize/Panel/CellSizeLabel");
+		cellSizeSlider = GetNode<HSlider>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize/CellSizeSlider");
+		mainContainer = GetNode<Control>("Overlay/MainPanelContainer");
 
-        SetMouseFilterOnUI(mainContainer);
-    }
+		spawnRadiusSlider.ValueChanged += OnValueCircleSizeChanged;
+		cellSizeSlider.ValueChanged += OnValueCellSizeChanged;
 
-    private void SetMouseFilterOnUI(Node node)
-    {
-        if (node is Button button)
+		spawnRadiusLabel.Text = CircleSize.ToString();
+		spawnRadiusSlider.Value = CircleSize;
+		cellSizeLabel.Text = PixelSize.ToString();
+		cellSizeSlider.Value = PixelSize;
+
+		// Setup material buttons
+		GetNode<Button>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/AirButton").Pressed += () => selectedMaterial = MaterialType.Air;
+		GetNode<Button>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SandButton").Pressed += () => selectedMaterial = MaterialType.Sand;
+		GetNode<Button>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/WaterButton").Pressed += () => selectedMaterial = MaterialType.Water;
+		GetNode<Button>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/RockButton").Pressed += () => selectedMaterial = MaterialType.Rock;
+		GetNode<Button>("Overlay/MainPanelContainer/MarginContainer/VBoxContainer/WallButton").Pressed += () => selectedMaterial = MaterialType.Wall;
+
+		SetMouseFilterOnUI(mainContainer);
+	}
+
+	private void SetMouseFilterOnUI(Node node)
+	{
+		if (node is Button button)
 			button.GuiInput += OnGuiInput;
-		
-		if (node is Slider slider)
-			 slider.MouseExited += OnMouseExit;
 
-        foreach (var child in node.GetChildren())
-            SetMouseFilterOnUI(child);
-    }
+		if (node is HSlider slider)
+			slider.MouseExited += OnMouseExit;
 
-    private void OnValueChanged(double value)
-    {
-        CircleSize = (int)value;
-        spawnRadiusLabel.Text = CircleSize.ToString();
-    }
+		foreach (var child in node.GetChildren())
+			SetMouseFilterOnUI(child);
+	}
 
-    private void OnGuiInput(InputEvent @event)
-    {
-        if (@event is InputEventMouseButton mouseButton)
-            isPressingUi = mouseButton.Pressed;
-    }
+	private void OnValueCircleSizeChanged(double value)
+	{
+		CircleSize = (int)value;
+		spawnRadiusLabel.Text = CircleSize.ToString();
+	}
 
-    private void OnMouseExit()
-    {
-        isPressingUi = false;
-    }
+	private void OnValueCellSizeChanged(double value)
+	{
+		PixelSize = (int)value;
+		cellSizeLabel.Text = PixelSize.ToString();
+		ChangePixelSize(PixelSize);
+	}
 
-    private void SetupImages()
-    {
-        worldImage = Image.CreateEmpty(gridWidth, gridHeight, false, Image.Format.Rgba8);
-        worldImage.Fill(Colors.Transparent);
-        worldTexture = ImageTexture.CreateFromImage(worldImage);
-        textureRect.Texture = worldTexture;
-        textureRect.CustomMinimumSize = new Vector2(WindowWidth, WindowHeight);
-    }
+	private void OnGuiInput(InputEvent @event)
+	{
+		if (@event is InputEventMouseButton mouseButton)
+			isPressingUi = mouseButton.Pressed;
+	}
 
-    private void SetupDebug()
-    {
-        debugImage = Image.CreateEmpty(gridWidth * PixelSize, gridHeight * PixelSize, false, Image.Format.Rgba8);
-        worldImage.Fill(Colors.Transparent);
-        var debugTexture = ImageTexture.CreateFromImage(debugImage);
-        GetNode<TextureRect>("World/DebugLayer/DebugTexture").Texture = debugTexture;
-    }
+	private void OnMouseExit()
+	{
+		isPressingUi = false;
+	}
 
-    private void DebugDrawActiveCells()
-    {
-        debugImage.Fill(Colors.Transparent);
-        var red = new Color(Colors.Red, 1);
-        var blue = new Color(Colors.Blue, 1);
-        foreach (var pos in nextActiveCells.Keys)
-        {
-            DebugDrawCell(pos, red);
-        }
-    }
+	private void SetupImages()
+	{
+		worldImage = Image.CreateEmpty(gridWidth, gridHeight, false, Image.Format.Rgba8);
+		worldImage.Fill(Colors.Transparent);
+		worldTexture = ImageTexture.CreateFromImage(worldImage);
+		textureRect.Texture = worldTexture;
+		textureRect.CustomMinimumSize = new Vector2(WindowWidth, WindowHeight);
+	}
 
-    private void DebugDrawCell(Vector2I cellPos, Color color)
-    {
-        var pixelDrawPos = cellPos * CellSize * PixelSize;
-        var cellDrawSize = CellSize * PixelSize;
-        var rect = new Rect2I(pixelDrawPos, new Vector2I(cellDrawSize, cellDrawSize));
-        DrawRectOutline(debugImage, rect, color);
-    }
+	private void SetupDebug()
+	{
+		debugImage = Image.CreateEmpty(gridWidth * PixelSize, gridHeight * PixelSize, false, Image.Format.Rgba8);
+		worldImage.Fill(Colors.Transparent);
+		var debugTexture = ImageTexture.CreateFromImage(debugImage);
+		GetNode<TextureRect>("World/DebugLayer/DebugTexture").Texture = debugTexture;
+	}
 
-    private void DrawRectOutline(Image image, Rect2I rect, Color color)
-    {
-        var r = rect.Intersection(new Rect2I(0, 0, image.GetWidth(), image.GetHeight()));
+	private void DebugDrawActiveCells()
+	{
+		debugImage.Fill(Colors.Transparent);
+		var red = new Color(Colors.Red, 1);
+		var blue = new Color(Colors.Blue, 1);
+		foreach (var pos in nextActiveCells.Keys)
+		{
+			DebugDrawCell(pos, red);
+		}
+	}
 
-        for (int x = r.Position.X; x < r.Position.X + r.Size.X; x++)
-        {
-            image.SetPixel(x, r.Position.Y, color);
-            image.SetPixel(x, r.Position.Y + r.Size.Y - 1, color);
-        }
+	private void DebugDrawCell(Vector2I cellPos, Color color)
+	{
+		Vector2I pixelDrawPos = cellPos * CellSize * PixelSize;
+		int cellDrawSize = CellSize * PixelSize;
+		Rect2I rect = new(pixelDrawPos, new Vector2I(cellDrawSize, cellDrawSize));
+		DrawRectOutline(debugImage, rect, color);
+	}
 
-        for (int y = r.Position.Y; y < r.Position.Y + r.Size.Y; y++)
-        {
-            image.SetPixel(r.Position.X, y, color);
-            image.SetPixel(r.Position.X + r.Size.X - 1, y, color);
-        }
-    }
+	static private void DrawRectOutline(Image image, Rect2I rect, Color color)
+	{
+		Rect2I r = rect.Intersection(new Rect2I(0, 0, image.GetWidth(), image.GetHeight()));
 
-    private void DrawRectFilled(Vector2I pos, Color color)
-    {
-        var rect = new Rect2I(pos * PixelSize, new Vector2I(PixelSize, PixelSize));
-        rect = rect.Intersection(new Rect2I(0, 0, debugImage.GetWidth(), debugImage.GetHeight()));
-        debugImage.FillRect(rect, color);
-    }
+		for (int x = r.Position.X; x < r.Position.X + r.Size.X; x++)
+		{
+			image.SetPixel(x, r.Position.Y, color);
+			image.SetPixel(x, r.Position.Y + r.Size.Y - 1, color);
+		}
 
-    private void SimulateActive()
-    {
-        // Copy current frame state
-        nextPixels = currentPixels.Select(row => row.ToArray()).ToArray();
-        currentActiveCells = new Dictionary<Vector2I, bool>(nextActiveCells);
-        nextActiveCells.Clear();
+		for (int y = r.Position.Y; y < r.Position.Y + r.Size.Y; y++)
+		{
+			image.SetPixel(r.Position.X, y, color);
+			image.SetPixel(r.Position.X + r.Size.X - 1, y, color);
+		}
+	}
 
-        List<Vector2I> pixelsToSimulate = new();
-        foreach (Vector2I cell in currentActiveCells.Keys)
-        {
-            int cellX = cell.X * CellSize;
-            int cellY = cell.Y * CellSize;
-            for (int x = cellX; x < cellX + CellSize; x++)
-            {
-                for (int y = cellY; y < cellY + CellSize; y++)
-                {
-                    if (IsValidPosition(x, y))
-                        pixelsToSimulate.Add(new Vector2I(x, y));
-                }
-            }
-        }
+	private void DrawRectFilled(Vector2I pos, Color color)
+	{
+		var rect = new Rect2I(pos * PixelSize, new Vector2I(PixelSize, PixelSize));
+		rect = rect.Intersection(new Rect2I(0, 0, debugImage.GetWidth(), debugImage.GetHeight()));
+		debugImage.FillRect(rect, color);
+	}
 
-        // Randomize to avoid directional bias
-        pixelsToSimulate = pixelsToSimulate.OrderBy(_ => Guid.NewGuid()).ToList();
+	private void SimulateActive()
+	{
+		// Copy current frame state
+		nextPixels = currentPixels.Select(row => row.ToArray()).ToArray();
+		currentActiveCells = new Dictionary<Vector2I, bool>(nextActiveCells);
+		nextActiveCells.Clear();
 
-        // Simulate
-        foreach (var pixelPos in pixelsToSimulate)
-        {
-            if (Simulate(pixelPos.X, pixelPos.Y))
-                ActivateNeighboringCells(pixelPos.X, pixelPos.Y);
-        }
+		List<Vector2I> pixelsToSimulate = new();
+		foreach (Vector2I cell in currentActiveCells.Keys)
+		{
+			int cellX = cell.X * CellSize;
+			int cellY = cell.Y * CellSize;
+			for (int x = cellX; x < cellX + CellSize; x++)
+			{
+				for (int y = cellY; y < cellY + CellSize; y++)
+				{
+					if (IsValidPosition(x, y))
+						pixelsToSimulate.Add(new Vector2I(x, y));
+				}
+			}
+		}
 
-        movedPixels.Clear();
+		// Randomize to avoid directional bias
+		pixelsToSimulate = pixelsToSimulate.OrderBy(_ => Guid.NewGuid()).ToList();
 
-        // Cool swap.
-        (nextPixels, currentPixels) = (currentPixels, nextPixels);
-    }
+		// Simulate
+		foreach (var pixelPos in pixelsToSimulate)
+		{
+			if (Simulate(pixelPos.X, pixelPos.Y))
+				ActivateNeighboringCells(pixelPos.X, pixelPos.Y);
+		}
 
-    private void ActivateNeighboringCells(int x, int y)
-    {
-        var cellPos = GetCell(new Vector2I(x, y));
-        var posInCell = new Vector2I(x % CellSize, y % CellSize);
-        var edgesToActivate = new List<Vector2I>();
+		movedPixels.Clear();
 
-        if (posInCell.X == 0)
-            edgesToActivate.Add(Vector2I.Left);
-        else if (posInCell.X == CellSize - 1)
-            edgesToActivate.Add(Vector2I.Right);
+		// Cool swap.
+		(nextPixels, currentPixels) = (currentPixels, nextPixels);
+	}
 
-        if (posInCell.Y == 0)
-            edgesToActivate.Add(Vector2I.Up);
-        else if (posInCell.Y == CellSize - 1)
-            edgesToActivate.Add(Vector2I.Down);
+	private void ActivateNeighboringCells(int x, int y)
+	{
+		var cellPos = GetCell(new Vector2I(x, y));
+		var posInCell = new Vector2I(x % CellSize, y % CellSize);
+		var edgesToActivate = new List<Vector2I>();
 
-        foreach (var edge in edgesToActivate)
-        {
-            var neighbor = cellPos + edge;
-            if (IsValidCell(neighbor))
-                nextActiveCells[neighbor] = true;
-        }
+		if (posInCell.X == 0)
+			edgesToActivate.Add(Vector2I.Left);
+		else if (posInCell.X == CellSize - 1)
+			edgesToActivate.Add(Vector2I.Right);
 
-        if (edgesToActivate.Count == 2)
-        {
-            var diagonal = edgesToActivate[0] + edgesToActivate[1];
-            var neighbor = cellPos + diagonal;
-            if (IsValidCell(neighbor))
-                nextActiveCells[neighbor] = true;
-        }
-    }
+		if (posInCell.Y == 0)
+			edgesToActivate.Add(Vector2I.Up);
+		else if (posInCell.Y == CellSize - 1)
+			edgesToActivate.Add(Vector2I.Down);
 
-    private bool Simulate(int x, int y)
-    {
-        var currentMaterial = GetMaterialAt(x, y);
+		foreach (var edge in edgesToActivate)
+		{
+			var neighbor = cellPos + edge;
+			if (IsValidCell(neighbor))
+				nextActiveCells[neighbor] = true;
+		}
 
-        if (currentMaterial == MaterialType.Air)
-            return false;
+		if (edgesToActivate.Count == 2)
+		{
+			var diagonal = edgesToActivate[0] + edgesToActivate[1];
+			var neighbor = cellPos + diagonal;
+			if (IsValidCell(neighbor))
+				nextActiveCells[neighbor] = true;
+		}
+	}
 
-        if (HasMoved(new Vector2I(x, y)))
-            return false;
+	private bool Simulate(int x, int y)
+	{
+		var currentMaterial = GetMaterialAt(x, y);
 
-        return currentMaterial switch
-        {
-            MaterialType.Sand => SandMechanic(x, y, currentMaterial),
-            MaterialType.Water => WaterMechanic(x, y, currentMaterial),
-            MaterialType.Rock => MoveDown(x, y, MaterialType.Rock),
-            _ => false
-        };
-    }
+		if (currentMaterial == MaterialType.Air)
+			return false;
 
-    private bool SandMechanic(int x, int y, MaterialType processMaterial)
-    {
-        return MoveDown(x, y, processMaterial) || MoveDiagonal(x, y, processMaterial);
-    }
+		if (HasMoved(new Vector2I(x, y)))
+			return false;
 
-    private bool WaterMechanic(int x, int y, MaterialType processMaterial)
-    {
-        return MoveDown(x, y, processMaterial) || 
-               MoveDiagonal(x, y, processMaterial) || 
-               MoveHorizontal(x, y, processMaterial);
-    }
+		return currentMaterial switch
+		{
+			MaterialType.Sand => SandMechanic(x, y, currentMaterial),
+			MaterialType.Water => WaterMechanic(x, y, currentMaterial),
+			MaterialType.Rock => MoveDown(x, y, MaterialType.Rock),
+			_ => false
+		};
+	}
 
-    private bool MoveHorizontal(int x, int y, MaterialType processMaterial)
-    {
-        var xDirection = y % 2 == 0 ? 1 : -1;
-        var newX = x + xDirection;
-        
-        if (!IsValidPosition(newX, y))
-            return false;
+	private bool SandMechanic(int x, int y, MaterialType processMaterial)
+	{
+		return MoveDown(x, y, processMaterial) || MoveDiagonal(x, y, processMaterial);
+	}
 
-        if (CanSwap(processMaterial, GetMaterialAt(newX, y)))
-        {
-            SwapParticle(x, y, newX, y);
-            return true;
-        }
+	private bool WaterMechanic(int x, int y, MaterialType processMaterial)
+	{
+		return MoveDown(x, y, processMaterial) ||
+			   MoveDiagonal(x, y, processMaterial) ||
+			   MoveHorizontal(x, y, processMaterial);
+	}
 
-        return false;
-    }
+	private bool MoveHorizontal(int x, int y, MaterialType processMaterial)
+	{
+		var xDirection = y % 2 == 0 ? 1 : -1;
+		var newX = x + xDirection;
 
-    private bool MoveDown(int x, int y, MaterialType processMaterial)
-    {
-        if (!IsValidPosition(x, y + 1))
-            return false;
+		if (!IsValidPosition(newX, y))
+			return false;
 
-        if (CanSwap(processMaterial, GetMaterialAt(x, y + 1)))
-        {
-            SwapParticle(x, y, x, y + 1);
-            return true;
-        }
+		if (CanSwap(processMaterial, GetMaterialAt(newX, y)))
+		{
+			SwapParticle(x, y, newX, y);
+			return true;
+		}
 
-        return false;
-    }
+		return false;
+	}
 
-    private bool MoveDiagonal(int x, int y, MaterialType processMaterial)
-    {
-        var direction = (x + y) % 2 == 0 ? new Vector2I(-1, 1) : new Vector2I(1, 1);
-        var newPos = new Vector2I(x, y) + direction;
+	private bool MoveDown(int x, int y, MaterialType processMaterial)
+	{
+		if (!IsValidPosition(x, y + 1))
+			return false;
 
-        if (!IsValidPosition(newPos.X, newPos.Y))
-            return false;
+		if (CanSwap(processMaterial, GetMaterialAt(x, y + 1)))
+		{
+			SwapParticle(x, y, x, y + 1);
+			return true;
+		}
 
-        if (CanSwap(processMaterial, GetMaterialAt(newPos.X, newPos.Y)))
-        {
-            SwapParticle(x, y, newPos.X, newPos.Y);
-            return true;
-        }
+		return false;
+	}
 
-        return false;
-    }
+	private bool MoveDiagonal(int x, int y, MaterialType processMaterial)
+	{
+		var direction = (x + y) % 2 == 0 ? new Vector2I(-1, 1) : new Vector2I(1, 1);
+		var newPos = new Vector2I(x, y) + direction;
+
+		if (!IsValidPosition(newPos.X, newPos.Y))
+			return false;
+
+		if (CanSwap(processMaterial, GetMaterialAt(newPos.X, newPos.Y)))
+		{
+			SwapParticle(x, y, newPos.X, newPos.Y);
+			return true;
+		}
+
+		return false;
+	}
 
 	private void DrawPixelAt(int x, int y, int[][] pixelArray)
 	{
@@ -371,96 +388,126 @@ public partial class MainSharp : Node2D
 		worldImage.SetPixel(x, y, color);
 	}
 
-    private void DrawSpawnRadiusPreview(int centerX, int centerY, int radius)
-    {
-        int startX = Math.Max(0, centerX - radius);
-        int startY = Math.Max(0, centerY - radius);
-        int endX = Math.Min(gridWidth, centerX + radius + 1);
-        int endY = Math.Min(gridHeight, centerY + radius + 1);
+	private void DrawSpawnRadiusPreview(int centerX, int centerY, int radius)
+	{
+		int startX = Math.Max(0, centerX - radius);
+		int startY = Math.Max(0, centerY - radius);
+		int endX = Math.Min(gridWidth, centerX + radius + 1);
+		int endY = Math.Min(gridHeight, centerY + radius + 1);
 
-        for (int y = startY; y < endY; y++) 
-        {
-            for (int x = startX; x < endX; x++) 
-            {
-                float distance = new Vector2I(centerX, centerY).DistanceTo(new Vector2I(x, y));
+		for (int y = startY; y < endY; y++)
+		{
+			for (int x = startX; x < endX; x++)
+			{
+				float distance = new Vector2I(centerX, centerY).DistanceTo(new Vector2I(x, y));
 
-                if (distance <= radius)
-                    DrawRectFilled(new Vector2I(x, y), new Color(Colors.White, 0.3f));
-            }
-        }
+				if (distance <= radius)
+					DrawRectFilled(new Vector2I(x, y), new Color(Colors.White, 0.3f));
+			}
+		}
 
-        ImageTexture texture = GetNode<TextureRect>("World/DebugLayer/DebugTexture").Texture as ImageTexture;
+		DrawRectFilled(new Vector2I(centerX, centerY), new Color(Colors.White, 0.9f));
+
+		ImageTexture texture = GetNode<TextureRect>("World/DebugLayer/DebugTexture").Texture as ImageTexture;
 		texture.Update(debugImage);
-    }
+	}
 
-    static private int GetVarantAt(int x, int y, int[][] pixelArray)
-    {
+	static private int GetVarantAt(int x, int y, int[][] pixelArray)
+	{
 		return (pixelArray[y][x] >> VariantBitsStart) & VariantBitsMask;
-    }
+	}
 
 	private Color GetColorForVariant(int variant)
 	{
 		return colorAtlasImage.GetPixel(variant, 0);
 	}
 
+	public void ChangePixelSize(int newPixelSize)
+	{
+		PixelSize = newPixelSize;
 
-    private void SwapParticle(int sourceX, int sourceY, int destinationX, int destinationY)
-    {
-        var temp = nextPixels[destinationY][destinationX];
-        nextPixels[destinationY][destinationX] = currentPixels[sourceY][sourceX];
-        nextPixels[sourceY][sourceX] = temp;
+		// Recalculate grid dimensions
+		gridWidth = WindowWidth / PixelSize;
+		gridHeight = WindowHeight / PixelSize;
 
-        DrawPixelAt(sourceX, sourceY, nextPixels);
-        DrawPixelAt(destinationX, destinationY, nextPixels);
+		// Recreate images with new dimensions
+		worldImage = Image.CreateEmpty(gridWidth, gridHeight, false, Image.Format.Rgba8);
+		worldImage.Fill(Colors.Transparent);
+		worldTexture = ImageTexture.CreateFromImage(worldImage);
+		textureRect.Texture = worldTexture;
 
-        var source = new Vector2I(sourceX, sourceY);
-        var destination = new Vector2I(destinationX, destinationY);
+		debugImage = Image.CreateEmpty(gridWidth * PixelSize, gridHeight * PixelSize, false, Image.Format.Rgba8);
+		debugImage.Fill(Colors.Transparent);
+		var debugTexture = ImageTexture.CreateFromImage(debugImage);
+		GetNode<TextureRect>("World/DebugLayer/DebugTexture").Texture = debugTexture;
 
-        movedPixels.Add(source);
-        movedPixels.Add(destination);
+		// Reset pixel arrays and active cells
+		SetupPixels();
+		currentActiveCells.Clear();
+		nextActiveCells.Clear();
+		movedPixels.Clear();
 
-        ActivateCell(source);
-        ActivateCell(destination);
-    }
+		// Update UI size
+		textureRect.CustomMinimumSize = new Vector2(WindowWidth, WindowHeight);
+	}
 
-    public override void _Process(double delta)
-    {
+	private void SwapParticle(int sourceX, int sourceY, int destinationX, int destinationY)
+	{
+		var temp = nextPixels[destinationY][destinationX];
+		nextPixels[destinationY][destinationX] = currentPixels[sourceY][sourceX];
+		nextPixels[sourceY][sourceX] = temp;
 
-        CheckMouseInput();
-        debugImage.Fill(Colors.Transparent);
-        timer.WaitTime = SimSpeedSeconds;
-        var startTime = Time.GetTicksMsec();
+		DrawPixelAt(sourceX, sourceY, nextPixels);
+		DrawPixelAt(destinationX, destinationY, nextPixels);
 
-        SimulateActive();
-        worldTexture.Update(worldImage);
+		var source = new Vector2I(sourceX, sourceY);
+		var destination = new Vector2I(destinationX, destinationY);
 
-        if (isBenchmark)
-            BenchmarkActive(startTime);
+		movedPixels.Add(source);
+		movedPixels.Add(destination);
 
-        if (EnableDebug)
-            DebugDrawActiveCells();
+		ActivateCell(source);
+		ActivateCell(destination);
+	}
 
-        GetWindow().Title = Engine.GetFramesPerSecond().ToString();
-        ImageTexture texture = GetNode<TextureRect>("World/DebugLayer/DebugTexture").Texture as ImageTexture;
+	public override void _Process(double delta)
+	{
+
+		CheckMouseInput();
+		debugImage.Fill(Colors.Transparent);
+		timer.WaitTime = SimSpeedSeconds;
+		var startTime = Time.GetTicksMsec();
+
+		SimulateActive();
+		worldTexture.Update(worldImage);
+
+		if (isBenchmark)
+			BenchmarkActive(startTime);
+
+		if (EnableDebug)
+			DebugDrawActiveCells();
+
+		GetWindow().Title = Engine.GetFramesPerSecond().ToString();
+		ImageTexture texture = GetNode<TextureRect>("World/DebugLayer/DebugTexture").Texture as ImageTexture;
 		texture.Update(debugImage);
-        Vector2I mousePosition = GetMouseTilePos();
-        DrawSpawnRadiusPreview(mousePosition.X, mousePosition.Y, CircleSize);
-    }
+		Vector2I mousePosition = GetMouseTilePos();
+		DrawSpawnRadiusPreview(mousePosition.X, mousePosition.Y, CircleSize);
+	}
 
-    private void CheckMouseInput() 
-    {
-        if (Input.IsActionPressed("SPAWN_SAND") && !isPressingUi)
-        {
-            Vector2I pos = GetMouseTilePos();
-            SpawnInRadius(pos.X, pos.Y, CircleSize, selectedMaterial);
-        }
+	private void CheckMouseInput()
+	{
+		if (Input.IsActionPressed("SPAWN_SAND") && !isPressingUi)
+		{
+			Vector2I pos = GetMouseTilePos();
+			SpawnInRadius(pos.X, pos.Y, CircleSize, selectedMaterial);
+		}
 
-        if (Input.IsActionPressed("SPAWN_WATER") && !isPressingUi)
-        {
-            Vector2I pos = GetMouseTilePos();
-            SpawnInRadius(pos.X, pos.Y, CircleSize, MaterialType.Air);
-        }
-    }
+		if (Input.IsActionPressed("SPAWN_WATER") && !isPressingUi)
+		{
+			Vector2I pos = GetMouseTilePos();
+			SpawnInRadius(pos.X, pos.Y, CircleSize, MaterialType.Air);
+		}
+	}
 
 	private void SpawnInRadius(int centerX, int centerY, int radius, MaterialType materialType)
 	{
@@ -479,82 +526,82 @@ public partial class MainSharp : Node2D
 	}
 
 
-    // Helper methods
-    private bool IsValidPosition(int x, int y) => 
-        x >= 0 && x < gridWidth && y >= 0 && y < gridHeight;
+	// Helper methods
+	private bool IsValidPosition(int x, int y) =>
+		x >= 0 && x < gridWidth && y >= 0 && y < gridHeight;
 
-    private bool IsValidCell(Vector2I cellPos) => 
-        cellPos.X >= 0 && cellPos.X < gridWidth/CellSize && 
-        cellPos.Y >= 0 && cellPos.Y < gridHeight/CellSize;
+	private bool IsValidCell(Vector2I cellPos) =>
+		cellPos.X >= 0 && cellPos.X < gridWidth/CellSize &&
+		cellPos.Y >= 0 && cellPos.Y < gridHeight/CellSize;
 
-    private Vector2I GetCell(Vector2I pos) => 
-        new(pos.X / CellSize, pos.Y / CellSize);
+	private Vector2I GetCell(Vector2I pos) =>
+		new(pos.X / CellSize, pos.Y / CellSize);
 
-    private void ActivateCell(Vector2I pos)
-    {
-        var cellPos = GetCell(pos);
-        nextActiveCells[cellPos] = true;
-    }
+	private void ActivateCell(Vector2I pos)
+	{
+		var cellPos = GetCell(pos);
+		nextActiveCells[cellPos] = true;
+	}
 
-    private MaterialType GetMaterialAt(int x, int y) =>
-        (MaterialType)((currentPixels[y][x] >> MaterialBitsStart) & MaterialBitsMask);
+	private MaterialType GetMaterialAt(int x, int y) =>
+		(MaterialType)((currentPixels[y][x] >> MaterialBitsStart) & MaterialBitsMask);
 
-    private bool HasMoved(Vector2I position) => 
-        movedPixels.Contains(position);
+	private bool HasMoved(Vector2I position) =>
+		movedPixels.Contains(position);
 
-    private bool CanSwap(MaterialType source, MaterialType swappingPartner) =>
-        SwapRules.TryGetValue(source, out var rules) && rules.Contains(swappingPartner);
+	private bool CanSwap(MaterialType source, MaterialType swappingPartner) =>
+		SwapRules.TryGetValue(source, out var rules) && rules.Contains(swappingPartner);
 
-    private void SetupPixels()
-    {
-        currentPixels = new int[gridHeight][];
-        for (int y = 0; y < gridHeight; y++)
-        {
-            currentPixels[y] = new int[gridWidth];
-            for (int x = 0; x < gridWidth; x++)
-                SetStateAt(x, y, MaterialType.Air, GetRandomVariant(MaterialType.Air));
-        }
-        nextPixels = currentPixels.Select(row => row.ToArray()).ToArray();
-    }
+	private void SetupPixels()
+	{
+		currentPixels = new int[gridHeight][];
+		for (int y = 0; y < gridHeight; y++)
+		{
+			currentPixels[y] = new int[gridWidth];
+			for (int x = 0; x < gridWidth; x++)
+				SetStateAt(x, y, MaterialType.Air, GetRandomVariant(MaterialType.Air));
+		}
+		nextPixels = currentPixels.Select(row => row.ToArray()).ToArray();
+	}
 
-    private int GetRandomVariant(MaterialType materialType)
-    {
-        var variants = ColorRanges[materialType];
-        return GD.RandRange(variants[0], variants[1]);
-    }
+	private int GetRandomVariant(MaterialType materialType)
+	{
+		var variants = ColorRanges[materialType];
+		return GD.RandRange(variants[0], variants[1]);
+	}
 
-    private Vector2I GetMouseTilePos()
-    {
-        var currentSize = DisplayServer.WindowGetSize();
-        var scaleFactor = new Vector2(
-            baseWindowSize.X / currentSize.X,
-            baseWindowSize.Y / currentSize.Y
-        );
-        Vector2I mousePos = (Vector2I) (GetViewport().GetMousePosition() * scaleFactor / PixelSize).Abs();
+	private Vector2I GetMouseTilePos()
+	{
+		var currentSize = DisplayServer.WindowGetSize();
+		var scaleFactor = new Vector2(
+			baseWindowSize.X / currentSize.X,
+			baseWindowSize.Y / currentSize.Y
+		);
+		Vector2I mousePos = (Vector2I) (GetViewport().GetMousePosition() * scaleFactor / PixelSize).Abs();
 
-        return mousePos.Clamp(Vector2I.Zero, new Vector2I(gridWidth - 1, gridHeight -1));
-    }
+		return mousePos.Clamp(Vector2I.Zero, new Vector2I(gridWidth - 1, gridHeight -1));
+	}
 
-    // Event handlers and input processing
-    public override void _Input(InputEvent @event)
-    {
-        if (@event is InputEventMouseButton mouseEvent)
-        {
-            if (mouseEvent.Pressed)
-                Input.MouseMode = Input.MouseModeEnum.Hidden;
-        }
+	// Event handlers and input processing
+	public override void _Input(InputEvent @event)
+	{
+		if (@event is InputEventMouseButton mouseEvent)
+		{
+			if (mouseEvent.Pressed)
+				Input.MouseMode = Input.MouseModeEnum.Hidden;
+		}
 
-        if (@event.IsActionReleased("CHECK_MATERIAL"))
-        {
-            var mousePos = GetMouseTilePos();
-            GD.Print(GetMaterialAt(mousePos.X, mousePos.Y));
-        }
+		if (@event.IsActionReleased("CHECK_MATERIAL"))
+		{
+			var mousePos = GetMouseTilePos();
+			GD.Print(GetMaterialAt(mousePos.X, mousePos.Y));
+		}
 
-        if (@event.IsActionReleased("STATS"))
-        {
-            InitializeBenchmarkParticles();
-        }
-    }
+		if (@event.IsActionReleased("STATS"))
+		{
+			InitializeBenchmarkParticles();
+		}
+	}
 
 	private void InitializeBenchmarkParticles()
 	{

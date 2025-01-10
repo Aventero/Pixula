@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://cxcvn0k2w0x3u"]
+[gd_scene load_steps=13 format=3 uid="uid://cxcvn0k2w0x3u"]
 
 [ext_resource type="Script" path="res://Scripts/MainSharp.cs" id="1_gixc6"]
 [ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://Sprites/Pixula_Icon.png" id="2_yt66i"]
@@ -9,6 +9,8 @@
 [ext_resource type="Texture2D" uid="uid://dyqwfh5jvgas1" path="res://Sprites/Rock_Icon.png" id="7_pb25d"]
 [ext_resource type="Texture2D" uid="uid://vso6awjwcax" path="res://Sprites/Wall_Icon.png" id="8_aswaw"]
 [ext_resource type="Texture2D" uid="uid://bsc6urywf5gu" path="res://Images/Background.png" id="9_hfhlx"]
+[ext_resource type="Texture2D" uid="uid://vhpnxnjlf2k8" path="res://Sprites/CircleSize.png" id="9_v0a7p"]
+[ext_resource type="Texture2D" uid="uid://drqlem5e5wi0d" path="res://Sprites/CellSize.png" id="10_kjxfc"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_exg3k"]
 bg_color = Color(0.0807833, 0.0807833, 0.0807833, 0.313726)
@@ -28,10 +30,10 @@ texture_filter = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -202.0
+offset_left = -227.0
 offset_top = 16.0
 offset_right = -12.0
-offset_bottom = 169.0
+offset_bottom = 473.0
 grow_horizontal = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="Overlay/MainPanelContainer"]
@@ -93,17 +95,31 @@ icon = ExtResource("8_aswaw")
 alignment = 0
 expand_icon = true
 
-[node name="HBoxContainer" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+[node name="SpawnRadius" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="Panel" type="Panel" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(0, 42.785)
+[node name="MarginContainer" type="MarginContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_stretch_ratio = 2.0
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 5
+
+[node name="TextureRect" type="TextureRect" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius/MarginContainer"]
+layout_mode = 2
+texture = ExtResource("9_v0a7p")
+stretch_mode = 5
+
+[node name="Panel" type="Panel" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius"]
+custom_minimum_size = Vector2(0, 42.785)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.5
 theme_override_styles/panel = SubResource("StyleBoxFlat_exg3k")
 
-[node name="SpawnRadius" type="Label" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/Panel"]
+[node name="SpawnRadius" type="Label" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius/Panel"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -116,13 +132,59 @@ text = "10"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="HSlider" type="HSlider" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
-custom_minimum_size = Vector2(115.35, 0)
+[node name="SpawnRadiusSlider" type="HSlider" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
-size_flags_stretch_ratio = 4.0
+size_flags_stretch_ratio = 3.0
+max_value = 30.0
+rounded = true
+
+[node name="CellSize" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 5
+
+[node name="TextureRect" type="TextureRect" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize/MarginContainer"]
+layout_mode = 2
+texture = ExtResource("10_kjxfc")
+stretch_mode = 5
+
+[node name="Panel" type="Panel" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize"]
+custom_minimum_size = Vector2(0, 42.785)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.5
+theme_override_styles/panel = SubResource("StyleBoxFlat_exg3k")
+
+[node name="CellSizeLabel" type="Label" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+text = "10"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CellSizeSlider" type="HSlider" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+size_flags_stretch_ratio = 3.0
+min_value = 1.0
 max_value = 20.0
+value = 1.0
 rounded = true
 
 [node name="World" type="CanvasLayer" parent="."]
