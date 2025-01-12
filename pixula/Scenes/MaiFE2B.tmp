@@ -1,0 +1,245 @@
+[gd_scene load_steps=13 format=3 uid="uid://cxcvn0k2w0x3u"]
+
+[ext_resource type="Script" path="res://Scenes/main_core.gd" id="1_1k4pe"]
+[ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://UI/Sprites/Pixula_Icon.png" id="2_yt66i"]
+[ext_resource type="Theme" uid="uid://x4ngw312h2qp" path="res://UI/TheTheme.tres" id="3_r6eas"]
+[ext_resource type="Texture2D" uid="uid://dili5fe4u1uet" path="res://UI/Sprites/Air.png" id="4_we8p7"]
+[ext_resource type="Texture2D" uid="uid://cydsabxv8780s" path="res://UI/Sprites/Sand_Icon.png" id="5_tremm"]
+[ext_resource type="Texture2D" uid="uid://bon0k40pry2rx" path="res://UI/Sprites/Water_Icon.png" id="6_hco3j"]
+[ext_resource type="Texture2D" uid="uid://dyqwfh5jvgas1" path="res://UI/Sprites/Rock_Icon.png" id="7_pb25d"]
+[ext_resource type="Texture2D" uid="uid://vso6awjwcax" path="res://UI/Sprites/Wall_Icon.png" id="8_aswaw"]
+[ext_resource type="Texture2D" uid="uid://bsc6urywf5gu" path="res://UI/Sprites/Background.png" id="9_hfhlx"]
+[ext_resource type="Texture2D" uid="uid://vhpnxnjlf2k8" path="res://UI/Sprites/CircleSize.png" id="9_v0a7p"]
+[ext_resource type="Texture2D" uid="uid://drqlem5e5wi0d" path="res://UI/Sprites/CellSize.png" id="10_kjxfc"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_exg3k"]
+bg_color = Color(0.0807833, 0.0807833, 0.0807833, 0.313726)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
+
+[node name="Main" type="Node2D"]
+script = ExtResource("1_1k4pe")
+
+[node name="Overlay" type="CanvasLayer" parent="."]
+layer = 2
+
+[node name="MainPanelContainer" type="PanelContainer" parent="Overlay"]
+texture_filter = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -227.0
+offset_top = 16.0
+offset_right = -12.0
+offset_bottom = 473.0
+grow_horizontal = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="Overlay/MainPanelContainer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer"]
+layout_mode = 2
+size_flags_vertical = 0
+theme_override_constants/separation = 11
+alignment = 1
+
+[node name="TextureRect" type="TextureRect" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+texture = ExtResource("2_yt66i")
+
+[node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("3_r6eas")
+text = "Air"
+icon = ExtResource("4_we8p7")
+alignment = 0
+expand_icon = true
+
+[node name="SandButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("3_r6eas")
+text = "Sand"
+icon = ExtResource("5_tremm")
+alignment = 0
+expand_icon = true
+
+[node name="WaterButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+text = "Water"
+icon = ExtResource("6_hco3j")
+alignment = 0
+expand_icon = true
+
+[node name="RockButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+text = "Rock"
+icon = ExtResource("7_pb25d")
+alignment = 0
+expand_icon = true
+
+[node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+text = "Wall"
+icon = ExtResource("8_aswaw")
+alignment = 0
+expand_icon = true
+
+[node name="SpawnRadius" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius"]
+use_parent_material = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 5
+
+[node name="TextureRect" type="TextureRect" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius/MarginContainer"]
+use_parent_material = true
+layout_mode = 2
+texture = ExtResource("9_v0a7p")
+stretch_mode = 5
+
+[node name="Panel" type="Panel" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius"]
+use_parent_material = true
+custom_minimum_size = Vector2(0, 42.785)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.5
+theme_override_styles/panel = SubResource("StyleBoxFlat_exg3k")
+
+[node name="SpawnRadius" type="Label" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius/Panel"]
+use_parent_material = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+text = "10"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="SpawnRadiusSlider" type="HSlider" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius"]
+use_parent_material = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+size_flags_stretch_ratio = 3.0
+max_value = 30.0
+rounded = true
+
+[node name="CellSize" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize"]
+use_parent_material = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 2.0
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 5
+
+[node name="TextureRect" type="TextureRect" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize/MarginContainer"]
+use_parent_material = true
+layout_mode = 2
+texture = ExtResource("10_kjxfc")
+stretch_mode = 5
+
+[node name="Panel" type="Panel" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize"]
+use_parent_material = true
+custom_minimum_size = Vector2(0, 42.785)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.5
+theme_override_styles/panel = SubResource("StyleBoxFlat_exg3k")
+
+[node name="CellSizeLabel" type="Label" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize/Panel"]
+use_parent_material = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 30
+text = "10"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CellSizeSlider" type="HSlider" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize"]
+use_parent_material = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+size_flags_stretch_ratio = 3.0
+min_value = 1.0
+max_value = 20.0
+value = 1.0
+rounded = true
+
+[node name="World" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="DebugLayer" type="CanvasLayer" parent="World"]
+
+[node name="DebugTexture" type="TextureRect" parent="World/DebugLayer"]
+texture_filter = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 3
+stretch_mode = 5
+metadata/_edit_use_anchors_ = true
+metadata/_edit_lock_ = true
+
+[node name="WorldTexture" type="TextureRect" parent="World"]
+texture_filter = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+texture = ExtResource("9_hfhlx")
+expand_mode = 2
+stretch_mode = 5
+metadata/_edit_use_anchors_ = true
+
+[node name="Camera2D" type="Camera2D" parent="."]
+anchor_mode = 0
+
+[node name="Timer" type="Timer" parent="."]
+autostart = true
+
+[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]

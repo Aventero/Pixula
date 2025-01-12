@@ -9,7 +9,7 @@ public partial class MainSharp : Node2D
 	private Timer timer;
 	private Camera2D camera;
 	private TextureRect textureRect;
-	private Texture2D colorAtlas;
+	[Export] public Texture2D colorAtlas;
 	private Image colorAtlasImage;
 
 	// Drawing
@@ -96,7 +96,6 @@ public partial class MainSharp : Node2D
 	{
 		timer = GetNode<Timer>("Timer");
 		textureRect = GetNode<TextureRect>("World/WorldTexture");
-		colorAtlas = GD.Load<Texture2D>("res://Images/apollo.png");
 		colorAtlasImage = colorAtlas.GetImage();
 
 		gridWidth = WindowWidth / PixelSize;
@@ -139,10 +138,16 @@ public partial class MainSharp : Node2D
 	private void SetMouseFilterOnUI(Node node)
 	{
 		if (node is Button button)
+		{
 			button.GuiInput += OnGuiInput;
+			button.MouseExited += OnMouseExit;
+		}
 
 		if (node is HSlider slider)
+		{
+			slider.GuiInput += OnGuiInput;
 			slider.MouseExited += OnMouseExit;
+		}
 
 		foreach (var child in node.GetChildren())
 			SetMouseFilterOnUI(child);

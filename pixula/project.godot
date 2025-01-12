@@ -13,7 +13,7 @@ config_version=5
 config/name="Pixula"
 run/main_scene="res://Scenes/Main.tscn"
 config/features=PackedStringArray("4.3", "C#", "Forward Plus")
-config/icon="res://Images/icon.svg"
+config/icon="res://UI/Sprites/icon.svg"
 
 [debug]
 
@@ -30,11 +30,11 @@ project/assembly_name="Pixula"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/script-ide/plugin.cfg")
+enabled=PackedStringArray("res://addons/ridiculous_coding/plugin.cfg", "res://addons/script-ide/plugin.cfg")
 
 [gui]
 
-theme/custom="res://Scenes/TheTheme.tres"
+theme/custom="res://UI/TheTheme.tres"
 
 [input]
 
