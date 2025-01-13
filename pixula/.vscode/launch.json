@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "C:/Users/or-202362/Downloads/Godot_v4.3-stable_mono_win64/Godot_v4.3-stable_mono_win64/Godot_v4.3-stable_mono_win64.exe",
+            "program": "C:/Users/Henk/Desktop/GodotSharp/Godot.exe",
             "args": [],
             "cwd": "${workspaceFolder}",
             "stopAtEntry": false,

@@ -37,6 +37,8 @@ enum MaterialType {
 	LAVA = 9,
 }
 
+@export var world_environment: WorldEnvironment
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	simulator.Initialize(width, height, pixel_size, cell_size, spawn_radius)
@@ -47,6 +49,17 @@ func _ready() -> void:
 
 	setup_ui()
 	setup_mouse_filter($Overlay/MainPanelContainer)
+
+# Method to update glow settings
+func update_glow_settings(enabled: bool, intensity: float, bloom: float, hdr_threshold: float):
+	var environment = world_environment.environment
+	environment.glow_enabled = enabled
+	environment.glow_intensity = intensity
+	environment.glow_bloom = bloom
+	environment.glow_hdr_threshold = hdr_threshold
+
+	# Force the environment to update
+	world_environment.environment = environment
 
 
 func _on_timer_timeout() -> void:
@@ -134,8 +147,6 @@ func spawn_material_at_mouse(material_type: MaterialType) -> void:
 	simulator.SpawnInRadius(mouse_pos.x, mouse_pos.y, spawn_radius, material_type)
 
 func get_mouse_tile_pos() -> Vector2i:
-	var currentSize = DisplayServer.window_get_size()
-
 	var mousePos: Vector2i = Vector2i((get_viewport().get_mouse_position() / pixel_size).abs())
 	return mousePos.clamp(Vector2i.ZERO, Vector2i(grid_width - 1, grid_height -1))
 

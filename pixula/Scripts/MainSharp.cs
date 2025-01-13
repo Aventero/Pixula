@@ -129,7 +129,7 @@ public partial class MainSharp : Node2D
 
 	private void SetupImages()
 	{
-		worldImage = Image.CreateEmpty(gridWidth, gridHeight, false, Image.Format.Rgba8);
+		worldImage = Image.CreateEmpty(gridWidth, gridHeight, true, Image.Format.Rgbaf);
 		worldImage.Fill(Colors.Transparent);
 		worldTexture = ImageTexture.CreateFromImage(worldImage);
 		worldTextureRect.Texture = worldTexture;
@@ -524,10 +524,32 @@ public partial class MainSharp : Node2D
 		return true;
 	}
 
+	private Color GetEmission(MaterialType currentMaterial, Color materialColor)
+	{
+		return currentMaterial switch
+		{
+			MaterialType.Fire => new Color(
+				materialColor.R * 5.5f,  
+				materialColor.G * 1.2f, 
+				materialColor.B * 1.3f,  
+				materialColor.A
+			),
+			MaterialType.Lava => new Color(
+				materialColor.R * 3.0f,
+				materialColor.G * 1.5f,
+				materialColor.B * 1.0f,
+				materialColor.A
+			),
+			_ => materialColor
+		};
+	}
+
 	private void DrawPixelAt(int x, int y, int[][] pixelArray)
 	{
 		int variant = GetVarantAt(x, y, pixelArray);
+		MaterialType materialType = GetNewMaterialAt(x, y);
 		Color color = GetColorForVariant(variant);
+		color = GetEmission(materialType, color);
 		worldImage.SetPixel(x, y, color);
 	}
 
@@ -650,6 +672,7 @@ public partial class MainSharp : Node2D
 				if (distance <= radius)
 				{
 					SetMaterialAt(x, y, materialType, currentPixels);
+					SetMaterialAt(x, y, materialType, nextPixels);
 					ActivateCell(new Vector2I(x, y));
 				}
 			}
@@ -677,6 +700,9 @@ public partial class MainSharp : Node2D
 	private MaterialType GetMaterialAt(int x, int y) =>
 		(MaterialType)((currentPixels[y][x] >> MaterialBitsStart) & MaterialBitsMask);
 
+	private MaterialType GetNewMaterialAt(int x, int y) =>
+		(MaterialType)((nextPixels[y][x] >> MaterialBitsStart) & MaterialBitsMask);
+
 	private bool WasProcessed(Vector2I position) =>
 		processedPixels.Contains(position);
 
@@ -685,14 +711,19 @@ public partial class MainSharp : Node2D
 
 	private void SetupPixels()
 	{
+		// Initialize coloum
 		currentPixels = new int[gridHeight][];
+		nextPixels = new int[gridHeight][]; 
+
 		for (int y = 0; y < gridHeight; y++)
 		{
+			// Initialize Rows
 			currentPixels[y] = new int[gridWidth];
+			nextPixels[y] = new int[gridWidth]; 
 			for (int x = 0; x < gridWidth; x++)
 				SetMaterialAt(x, y, MaterialType.Air, currentPixels);
+			Array.Copy(currentPixels[y], nextPixels[y], gridWidth);
 		}
-		nextPixels = currentPixels.Select(row => row.ToArray()).ToArray();
 	}
 
 	private int GetRandomVariant(MaterialType materialType)

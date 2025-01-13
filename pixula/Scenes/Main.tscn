@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=3 uid="uid://cxcvn0k2w0x3u"]
+[gd_scene load_steps=22 format=3 uid="uid://cxcvn0k2w0x3u"]
 
 [ext_resource type="Script" path="res://Scripts/MainEntry.gd" id="1_fjtcw"]
 [ext_resource type="Script" path="res://Scripts/MainSharp.cs" id="1_u0yqt"]
@@ -29,9 +29,19 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
-[node name="Main" type="Node2D"]
+[sub_resource type="Environment" id="Environment_u2gw7"]
+background_mode = 3
+tonemap_white = 2.23
+glow_enabled = true
+glow_normalized = true
+glow_intensity = 6.0
+glow_strength = 1.4
+glow_blend_mode = 1
+
+[node name="Main" type="Node2D" node_paths=PackedStringArray("world_environment")]
 script = ExtResource("1_fjtcw")
 height = 912
+world_environment = NodePath("WorldEnvironment")
 
 [node name="Overlay" type="CanvasLayer" parent="."]
 layer = 2
@@ -317,7 +327,7 @@ metadata/_edit_use_anchors_ = true
 metadata/_edit_lock_ = true
 
 [node name="WorldTexture" type="TextureRect" parent="World"]
-texture_filter = 1
+texture_filter = 5
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -331,7 +341,7 @@ stretch_mode = 5
 metadata/_edit_use_anchors_ = true
 
 [node name="Timer" type="Timer" parent="."]
-wait_time = 0.01
+wait_time = 0.014
 autostart = true
 
 [node name="MainSharp" type="Node2D" parent="." node_paths=PackedStringArray("worldTextureRect", "debugTextureRect")]
@@ -339,6 +349,9 @@ script = ExtResource("1_u0yqt")
 worldTextureRect = NodePath("../World/WorldTexture")
 debugTextureRect = NodePath("../World/DebugLayer/DebugTexture")
 colorAtlas = ExtResource("14_coue8")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_u2gw7")
 
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/AirButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/SandButton" to="." method="_on_material_button_pressed"]
