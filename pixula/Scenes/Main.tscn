@@ -1,5 +1,6 @@
-[gd_scene load_steps=16 format=3 uid="uid://cxcvn0k2w0x3u"]
+[gd_scene load_steps=22 format=3 uid="uid://cxcvn0k2w0x3u"]
 
+[ext_resource type="Script" path="res://Scripts/MainEntry.gd" id="1_fjtcw"]
 [ext_resource type="Script" path="res://Scripts/MainSharp.cs" id="1_u0yqt"]
 [ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://UI/Sprites/Pixula_Icon.png" id="2_yt66i"]
 [ext_resource type="Shader" path="res://Shaders/Wobble.gdshader" id="3_8a7hv"]
@@ -7,12 +8,16 @@
 [ext_resource type="Texture2D" uid="uid://dili5fe4u1uet" path="res://UI/Sprites/Air.png" id="4_we8p7"]
 [ext_resource type="Texture2D" uid="uid://cydsabxv8780s" path="res://UI/Sprites/Sand_Icon.png" id="5_tremm"]
 [ext_resource type="Texture2D" uid="uid://bon0k40pry2rx" path="res://UI/Sprites/Water_Icon.png" id="6_hco3j"]
+[ext_resource type="Script" path="res://Scripts/material_button.gd" id="6_sdk4a"]
 [ext_resource type="Texture2D" uid="uid://dyqwfh5jvgas1" path="res://UI/Sprites/Rock_Icon.png" id="7_pb25d"]
 [ext_resource type="Texture2D" uid="uid://vso6awjwcax" path="res://UI/Sprites/Wall_Icon.png" id="8_aswaw"]
 [ext_resource type="Texture2D" uid="uid://bsc6urywf5gu" path="res://UI/Sprites/Background.png" id="9_hfhlx"]
 [ext_resource type="Texture2D" uid="uid://vhpnxnjlf2k8" path="res://UI/Sprites/CircleSize.png" id="9_v0a7p"]
 [ext_resource type="Texture2D" uid="uid://drqlem5e5wi0d" path="res://UI/Sprites/CellSize.png" id="10_kjxfc"]
-[ext_resource type="Texture2D" uid="uid://cna2fmjfhqaqh" path="res://UI/Sprites/apollo.png" id="14_btycu"]
+[ext_resource type="Texture2D" uid="uid://d1b2en56japjq" path="res://UI/Sprites/WoodIcon.png" id="10_s7o1q"]
+[ext_resource type="Texture2D" uid="uid://3ib8qwraev23" path="res://UI/Sprites/FireIcon.png" id="11_2ajil"]
+[ext_resource type="Texture2D" uid="uid://dimk1h8crasje" path="res://UI/Sprites/Vapor_Icon.png" id="12_7ks5b"]
+[ext_resource type="Texture2D" uid="uid://cna2fmjfhqaqh" path="res://UI/Sprites/colorAtlas.png" id="14_coue8"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_rwn16"]
 shader = ExtResource("3_8a7hv")
@@ -24,9 +29,12 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4u171"]
+shader = ExtResource("3_8a7hv")
+
 [node name="Main" type="Node2D"]
-script = ExtResource("1_u0yqt")
-colorAtlas = ExtResource("14_btycu")
+script = ExtResource("1_fjtcw")
+height = 912
 
 [node name="Overlay" type="CanvasLayer" parent="."]
 layer = 2
@@ -36,33 +44,53 @@ texture_filter = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -227.0
-offset_top = 16.0
-offset_right = -12.0
-offset_bottom = 473.0
+offset_left = -300.0
+offset_top = 22.0
+offset_right = -48.415
+offset_bottom = 365.0
 grow_horizontal = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="Overlay/MainPanelContainer"]
 material = SubResource("ShaderMaterial_rwn16")
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 10
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 20
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer"]
 use_parent_material = true
 layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 5
+
+[node name="TextureRect" type="TextureRect" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/MarginContainer"]
+use_parent_material = true
+layout_mode = 2
+texture = ExtResource("2_yt66i")
+expand_mode = 5
+stretch_mode = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 0
 theme_override_constants/separation = 11
 alignment = 1
 
-[node name="TextureRect" type="TextureRect" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
-use_parent_material = true
-layout_mode = 2
-texture = ExtResource("2_yt66i")
-
-[node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+[node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" node_paths=PackedStringArray("main") groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -71,8 +99,10 @@ text = "Air"
 icon = ExtResource("4_we8p7")
 alignment = 0
 expand_icon = true
+script = ExtResource("6_sdk4a")
+main = NodePath("../../../../../../..")
 
-[node name="SandButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+[node name="SandButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" node_paths=PackedStringArray("main") groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -81,8 +111,11 @@ text = "Sand"
 icon = ExtResource("5_tremm")
 alignment = 0
 expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 1
+main = NodePath("../../../../../../..")
 
-[node name="WaterButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+[node name="WaterButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" node_paths=PackedStringArray("main") groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -90,8 +123,11 @@ text = "Water"
 icon = ExtResource("6_hco3j")
 alignment = 0
 expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 2
+main = NodePath("../../../../../../..")
 
-[node name="RockButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+[node name="RockButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" node_paths=PackedStringArray("main") groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -99,8 +135,19 @@ text = "Rock"
 icon = ExtResource("7_pb25d")
 alignment = 0
 expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 3
+main = NodePath("../../../../../../..")
 
-[node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+[node name="VBoxContainer2" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_constants/separation = 11
+alignment = 1
+
+[node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" node_paths=PackedStringArray("main") groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -108,6 +155,45 @@ text = "Wall"
 icon = ExtResource("8_aswaw")
 alignment = 0
 expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 4
+main = NodePath("../../../../../../..")
+
+[node name="WoodButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" node_paths=PackedStringArray("main") groups=["element_buttons"]]
+use_parent_material = true
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+text = "Wood"
+icon = ExtResource("10_s7o1q")
+alignment = 0
+expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 5
+main = NodePath("../../../../../../..")
+
+[node name="FireButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" node_paths=PackedStringArray("main") groups=["element_buttons"]]
+use_parent_material = true
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+text = "Fire"
+icon = ExtResource("11_2ajil")
+alignment = 0
+expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 6
+main = NodePath("../../../../../../..")
+
+[node name="VaporButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" node_paths=PackedStringArray("main") groups=["element_buttons"]]
+use_parent_material = true
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+text = "Vapor"
+icon = ExtResource("12_7ks5b")
+alignment = 0
+expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 7
+main = NodePath("../../../../../../..")
 
 [node name="SpawnRadius" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 use_parent_material = true
@@ -188,7 +274,7 @@ size_flags_horizontal = 3
 size_flags_stretch_ratio = 1.5
 theme_override_styles/panel = SubResource("StyleBoxFlat_exg3k")
 
-[node name="CellSizeLabel" type="Label" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize/Panel"]
+[node name="PixelSizeLabel" type="Label" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize/Panel"]
 use_parent_material = true
 layout_mode = 1
 anchors_preset = 15
@@ -202,7 +288,7 @@ text = "10"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="CellSizeSlider" type="HSlider" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize"]
+[node name="PixelSizeSlider" type="HSlider" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize"]
 use_parent_material = true
 layout_mode = 2
 size_flags_horizontal = 3
@@ -232,6 +318,7 @@ metadata/_edit_lock_ = true
 
 [node name="WorldTexture" type="TextureRect" parent="World"]
 texture_filter = 1
+material = SubResource("ShaderMaterial_4u171")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -244,10 +331,12 @@ expand_mode = 2
 stretch_mode = 5
 metadata/_edit_use_anchors_ = true
 
-[node name="Camera2D" type="Camera2D" parent="."]
-anchor_mode = 0
-
 [node name="Timer" type="Timer" parent="."]
+wait_time = 0.01
 autostart = true
 
-[connection signal="timeout" from="Timer" to="." method="_on_timer_timeout"]
+[node name="MainSharp" type="Node2D" parent="." node_paths=PackedStringArray("worldTextureRect", "debugTextureRect")]
+script = ExtResource("1_u0yqt")
+worldTextureRect = NodePath("../World/WorldTexture")
+debugTextureRect = NodePath("../World/DebugLayer/DebugTexture")
+colorAtlas = ExtResource("14_coue8")

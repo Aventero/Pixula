@@ -100,6 +100,8 @@ func setup_UI() -> void:
 	$Overlay/MainPanelContainer/MarginContainer/VBoxContainer/WallButton.pressed.connect(func(): selected_material = MaterialType.WALL)
 	set_mouse_filter_on_ui(main_container)
 
+
+
 func set_mouse_filter_on_ui(node: Node) -> void:
 	if node is Button or node is Slider:
 		node.gui_input.connect(_on_gui_input)

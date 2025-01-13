@@ -32,6 +32,10 @@ project/assembly_name="Pixula"
 
 enabled=PackedStringArray("res://addons/ridiculous_coding/plugin.cfg", "res://addons/script-ide/plugin.cfg")
 
+[global_group]
+
+element_buttons=""
+
 [gui]
 
 theme/custom="res://UI/TheTheme.tres"

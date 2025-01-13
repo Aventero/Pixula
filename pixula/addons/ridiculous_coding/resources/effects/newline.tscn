@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://wd4tkg0uxd18"]
+[gd_scene load_steps=12 format=3 uid="uid://wd4tkg0uxd18"]
 
 [ext_resource type="Script" path="res://addons/ridiculous_coding/resources/effects/newline.gd" id="1_q0o8v"]
 [ext_resource type="Texture2D" uid="uid://b1vn1823wqae2" path="res://addons/ridiculous_coding/images/newline.png" id="2_vndcj"]
@@ -46,9 +46,23 @@ animations = [{
 "speed": 12.0
 }]
 
+[sub_resource type="Animation" id="Animation_dl88e"]
+length = 0.001
+tracks/0/type = "value"
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/path = NodePath("NewlineSprite:modulate:a")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/keys = {
+"times": PackedFloat32Array(0),
+"transitions": PackedFloat32Array(1),
+"update": 1,
+"values": [1.0]
+}
+
 [sub_resource type="Animation" id="7"]
 resource_name = "default"
-length = 0.3
 capture_included = true
 tracks/0/type = "value"
 tracks/0/imported = false
@@ -62,9 +76,22 @@ tracks/0/keys = {
 "update": 2,
 "values": [Vector2(-200, 3.5), Vector2(-50, 3.5)]
 }
+tracks/1/type = "value"
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/path = NodePath("NewlineSprite:modulate:a")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/keys = {
+"times": PackedFloat32Array(0, 1),
+"transitions": PackedFloat32Array(0.329877, 1),
+"update": 0,
+"values": [1.0, 0.0]
+}
 
 [sub_resource type="AnimationLibrary" id="AnimationLibrary_gwr1r"]
 _data = {
+"RESET": SubResource("Animation_dl88e"),
 "default": SubResource("7")
 }
 
