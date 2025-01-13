@@ -21,7 +21,7 @@ public partial class MainSharp : Node2D
 	// Pixel State
 	private int[][] currentPixels;
 	private int[][] nextPixels;
-	private HashSet<Vector2I> movedPixels = new();
+	private HashSet<Vector2I> processedPixels = new();
 
 	// Simulation
 	[Export] public bool EnableDebug { get; set; } = false;
@@ -216,7 +216,7 @@ public partial class MainSharp : Node2D
 				ActivateNeighboringCells(pixelPos.X, pixelPos.Y);
 		}
 
-		movedPixels.Clear();
+		processedPixels.Clear();
 
 		// Cool swap.
 		(nextPixels, currentPixels) = (currentPixels, nextPixels);
@@ -261,7 +261,7 @@ public partial class MainSharp : Node2D
 		if (currentMaterial == MaterialType.Air)
 			return false;
 
-		if (HasMoved(new Vector2I(x, y)))
+		if (WasProcessed(new Vector2I(x, y)))
 			return false;
 
 		return currentMaterial switch
@@ -296,7 +296,7 @@ public partial class MainSharp : Node2D
 		// Chance to go out - modify the next array directly
 		if (Random.Shared.NextDouble() < 0.025f)
 		{
-			SetMaterialAt(x, y, MaterialType.Air, nextPixels);
+			ConvertTo(x, y, MaterialType.Air);
 			return true;
 		}
 
@@ -352,13 +352,13 @@ public partial class MainSharp : Node2D
 		{
 			// Check if space below is empty
 			if (GetMaterialAt(x, y + 1) == MaterialType.Air)
-				SetMaterialAt(x, y + 1, MaterialType.Water, nextPixels);
+				ConvertTo(x, y + 1, MaterialType.Water);
 		}
 
 		// Dying with 1% chance per update
 		if (Random.Shared.NextDouble() < 0.005f)
 		{
-			SetMaterialAt(x, y, MaterialType.Air, nextPixels);
+			ConvertTo(x, y, MaterialType.Air);
 			return true;
 		}
 
@@ -389,7 +389,7 @@ public partial class MainSharp : Node2D
 		// Make me a CLOUD
 		if (vaporCount >= 4 && Random.Shared.NextDouble() < 0.1f) 
 		{
-			SetMaterialAt(x, y, MaterialType.Cloud, nextPixels);
+			ConvertTo(x, y, MaterialType.Cloud);
 			return true;
 		}
 
@@ -407,8 +407,8 @@ public partial class MainSharp : Node2D
 			
 			if (GetMaterialAt(checkX, checkY) == MaterialType.Water)
 			{
-				SetMaterialAt(x, y, MaterialType.Vapor, nextPixels);
-				SetMaterialAt(checkX, checkY, MaterialType.Vapor, nextPixels);
+				ConvertTo(x, y, MaterialType.Vapor);
+				ConvertTo(checkX, checkY, MaterialType.Vapor);
 				return true;
 			} 
 		}
@@ -424,10 +424,10 @@ public partial class MainSharp : Node2D
 			if (!IsValidPosition(checkX, checkY))
 				continue;
 			var material = GetMaterialAt(checkX, checkY);
-			if (IsFlammable(material) && Random.Shared.NextDouble() < 0.05f) // 5% chance to ignite
-            {
-                SetMaterialAt(checkX, checkY, MaterialType.Fire, nextPixels);
-            }
+
+			// 5% chance to burn something!
+			if (IsFlammable(material) && Random.Shared.NextDouble() < 0.05f) 
+				ConvertTo(checkX, checkY, MaterialType.Fire);
 		}
 	}
 
@@ -461,9 +461,6 @@ public partial class MainSharp : Node2D
 		return MoveTo(x, y, newPos.X, newPos.Y, processMaterial);
 	}
 
-
-
-
 	private static bool IsFlammable(MaterialType processMaterial) 
 	{
 		return processMaterial switch
@@ -472,7 +469,6 @@ public partial class MainSharp : Node2D
 			_ => false
 		};
 	}
-
 
 	private bool MoveTo(int x, int y, int newX, int newY, MaterialType processMaterial) 
 	{
@@ -549,7 +545,7 @@ public partial class MainSharp : Node2D
 		SetupPixels();
 		currentActiveCells.Clear();
 		nextActiveCells.Clear();
-		movedPixels.Clear();
+		processedPixels.Clear();
 
 		// Update UI size
 		worldTextureRect.CustomMinimumSize = new Vector2(width, height);
@@ -567,13 +563,18 @@ public partial class MainSharp : Node2D
 		var source = new Vector2I(sourceX, sourceY);
 		var destination = new Vector2I(destinationX, destinationY);
 
-		movedPixels.Add(source);
-		movedPixels.Add(destination);
+		processedPixels.Add(source);
+		processedPixels.Add(destination);
 
 		ActivateCell(source);
 		ActivateCell(destination);
 	}
 
+	private void ConvertTo(int x, int y, MaterialType materialType) 
+	{
+		SetMaterialAt(x, y, materialType, nextPixels);
+		processedPixels.Add(new Vector2I(x, y));
+	}
 	// called in gd script
 	public void Simulate()
 	{
@@ -633,8 +634,8 @@ public partial class MainSharp : Node2D
 	private MaterialType GetMaterialAt(int x, int y) =>
 		(MaterialType)((currentPixels[y][x] >> MaterialBitsStart) & MaterialBitsMask);
 
-	private bool HasMoved(Vector2I position) =>
-		movedPixels.Contains(position);
+	private bool WasProcessed(Vector2I position) =>
+		processedPixels.Contains(position);
 
 	private bool CanSwap(MaterialType source, MaterialType swappingPartner) =>
 		SwapRules.TryGetValue(source, out var rules) && rules.Contains(swappingPartner);

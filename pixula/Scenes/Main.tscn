@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://cxcvn0k2w0x3u"]
+[gd_scene load_steps=21 format=3 uid="uid://cxcvn0k2w0x3u"]
 
 [ext_resource type="Script" path="res://Scripts/MainEntry.gd" id="1_fjtcw"]
 [ext_resource type="Script" path="res://Scripts/MainSharp.cs" id="1_u0yqt"]
@@ -28,9 +28,6 @@ corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
-
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_4u171"]
-shader = ExtResource("3_8a7hv")
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_fjtcw")
@@ -318,7 +315,6 @@ metadata/_edit_lock_ = true
 
 [node name="WorldTexture" type="TextureRect" parent="World"]
 texture_filter = 1
-material = SubResource("ShaderMaterial_4u171")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
