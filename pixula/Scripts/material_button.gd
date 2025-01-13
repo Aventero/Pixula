@@ -1,11 +1,9 @@
-# MaterialButton.gd
+class_name MaterialButton
 extends Button
 
-@export var material_type: int = 0
-@export var main : Node2D
+signal material_pressed(type : MainEntry.MaterialType)
+@export var material_type: MainEntry.MaterialType = 0
 
-func _ready():
-	pressed.connect(_on_pressed)
-
-func _on_pressed():
-	main.selected_material = material_type
+func _pressed() -> void:
+	print(material_type)
+	material_pressed.emit(material_type)

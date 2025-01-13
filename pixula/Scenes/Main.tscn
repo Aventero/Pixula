@@ -87,7 +87,7 @@ size_flags_vertical = 0
 theme_override_constants/separation = 11
 alignment = 1
 
-[node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" node_paths=PackedStringArray("main") groups=["element_buttons"]]
+[node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -97,9 +97,8 @@ icon = ExtResource("4_we8p7")
 alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
-main = NodePath("../../../../../../..")
 
-[node name="SandButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" node_paths=PackedStringArray("main") groups=["element_buttons"]]
+[node name="SandButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 size_flags_vertical = 3
@@ -110,9 +109,8 @@ alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 1
-main = NodePath("../../../../../../..")
 
-[node name="WaterButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" node_paths=PackedStringArray("main") groups=["element_buttons"]]
+[node name="WaterButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -122,9 +120,8 @@ alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 2
-main = NodePath("../../../../../../..")
 
-[node name="RockButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" node_paths=PackedStringArray("main") groups=["element_buttons"]]
+[node name="RockButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -134,7 +131,17 @@ alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 3
-main = NodePath("../../../../../../..")
+
+[node name="LavaButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+use_parent_material = true
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+text = "Lava"
+icon = ExtResource("11_2ajil")
+alignment = 0
+expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 9
 
 [node name="VBoxContainer2" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
 use_parent_material = true
@@ -144,7 +151,7 @@ size_flags_vertical = 0
 theme_override_constants/separation = 11
 alignment = 1
 
-[node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" node_paths=PackedStringArray("main") groups=["element_buttons"]]
+[node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -154,9 +161,8 @@ alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 4
-main = NodePath("../../../../../../..")
 
-[node name="WoodButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" node_paths=PackedStringArray("main") groups=["element_buttons"]]
+[node name="WoodButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -166,9 +172,8 @@ alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 5
-main = NodePath("../../../../../../..")
 
-[node name="FireButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" node_paths=PackedStringArray("main") groups=["element_buttons"]]
+[node name="FireButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -178,9 +183,8 @@ alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 6
-main = NodePath("../../../../../../..")
 
-[node name="VaporButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" node_paths=PackedStringArray("main") groups=["element_buttons"]]
+[node name="VaporButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -190,7 +194,6 @@ alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 7
-main = NodePath("../../../../../../..")
 
 [node name="SpawnRadius" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 use_parent_material = true
@@ -336,3 +339,13 @@ script = ExtResource("1_u0yqt")
 worldTextureRect = NodePath("../World/WorldTexture")
 debugTextureRect = NodePath("../World/DebugLayer/DebugTexture")
 colorAtlas = ExtResource("14_coue8")
+
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/AirButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/SandButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/WaterButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/RockButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/LavaButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/WallButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/WoodButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/FireButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/VaporButton" to="." method="_on_material_button_pressed"]

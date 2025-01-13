@@ -65,7 +65,8 @@ public partial class MainSharp : Node2D
 		Wood = 5,
 		Fire = 6,
 		Vapor = 7,
-		Cloud = 8
+		Cloud = 8,
+		Lava = 9,
 	}
 
 	private readonly Dictionary<MaterialType, int[]> ColorRanges = new()
@@ -78,7 +79,8 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Wood, new[] { 12, 13} },
 		{ MaterialType.Fire, new[] { 27, 29} },
 		{ MaterialType.Vapor, new[] { 44, 45} },
-		{ MaterialType.Cloud, new[] { 1, 2} }
+		{ MaterialType.Cloud, new[] { 1, 2} },
+		{ MaterialType.Lava, new[] { 25, 26} },
 
 	};
 
@@ -93,7 +95,8 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Wood, Array.Empty<MaterialType>() },
 		{ MaterialType.Fire, new[] { MaterialType.Air, MaterialType.Vapor, MaterialType.Cloud } },
 		{ MaterialType.Vapor, new[] { MaterialType.Air } },
-		{ MaterialType.Cloud, new[] { MaterialType.Air }}
+		{ MaterialType.Cloud, new[] { MaterialType.Air }},
+		{ MaterialType.Lava, new[] { MaterialType.Air, MaterialType.Vapor, MaterialType.Cloud }},
 
 	};
 
@@ -272,6 +275,7 @@ public partial class MainSharp : Node2D
 			MaterialType.Fire => FireMechanic(x, y, currentMaterial),
 			MaterialType.Vapor => VaporMechanics(x, y, currentMaterial),
 			MaterialType.Cloud => CloudMechanics(x, y, currentMaterial),
+			MaterialType.Lava => LavaMechanics(x, y, currentMaterial),
 			_ => false
 		};
 	}
@@ -322,6 +326,26 @@ public partial class MainSharp : Node2D
 			return true;
 
 		return false;
+	}
+
+	private bool LavaMechanics(int x, int y, MaterialType processMaterial)
+	{
+		ActivateCell(new Vector2I(x, y));
+
+		// Look for neighboring Water.
+		if (ExtinguishLava(x, y))
+			return true;
+
+		// Spread to flammable materials
+		SpreadFire(x, y);
+
+		// Do nothing
+		if (Random.Shared.NextDouble() < 0.9f)
+			return true;
+
+		return MoveDown(x, y, processMaterial) ||
+			   MoveDiagonalDown(x, y, processMaterial) ||
+			   MoveHorizontal(x, y, processMaterial);
 	}
 
 	private bool VaporMechanics(int x, int y, MaterialType processMaterial) 
@@ -408,6 +432,25 @@ public partial class MainSharp : Node2D
 			if (GetMaterialAt(checkX, checkY) == MaterialType.Water)
 			{
 				ConvertTo(x, y, MaterialType.Vapor);
+				ConvertTo(checkX, checkY, MaterialType.Vapor);
+				return true;
+			} 
+		}
+		return false;
+	}
+
+	private bool ExtinguishLava(int x, int y) 
+	{
+		foreach (Vector2I direction in directions) 
+		{
+			var checkX = x + direction.X;
+			var checkY = y + direction.Y;
+			if (!IsValidPosition(checkX, checkY))
+				continue;
+			
+			if (GetMaterialAt(checkX, checkY) == MaterialType.Water)
+			{
+				ConvertTo(x, y, MaterialType.Rock);
 				ConvertTo(checkX, checkY, MaterialType.Vapor);
 				return true;
 			} 

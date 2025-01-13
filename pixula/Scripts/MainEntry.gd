@@ -1,3 +1,4 @@
+class_name MainEntry
 extends Node
 
 # UI
@@ -32,6 +33,8 @@ enum MaterialType {
 	WOOD = 5,
 	FIRE = 6,
 	VAPOR = 7,
+	CLOUD = 8,
+	LAVA = 9,
 }
 
 # Called when the node enters the scene tree for the first time.
@@ -135,3 +138,6 @@ func get_mouse_tile_pos() -> Vector2i:
 
 	var mousePos: Vector2i = Vector2i((get_viewport().get_mouse_position() / pixel_size).abs())
 	return mousePos.clamp(Vector2i.ZERO, Vector2i(grid_width - 1, grid_height -1))
+
+func _on_material_button_pressed(material_type: MaterialType) -> void:
+	selected_material = material_type
