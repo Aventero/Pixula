@@ -341,7 +341,7 @@ stretch_mode = 5
 metadata/_edit_use_anchors_ = true
 
 [node name="Timer" type="Timer" parent="."]
-wait_time = 0.014
+wait_time = 0.01
 autostart = true
 
 [node name="MainSharp" type="Node2D" parent="." node_paths=PackedStringArray("worldTextureRect", "debugTextureRect")]

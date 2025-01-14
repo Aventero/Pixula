@@ -55,6 +55,8 @@ public partial class MainSharp : Node2D
 	private Dictionary<Vector2I, bool> currentActiveCells = new();
 	private Dictionary<Vector2I, bool> nextActiveCells = new();
 
+	private static readonly Random rand = new();
+
 	public enum MaterialType
 	{
 		Air = 0,
@@ -88,7 +90,7 @@ public partial class MainSharp : Node2D
 	private readonly Dictionary<MaterialType, MaterialType[]> SwapRules = new()
 	{
 		{ MaterialType.Air, Array.Empty<MaterialType>() },
-		{ MaterialType.Sand, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Vapor, MaterialType.Cloud  } },
+		{ MaterialType.Sand, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Vapor, MaterialType.Cloud, MaterialType.Lava  } },
 		{ MaterialType.Water, new[] { MaterialType.Air, MaterialType.Vapor, MaterialType.Cloud } },
 		{ MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Sand, MaterialType.Water, MaterialType.Vapor, MaterialType.Cloud } },
 		{ MaterialType.Wall, Array.Empty<MaterialType>() },
@@ -97,7 +99,6 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Vapor, new[] { MaterialType.Air } },
 		{ MaterialType.Cloud, new[] { MaterialType.Air }},
 		{ MaterialType.Lava, new[] { MaterialType.Air, MaterialType.Vapor, MaterialType.Cloud }},
-
 	};
 
 	private readonly Vector2I[] directions = {
@@ -276,11 +277,34 @@ public partial class MainSharp : Node2D
 			MaterialType.Vapor => VaporMechanics(x, y, currentMaterial),
 			MaterialType.Cloud => CloudMechanics(x, y, currentMaterial),
 			MaterialType.Lava => LavaMechanics(x, y, currentMaterial),
+			MaterialType.Wood => WoodMechanics(x, y, currentMaterial),
 			_ => false
 		};
 	}
 
-	private bool SandMechanic(int x, int y, MaterialType processMaterial)
+    private bool WoodMechanics(int x, int y, MaterialType currentMaterial)
+    {
+		ActivateCell(new Vector2I(x, y));
+
+		if (Random.Shared.NextDouble() < 0.995f)
+			return true;
+		
+		int randomDirection = Random.Shared.Next(0, directions.Length);
+		Vector2I checkPosition = directions[randomDirection] + new Vector2I(x, y);
+
+		if (!IsValidPosition(checkPosition.X, checkPosition.Y))
+			return false;
+		
+		if (GetMaterialAt(checkPosition.X, checkPosition.Y) == MaterialType.Air)
+		{
+			ConvertTo(checkPosition.X, checkPosition.Y, MaterialType.Wood);
+			return true;
+		}
+
+		return false;
+    }
+
+    private bool SandMechanic(int x, int y, MaterialType processMaterial)
 	{
 		return MoveDown(x, y, processMaterial) || MoveDiagonalDown(x, y, processMaterial);
 	}
