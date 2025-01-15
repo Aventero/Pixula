@@ -21,7 +21,7 @@ public partial class MainSharp : Node2D
 	// Pixel State
 	private int[][] currentPixels;
 	private int[][] nextPixels;
-	private HashSet<Vector2I> processedPixels = new();
+	private HashSet<Vector2I> processedPixels = [];
 
 	// Simulation
 	[Export] public bool EnableDebug { get; set; } = false;
@@ -52,8 +52,8 @@ public partial class MainSharp : Node2D
 	// Grid cells
 	private int circleSize { get; set; } = 3;
 	private int pixelSize { get; set; } = 5;
-	private Dictionary<Vector2I, bool> currentActiveCells = new();
-	private Dictionary<Vector2I, bool> nextActiveCells = new();
+	private Dictionary<Vector2I, bool> currentActiveCells = [];
+	private Dictionary<Vector2I, bool> nextActiveCells = [];
 
 	private static readonly Random rand = new();
 
@@ -92,7 +92,7 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Air, Array.Empty<MaterialType>() },
 		{ MaterialType.Sand, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Vapor, MaterialType.Cloud, MaterialType.Lava  } },
 		{ MaterialType.Water, new[] { MaterialType.Air, MaterialType.Vapor, MaterialType.Cloud } },
-		{ MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Sand, MaterialType.Water, MaterialType.Vapor, MaterialType.Cloud } },
+		{ MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Sand, MaterialType.Water, MaterialType.Vapor, MaterialType.Cloud, MaterialType.Fire } },
 		{ MaterialType.Wall, Array.Empty<MaterialType>() },
 		{ MaterialType.Wood, Array.Empty<MaterialType>() },
 		{ MaterialType.Fire, new[] { MaterialType.Air, MaterialType.Vapor, MaterialType.Cloud } },
@@ -101,6 +101,11 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Lava, new[] { MaterialType.Air, MaterialType.Vapor, MaterialType.Cloud }},
 	};
 
+	// TODO: Cloud formation, look for other clouds
+	// TODO: Acid
+	// TODO: Poison: Turns things into CRUST, very flammable!
+	// TODO: Acid Vapor 
+	// TODO: Acid Cloud from the Acid vapor
 	private readonly Vector2I[] directions = {
 		new(-1, 1),
 		new(0, 1),
@@ -195,7 +200,7 @@ public partial class MainSharp : Node2D
 		currentActiveCells = new Dictionary<Vector2I, bool>(nextActiveCells);
 		nextActiveCells.Clear();
 
-		List<Vector2I> pixelsToSimulate = new();
+		List<Vector2I> pixelsToSimulate = [];
 		foreach (Vector2I cell in currentActiveCells.Keys)
 		{
 			int cellX = cell.X * cellSize;
@@ -216,6 +221,8 @@ public partial class MainSharp : Node2D
 		// Simulate
 		foreach (var pixelPos in pixelsToSimulate)
 		{
+			// The return in the machanic states if a change happend that requires the surrounding cells to be activated.
+			// Like MoveTo, Removal of an Material etc.
 			if (SimulateMaterialAt(pixelPos.X, pixelPos.Y))
 				ActivateNeighboringCells(pixelPos.X, pixelPos.Y);
 		}
@@ -284,18 +291,24 @@ public partial class MainSharp : Node2D
 
     private bool WoodMechanics(int x, int y, MaterialType currentMaterial)
     {
-		ActivateCell(new Vector2I(x, y));
 
+		// Very high chance to do nothing
 		if (Random.Shared.NextDouble() < 0.995f)
+		{
+			ActivateCell(new Vector2I(x, y));
 			return true;
+		}
 		
+		// GROW!
 		int randomDirection = Random.Shared.Next(0, directions.Length);
 		Vector2I checkPosition = directions[randomDirection] + new Vector2I(x, y);
 
 		if (!IsValidPosition(checkPosition.X, checkPosition.Y))
 			return false;
 		
-		if (GetMaterialAt(checkPosition.X, checkPosition.Y) == MaterialType.Air)
+
+		MaterialType mat = GetMaterialAt(checkPosition.X, checkPosition.Y);
+		if (mat is MaterialType.Air or MaterialType.Sand or MaterialType.Water or MaterialType.Rock)
 		{
 			ConvertTo(checkPosition.X, checkPosition.Y, MaterialType.Wood);
 			return true;
@@ -321,7 +334,7 @@ public partial class MainSharp : Node2D
 		// Always keep fire active!
 		ActivateCell(new Vector2I(x, y));
 
-		// Chance to go out - modify the next array directly
+		// Chance to go out
 		if (Random.Shared.NextDouble() < 0.025f)
 		{
 			ConvertTo(x, y, MaterialType.Air);
@@ -340,13 +353,17 @@ public partial class MainSharp : Node2D
 			return true;
 
 		// Try to move
-		if (Random.Shared.NextDouble() < 0.7f && MoveUp(x, y, processMaterial))
+		if (Random.Shared.NextDouble() < 0.1f && MoveDown(x, y, processMaterial))
+			return true;
+
+		// Try to move
+		if (Random.Shared.NextDouble() < 0.6f && MoveUp(x, y, processMaterial))
 			return true;
 			
 		if (MoveDiagonalUp(x, y, processMaterial))
 			return true;
 		
-		if (Random.Shared.NextDouble() < 0.3f && MoveHorizontal(x, y, processMaterial))
+		if (MoveHorizontal(x, y, processMaterial))
 			return true;
 
 		return false;
@@ -354,22 +371,22 @@ public partial class MainSharp : Node2D
 
 	private bool LavaMechanics(int x, int y, MaterialType processMaterial)
 	{
-		ActivateCell(new Vector2I(x, y));
 
 		// Look for neighboring Water.
 		if (ExtinguishLava(x, y))
-			return true;
+			return false; // was extinguished
 
 		// Spread to flammable materials
 		SpreadFire(x, y);
 
-		// Do nothing
-		if (Random.Shared.NextDouble() < 0.9f)
-			return true;
+		// Do nothing 90% of time
+		if (Random.Shared.NextDouble() < 0.7f)
+		{
+			ActivateCell(new Vector2I(x, y));
+			return false;
+		}
 
-		return MoveDown(x, y, processMaterial) ||
-			   MoveDiagonalDown(x, y, processMaterial) ||
-			   MoveHorizontal(x, y, processMaterial);
+		return MoveDown(x, y, processMaterial) || MoveDiagonalDown(x, y, processMaterial) || MoveHorizontal(x, y, processMaterial);
 	}
 
 	private bool VaporMechanics(int x, int y, MaterialType processMaterial) 
@@ -383,12 +400,43 @@ public partial class MainSharp : Node2D
 			return true;
 		}
 
+		for (int i = 0; i < 2; i++) 
+		{
+			if (AttractTowardsMaterial(x, y, 2, 12, MaterialType.Vapor))
+				return true;
+		}
+
 		// Chance to turn itself to cloud, based on surroundings
 		FormCloud(x, y);
 
-		return MoveUp(x, y, processMaterial) || 
-				MoveDiagonalUp(x, y, processMaterial) || 
-				MoveHorizontal(x, y, processMaterial);
+		return MoveUp(x, y, processMaterial) || MoveDiagonalUp(x, y, processMaterial) || MoveHorizontal(x, y, processMaterial);
+	}
+
+	private static Vector2I GetRandomRingPosition(int centerX, int centerY, int minDist, int maxDist) 
+	{
+		// 360° Degrees around the pixel are possible 
+		// 0 - 1 * 2PI 
+		double radians = Random.Shared.NextDouble() * Math.PI * 2;
+
+		// 0 - 1 * (area) + offset
+		double distance = Random.Shared.NextDouble() * (maxDist - minDist) + minDist;
+
+		int x = centerX + (int)(Math.Cos(radians) * distance);
+		int y = centerY + (int)(Math.Sin(radians) * distance);
+
+		return new Vector2I(x, y);
+	}
+
+	private bool AttractTowardsMaterial(int x, int y, int rangeMin, int rangeMax, MaterialType materialType)
+	{
+		Vector2I pos = GetRandomRingPosition(x, y, rangeMin, rangeMax);
+		if (IsValidPosition(pos.X, pos.Y) && GetMaterialAt(pos.X, pos.Y) == materialType)
+		{
+			Vector2I direction = new(Math.Sign(pos.X - x), Math.Sign(pos.Y -y));
+			return MoveTo(x, y, x + direction.X, y + direction.Y, materialType);
+		}
+
+		return false;
 	}
 
 	private bool CloudMechanics(int x, int y, MaterialType processMaterial)
@@ -403,7 +451,13 @@ public partial class MainSharp : Node2D
 				ConvertTo(x, y + 1, MaterialType.Water);
 		}
 
-		// Dying with 1% chance per update
+		for (int i = 0; i < 2; i++) 
+		{
+			if (AttractTowardsMaterial(x, y, 2, 8, MaterialType.Cloud))
+				return true;
+		}
+
+		// Dying with 0.5% chance per update
 		if (Random.Shared.NextDouble() < 0.005f)
 		{
 			ConvertTo(x, y, MaterialType.Air);
@@ -411,13 +465,10 @@ public partial class MainSharp : Node2D
 		}
 
 		// Do nothing
-		if (Random.Shared.NextDouble() < 0.8f)
+		if (Random.Shared.NextDouble() < 0.6f)
 			return true;
 
-
-		return MoveUp(x, y, processMaterial) || 
-				MoveDiagonalUp(x, y, processMaterial) || 
-				MoveHorizontal(x, y, processMaterial);
+		return MoveUp(x, y, processMaterial) || MoveDiagonalUp(x, y, processMaterial);
 	}
 
 	private bool FormCloud(int x, int y) 
@@ -493,7 +544,7 @@ public partial class MainSharp : Node2D
 			var material = GetMaterialAt(checkX, checkY);
 
 			// 5% chance to burn something!
-			if (IsFlammable(material) && Random.Shared.NextDouble() < 0.05f) 
+			if (IsFlammable(material) && Random.Shared.NextDouble() < 0.07f) 
 				ConvertTo(checkX, checkY, MaterialType.Fire);
 		}
 	}
