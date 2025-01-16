@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/ed7e5854-822c-42c8-b228-b0206d67a807" width="80%">
+  <img src="https://github.com/user-attachments/assets/64f3188d-5db4-4f40-a2cf-e084f33c897e" width="80%">
 </p>
 
 # What is this?
@@ -13,4 +13,7 @@ The core simulation acts on each pixel with a set of rules that tell it how to b
 - Rule A: **Moving Down** until it can't.
 - Rule B: **Down Diagonal** until it can't. <br>
 Resulting in this behaviour: <br>
-![SandFallingExample](https://github.com/user-attachments/assets/bcab0e4c-b2cd-488a-8cd5-bf9086f8961d)
+![CalmSmall](https://github.com/user-attachments/assets/4e967eab-7173-4a8a-bff4-501b5cf1fc77)
+
+## Some other interactions
+![WaterSandLavaWall](https://github.com/user-attachments/assets/9b4321a5-ea34-4f82-8b59-e6969ddcba19)
