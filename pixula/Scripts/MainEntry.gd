@@ -35,6 +35,8 @@ enum MaterialType {
 	VAPOR = 7,
 	CLOUD = 8,
 	LAVA = 9,
+	ACID = 10,
+	ACID_VAPOR = 11,
 }
 
 @export var world_environment: WorldEnvironment

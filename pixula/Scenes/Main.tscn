@@ -1,4 +1,4 @@
-[gd_scene load_steps=22 format=3 uid="uid://cxcvn0k2w0x3u"]
+[gd_scene load_steps=25 format=3 uid="uid://cxcvn0k2w0x3u"]
 
 [ext_resource type="Script" uid="uid://b0x1m6lhkcbb4" path="res://Scripts/MainEntry.gd" id="1_fjtcw"]
 [ext_resource type="Script" uid="uid://d2xhkm1orqb4f" path="res://Scripts/MainSharp.cs" id="1_u0yqt"]
@@ -11,13 +11,16 @@
 [ext_resource type="Script" uid="uid://c28qfg421io6y" path="res://Scripts/material_button.gd" id="6_sdk4a"]
 [ext_resource type="Texture2D" uid="uid://dyqwfh5jvgas1" path="res://UI/Sprites/Rock_Icon.png" id="7_pb25d"]
 [ext_resource type="Texture2D" uid="uid://vso6awjwcax" path="res://UI/Sprites/Wall_Icon.png" id="8_aswaw"]
+[ext_resource type="Texture2D" uid="uid://kwnkwo23r5fc" path="res://UI/Sprites/Lava_Icon.png" id="8_fq0cl"]
 [ext_resource type="Texture2D" uid="uid://bsc6urywf5gu" path="res://UI/Sprites/Background.png" id="9_hfhlx"]
 [ext_resource type="Texture2D" uid="uid://vhpnxnjlf2k8" path="res://UI/Sprites/CircleSize.png" id="9_v0a7p"]
 [ext_resource type="Texture2D" uid="uid://drqlem5e5wi0d" path="res://UI/Sprites/CellSize.png" id="10_kjxfc"]
 [ext_resource type="Texture2D" uid="uid://d1b2en56japjq" path="res://UI/Sprites/WoodIcon.png" id="10_s7o1q"]
+[ext_resource type="Texture2D" uid="uid://cdkvu1euv71xl" path="res://UI/Sprites/Acid_Icon.png" id="11_0sclb"]
 [ext_resource type="Texture2D" uid="uid://3ib8qwraev23" path="res://UI/Sprites/FireIcon.png" id="11_2ajil"]
 [ext_resource type="Texture2D" uid="uid://dimk1h8crasje" path="res://UI/Sprites/Vapor_Icon.png" id="12_7ks5b"]
 [ext_resource type="Texture2D" uid="uid://cna2fmjfhqaqh" path="res://UI/Sprites/colorAtlas.png" id="14_coue8"]
+[ext_resource type="Texture2D" uid="uid://cyxmfog7prka1" path="res://UI/Sprites/Acid_Vapor_Icon.png" id="15_sxkr1"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_rwn16"]
 shader = ExtResource("3_8a7hv")
@@ -52,10 +55,10 @@ texture_filter = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -300.0
+offset_left = -316.0
 offset_top = 22.0
-offset_right = -48.415
-offset_bottom = 365.0
+offset_right = -48.0
+offset_bottom = 536.0
 grow_horizontal = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="Overlay/MainPanelContainer"]
@@ -83,7 +86,7 @@ use_parent_material = true
 layout_mode = 2
 texture = ExtResource("2_yt66i")
 expand_mode = 5
-stretch_mode = 5
+stretch_mode = 6
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 use_parent_material = true
@@ -95,7 +98,6 @@ use_parent_material = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-theme_override_constants/separation = 11
 alignment = 1
 
 [node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
@@ -121,6 +123,17 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 1
 
+[node name="LavaButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+use_parent_material = true
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+text = "Lava"
+icon = ExtResource("8_fq0cl")
+alignment = 0
+expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 9
+
 [node name="WaterButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
@@ -132,34 +145,33 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 2
 
-[node name="RockButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+[node name="AcidButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 theme = ExtResource("3_r6eas")
-text = "Rock"
-icon = ExtResource("7_pb25d")
+text = "Acid"
+icon = ExtResource("11_0sclb")
 alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
-material_type = 3
+material_type = 10
 
-[node name="LavaButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+[node name="FireButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 theme = ExtResource("3_r6eas")
-text = "Lava"
+text = "Fire"
 icon = ExtResource("11_2ajil")
 alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
-material_type = 9
+material_type = 6
 
 [node name="VBoxContainer2" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer"]
 use_parent_material = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
-theme_override_constants/separation = 11
 alignment = 1
 
 [node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
@@ -173,6 +185,17 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 4
 
+[node name="RockButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
+use_parent_material = true
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+text = "Rock"
+icon = ExtResource("7_pb25d")
+alignment = 0
+expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 3
+
 [node name="WoodButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
@@ -184,17 +207,6 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 5
 
-[node name="FireButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
-use_parent_material = true
-layout_mode = 2
-theme = ExtResource("3_r6eas")
-text = "Fire"
-icon = ExtResource("11_2ajil")
-alignment = 0
-expand_icon = true
-script = ExtResource("6_sdk4a")
-material_type = 6
-
 [node name="VaporButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
@@ -205,6 +217,17 @@ alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 7
+
+[node name="FumeButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
+use_parent_material = true
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+text = "Fume"
+icon = ExtResource("15_sxkr1")
+alignment = 0
+expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 11
 
 [node name="SpawnRadius" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 use_parent_material = true
@@ -230,8 +253,7 @@ stretch_mode = 5
 use_parent_material = true
 custom_minimum_size = Vector2(0, 42.785)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.5
+size_flags_horizontal = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_exg3k")
 
 [node name="SpawnRadius" type="Label" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius/Panel"]
@@ -243,7 +265,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 30
 text = "10"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -253,7 +274,7 @@ use_parent_material = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
-size_flags_stretch_ratio = 3.0
+size_flags_stretch_ratio = 5.0
 max_value = 30.0
 rounded = true
 
@@ -281,8 +302,7 @@ stretch_mode = 5
 use_parent_material = true
 custom_minimum_size = Vector2(0, 42.785)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.5
+size_flags_horizontal = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_exg3k")
 
 [node name="PixelSizeLabel" type="Label" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize/Panel"]
@@ -294,7 +314,6 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
-theme_override_font_sizes/font_size = 30
 text = "10"
 horizontal_alignment = 1
 vertical_alignment = 1
@@ -304,11 +323,54 @@ use_parent_material = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 1
-size_flags_stretch_ratio = 3.0
+size_flags_stretch_ratio = 5.0
 min_value = 1.0
 max_value = 20.0
 value = 1.0
 rounded = true
+
+[node name="HBoxContainer2" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
+use_parent_material = true
+layout_mode = 2
+alignment = 1
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
+use_parent_material = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_constants/separation = 11
+alignment = 1
+
+[node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer" groups=["element_buttons"]]
+use_parent_material = true
+layout_mode = 2
+size_flags_vertical = 3
+theme = ExtResource("3_r6eas")
+text = "Grav."
+icon = ExtResource("4_we8p7")
+alignment = 0
+expand_icon = true
+script = ExtResource("6_sdk4a")
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
+use_parent_material = true
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+theme_override_constants/separation = 11
+alignment = 1
+
+[node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer2" groups=["element_buttons"]]
+use_parent_material = true
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+text = "Void"
+icon = ExtResource("8_aswaw")
+alignment = 0
+expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 4
 
 [node name="World" type="CanvasLayer" parent="."]
 layer = -1
@@ -356,10 +418,14 @@ environment = SubResource("Environment_u2gw7")
 
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/AirButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/SandButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/WaterButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/RockButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/LavaButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/WaterButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/AcidButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer/FireButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/WallButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/RockButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/WoodButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/FireButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/VaporButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/FumeButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer/AirButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer2/WallButton" to="." method="_on_material_button_pressed"]
