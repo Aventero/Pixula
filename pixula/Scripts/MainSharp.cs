@@ -51,7 +51,7 @@ public partial class MainSharp : Node2D
 
 	// Grid cells
 	private int circleSize { get; set; } = 3;
-	private int pixelSize { get; set; } = 5;
+	private int pixelSize { get; set; } = 20;
 	private Dictionary<Vector2I, bool> currentActiveCells = [];
 	private Dictionary<Vector2I, bool> nextActiveCells = [];
 
@@ -663,8 +663,8 @@ public partial class MainSharp : Node2D
 		return currentMaterial switch
 		{
 			MaterialType.Fire => new Color(
-				materialColor.R * 5.5f,  
-				materialColor.G * 1.2f, 
+				materialColor.R * 150.5f,  
+				materialColor.G * 1.0f, 
 				materialColor.B * 1.3f,  
 				materialColor.A
 			),

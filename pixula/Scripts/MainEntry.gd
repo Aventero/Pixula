@@ -46,8 +46,7 @@ func _ready() -> void:
 	simulator.Initialize(width, height, pixel_size, cell_size, spawn_radius)
 
 	get_tree().root.size_changed.connect(_on_window_resize)
-	timer.timeout.connect(_on_timer_timeout)
-	get_window().size = Vector2i(width, height)
+
 
 	setup_ui()
 	setup_mouse_filter($Overlay/MainPanelContainer)
@@ -62,11 +61,6 @@ func update_glow_settings(enabled: bool, intensity: float, bloom: float, hdr_thr
 
 	# Force the environment to update
 	world_environment.environment = environment
-
-
-func _on_timer_timeout() -> void:
-	simulator.Simulate()
-	simulator.DrawSpawnRadiusPreview(get_mouse_tile_pos().x, get_mouse_tile_pos().y, spawn_radius)
 
 func _on_window_resize():
 	if _is_handling_resize:
@@ -91,6 +85,10 @@ func _on_window_resize():
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
 	check_mouse_input()
+	simulator.Simulate()
+	get_window().size = Vector2i(width, height)
+	get_viewport().size = Vector2i(width, height)
+	simulator.DrawSpawnRadiusPreview(get_mouse_tile_pos().x, get_mouse_tile_pos().y, spawn_radius)
 
 # UI Setup
 func setup_ui() -> void:

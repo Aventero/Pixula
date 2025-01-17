@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Pixula"
-run/main_scene="res://Scenes/Main.tscn"
+run/main_scene="uid://cxcvn0k2w0x3u"
 config/features=PackedStringArray("4.4", "C#", "Forward Plus")
 config/icon="res://UI/Sprites/icon.svg"
 
@@ -31,7 +31,7 @@ project/assembly_name="Pixula"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/explore-editor-theme/plugin.cfg", "res://addons/ridiculous_coding/plugin.cfg", "res://addons/script-ide/plugin.cfg")
+enabled=PackedStringArray("res://addons/ridiculous_coding/plugin.cfg", "res://addons/script-ide/plugin.cfg")
 
 [global_group]
 

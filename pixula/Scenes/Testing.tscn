@@ -1,27 +1,35 @@
-[gd_scene load_steps=4 format=3 uid="uid://b5wlrbxkoqxr5"]
+[gd_scene load_steps=8 format=3 uid="uid://b5wlrbxkoqxr5"]
 
-[ext_resource type="Shader" path="res://Shaders/Wobble.gdshader" id="1_xok2n"]
+[ext_resource type="Shader" uid="uid://3f2aevp2sl7c" path="res://Shaders/Wobble.gdshader" id="1_xok2n"]
+[ext_resource type="Texture2D" uid="uid://dj1dgkklcky1s" path="res://UI/Sprites/icon.svg" id="2_50pdt"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_n5imt"]
-render_priority = 0
 shader = ExtResource("1_xok2n")
-shader_parameter/shine_color = Color(1, 1, 1, 1)
-shader_parameter/cycle_interval = 1.993
-shader_parameter/shine_speed = 2.0
-shader_parameter/shine_width = 7.372
-shader_parameter/shine_smoothness = 0.019
-shader_parameter/emission_strength = 3.143
-shader_parameter/view_falloff = 0.0
-shader_parameter/do_abs = true
-shader_parameter/do_quantize = true
-shader_parameter/quantize_to = 0.09
-shader_parameter/sine_amplitude = Vector2(1, 0)
-shader_parameter/sine_speed = Vector2(2.155, 0)
 
 [sub_resource type="SphereMesh" id="SphereMesh_ctu76"]
 material = SubResource("ShaderMaterial_n5imt")
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_8e680"]
+panorama = ExtResource("2_50pdt")
+
+[sub_resource type="Sky" id="Sky_4y0hx"]
+sky_material = SubResource("PanoramaSkyMaterial_8e680")
+
+[sub_resource type="Environment" id="Environment_y53xc"]
+background_mode = 2
+background_color = Color(0.772334, 0.850519, 0.96324, 1)
+sky = SubResource("Sky_4y0hx")
 
 [node name="Testing" type="Node3D"]
 
 [node name="MeshInstance3D" type="MeshInstance3D" parent="."]
 mesh = SubResource("SphereMesh_ctu76")
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3.10604)
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707551, 0.387871, 0.590701, -0.706662, 0.388358, 0.591444, 0, -0.835903, 0.548877, 0, 2.60936, 0)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_y53xc")

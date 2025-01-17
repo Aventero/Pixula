@@ -34,24 +34,16 @@ corner_radius_bottom_left = 10
 
 [sub_resource type="Environment" id="Environment_u2gw7"]
 background_mode = 3
-ambient_light_source = 1
+tonemap_white = 2.23
 glow_enabled = true
-glow_levels/1 = 0.1
-glow_levels/2 = 0.31
-glow_levels/3 = 0.42
-glow_levels/4 = 0.73
-glow_levels/5 = 0.0
 glow_normalized = true
-glow_intensity = 1.66
-glow_strength = 1.59
+glow_intensity = 6.0
+glow_strength = 1.4
 glow_blend_mode = 1
-glow_hdr_threshold = 0.9
-adjustment_enabled = true
-adjustment_saturation = 1.05
 
 [node name="Main" type="Node2D" node_paths=PackedStringArray("world_environment")]
 script = ExtResource("1_fjtcw")
-pixel_size = 10
+pixel_size = 20
 cell_size = 2
 height = 912
 world_environment = NodePath("WorldEnvironment")
