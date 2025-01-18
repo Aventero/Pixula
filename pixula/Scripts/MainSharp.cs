@@ -21,7 +21,6 @@ public partial class MainSharp : Node2D
 	// Pixel State
 	private int[][] currentPixels;
 	private int[][] nextPixels;
-	private HashSet<Vector2I> processedPixels = [];
 
 	// Simulation
 	[Export] public bool EnableDebug { get; set; } = false;
@@ -44,10 +43,6 @@ public partial class MainSharp : Node2D
 	private float highestSimulationTime = 0;
 	private float totalSimulationTime = 0;
 	private int totalFrames = 0;
-
-	// Debug
-	private int totalParticles = 0;
-	private int lastParticleCount = 0;
 
 	// Grid cells
 	public int SpawnRadius { get; set; } = 3;
@@ -157,9 +152,6 @@ public partial class MainSharp : Node2D
 		if (currentMaterial == MaterialType.Air)
 			return false;
 
-		if (WasProcessed(new Vector2I(x, y)))
-			return false;
-
 		return currentMaterial switch
 		{
 			MaterialType.Sand => SandMechanic(x, y, currentMaterial),
@@ -188,7 +180,6 @@ public partial class MainSharp : Node2D
 
 		GetWindow().Title = Engine.GetFramesPerSecond().ToString();
 	}
-
 
     private void SimulateActive()
 	{
@@ -223,8 +214,6 @@ public partial class MainSharp : Node2D
 			if (SimulateMaterialAt(pixelPos.X, pixelPos.Y))
 				ActivateNeighboringCells(pixelPos.X, pixelPos.Y);
 		}
-
-		processedPixels.Clear();
 
 		// Cool swap.
 		(nextPixels, currentPixels) = (currentPixels, nextPixels);
@@ -708,9 +697,6 @@ public partial class MainSharp : Node2D
 		DrawPixelAt(x, y, nextPixels);
 		DrawPixelAt(newX, newY, nextPixels);
 
-		processedPixels.Add(source);
-		processedPixels.Add(destination);
-
 		ActivateCell(source);
 		ActivateCell(destination);
 
@@ -810,7 +796,6 @@ public partial class MainSharp : Node2D
 		SetupPixels();
 		currentActiveCells.Clear();
 		nextActiveCells.Clear();
-		processedPixels.Clear();
 
 		// Update UI size
 		worldTextureRect.CustomMinimumSize = new Vector2(width, height);
@@ -826,7 +811,6 @@ public partial class MainSharp : Node2D
 	private void ConvertTo(int x, int y, MaterialType materialType) 
 	{
 		SetMaterialAt(x, y, materialType, nextPixels);
-		processedPixels.Add(new Vector2I(x, y));
 	}
 
 	public void SpawnInRadius(int centerX, int centerY, int radius, MaterialType materialType)
@@ -869,9 +853,6 @@ public partial class MainSharp : Node2D
 
 	private MaterialType GetNewMaterialAt(int x, int y) =>
 		(MaterialType)((nextPixels[y][x] >> MaterialBitsStart) & MaterialBitsMask);
-
-	private bool WasProcessed(Vector2I position) =>
-		processedPixels.Contains(position);
 
 	private bool CanSwap(MaterialType source, MaterialType swappingPartner) =>
 		SwapRules.TryGetValue(source, out var rules) && rules.Contains(swappingPartner);
