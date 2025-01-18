@@ -7,16 +7,16 @@ using System.Linq;
 public partial class MainSharp : Node2D
 {
 	// External nodes
-	[Export] public TextureRect worldTextureRect;
-	[Export] public TextureRect debugTextureRect;
 	[Export] public Texture2D colorAtlas;
-
 	private Image colorAtlasImage;
 
-	// Drawing
+	[Export] public TextureRect worldTextureRect;
 	private Image worldImage;
 	private ImageTexture worldTexture;
+
+	[Export] public TextureRect debugTextureRect;
 	private Image debugImage;
+	private ImageTexture debugTexture;
 
 	// Pixel State
 	private int[][] currentPixels;
@@ -54,8 +54,9 @@ public partial class MainSharp : Node2D
 	private int pixelSize { get; set; } = 20;
 	private Dictionary<Vector2I, bool> currentActiveCells = [];
 	private Dictionary<Vector2I, bool> nextActiveCells = [];
+	private Dictionary<Vector2I, Color> positionColors = new();
 
-	private static readonly Random rand = new();
+	public Vector2I MousePosition {get; set; }
 
 	public enum MaterialType
 	{
@@ -131,6 +132,24 @@ public partial class MainSharp : Node2D
 		};
 	}
 
+	public void Initialize(int width, int height, int pixelSize, int cellSize, int spawnRadius)
+	{
+		this.width = width;
+		this.height = height;
+		this.gridWidth = width / pixelSize;
+		this.gridHeight = height / pixelSize;
+		this.pixelSize = pixelSize;
+		this.circleSize = spawnRadius;
+		this.cellSize = cellSize;
+		colorAtlasImage = colorAtlas.GetImage();
+
+		SetupImages();
+		SetupDebug();
+		SetupPixels();
+		DrawImages();
+	}
+
+
 	private bool SimulateMaterialAt(int x, int y)
 	{
 		var currentMaterial = GetMaterialAt(x, y);
@@ -157,6 +176,19 @@ public partial class MainSharp : Node2D
 			_ => false
 		};
 	}
+
+	
+	public void Simulate()
+	{
+		var startTime = Time.GetTicksMsec();
+		SimulateActive();
+
+		if (isBenchmark)
+			BenchmarkActive(startTime);
+
+		GetWindow().Title = Engine.GetFramesPerSecond().ToString();
+	}
+
 
     private void SimulateActive()
 	{
@@ -196,6 +228,24 @@ public partial class MainSharp : Node2D
 
 		// Cool swap.
 		(nextPixels, currentPixels) = (currentPixels, nextPixels);
+	}
+
+	public void DrawImages()
+	{
+		debugImage.Fill(Colors.Transparent);
+		foreach (var positionColor in positionColors)
+		{
+			worldImage.SetPixel(positionColor.Key.X, positionColor.Key.Y, positionColor.Value);
+		}
+
+		worldTexture.Update(worldImage);
+		positionColors.Clear();
+
+		DrawSpawnRadiusPreview(MousePosition.X, MousePosition.Y, circleSize);
+		if (EnableDebug) 
+			DebugDrawActiveCells();
+
+		debugTexture.Update(debugImage);
 	}
 
 	private void ActivateNeighboringCells(int x, int y)
@@ -580,7 +630,7 @@ public partial class MainSharp : Node2D
 			
 			if (GetMaterialAt(checkX, checkY) == MaterialType.Water)
 			{
-				ConvertTo(x, y, MaterialType.Rock);
+				if (Random.Shared.NextSingle() < 0.5) ConvertTo(x, y, MaterialType.Rock);
 				ConvertTo(checkX, checkY, MaterialType.WaterVapor);
 				return true;
 			} 
@@ -663,7 +713,7 @@ public partial class MainSharp : Node2D
 		return currentMaterial switch
 		{
 			MaterialType.Fire => new Color(
-				materialColor.R * 150.5f,  
+				materialColor.R * 2.5f,  
 				materialColor.G * 1.0f, 
 				materialColor.B * 1.3f,  
 				materialColor.A
@@ -676,7 +726,7 @@ public partial class MainSharp : Node2D
 			),
 			MaterialType.Acid => new Color(
 				materialColor.R * 1.0f,
-				materialColor.G * 1.15f,
+				materialColor.G * 10.15f,
 				materialColor.B * 1.0f,
 				materialColor.A
 			),
@@ -702,7 +752,7 @@ public partial class MainSharp : Node2D
 		MaterialType materialType = GetNewMaterialAt(x, y);
 		Color color = GetColorForVariant(variant);
 		color = GetColorRevamp(materialType, color);
-		worldImage.SetPixel(x, y, color);
+		positionColors[new Vector2I(x, y)] =  color;
 	}
 
 	public void DrawSpawnRadiusPreview(int centerX, int centerY, int radius)
@@ -724,9 +774,6 @@ public partial class MainSharp : Node2D
 		}
 
 		DrawRectFilled(new Vector2I(centerX, centerY), new Color(Colors.White, 0.9f));
-
-		ImageTexture texture = debugTextureRect.Texture as ImageTexture;
-		texture.Update(debugImage);
 	}
 
 	static private int GetVarantAt(int x, int y, int[][] pixelArray)
@@ -736,7 +783,8 @@ public partial class MainSharp : Node2D
 
 	private Color GetColorForVariant(int variant)
 	{
-		return colorAtlasImage.GetPixel(variant, 0);
+		Color color = colorAtlasImage.GetPixel(variant, 0);
+		return color.SrgbToLinear(); // THIS IS VERY IMPORTANT FOR HDR.
 	}
 
 	public void ChangeSize(int newPixelSize, int width, int height, int gridWidth, int gridHeight)
@@ -747,18 +795,9 @@ public partial class MainSharp : Node2D
 		this.gridWidth = gridWidth;
 		this.gridHeight = gridHeight;
 
-		// Recreate images with new dimensions
-		worldImage = Image.CreateEmpty(gridWidth, gridHeight, false, Image.Format.Rgba8);
-		worldImage.Fill(Colors.Transparent);
-		worldTexture = ImageTexture.CreateFromImage(worldImage);
-		worldTextureRect.Texture = worldTexture;
-
-		debugImage = Image.CreateEmpty(gridWidth * pixelSize, gridHeight * pixelSize, false, Image.Format.Rgba8);
-		debugImage.Fill(Colors.Transparent);
-		var debugTexture = ImageTexture.CreateFromImage(debugImage);
-		debugTextureRect.Texture = debugTexture;
-
 		// Reset pixel arrays and active cells
+		SetupImages();
+		SetupDebug();
 		SetupPixels();
 		currentActiveCells.Clear();
 		nextActiveCells.Clear();
@@ -779,27 +818,6 @@ public partial class MainSharp : Node2D
 	{
 		SetMaterialAt(x, y, materialType, nextPixels);
 		processedPixels.Add(new Vector2I(x, y));
-	}
-	// called in gd script
-	public void Simulate()
-	{
-
-		// CheckMouseInput();
-		debugImage.Fill(Colors.Transparent);
-		var startTime = Time.GetTicksMsec();
-
-		SimulateActive();
-		worldTexture.Update(worldImage);
-
-		if (isBenchmark)
-			BenchmarkActive(startTime);
-
-		if (EnableDebug)
-			DebugDrawActiveCells();
-
-		GetWindow().Title = Engine.GetFramesPerSecond().ToString();
-		ImageTexture texture = debugTextureRect.Texture as ImageTexture;
-		texture.Update(debugImage);
 	}
 
 	public void SpawnInRadius(int centerX, int centerY, int radius, MaterialType materialType)
@@ -872,6 +890,14 @@ public partial class MainSharp : Node2D
 		return GD.RandRange(variants[0], variants[1]);
 	}
 
+	public Color GetColorAt(int x, int y)
+	{
+		if (!IsValidPosition(x, y))
+			return Colors.Transparent;
+			
+		return worldImage.GetPixel(x, y);
+	}
+
 	// Event handlers and input processing
 	public override void _Input(InputEvent @event)
 	{
@@ -880,14 +906,9 @@ public partial class MainSharp : Node2D
 			if (mouseEvent.Pressed)
 				Input.MouseMode = Input.MouseModeEnum.Hidden;
 		}
-
-		if (@event.IsActionReleased("STATS"))
-		{
-			InitializeBenchmarkParticles();
-		}
 	}
 
-	private void InitializeBenchmarkParticles()
+	public void InitializeBenchmarkParticles()
 	{
 		// Clear benchmarking stats
 		totalFrames = 0;
@@ -958,42 +979,27 @@ public partial class MainSharp : Node2D
 		new(-1, 0),
 	};
 
-		public void Initialize(int width, int height, int pixelSize, int cellSize, int spawnRadius)
-	{
-		this.width = width;
-		this.height = height;
-		this.gridWidth = width / pixelSize;
-		this.gridHeight = height / pixelSize;
-		this.pixelSize = pixelSize;
-		this.circleSize = spawnRadius;
-		this.cellSize = cellSize;
-		colorAtlasImage = colorAtlas.GetImage();
-
-		SetupImages();
-		SetupDebug();
-		SetupPixels();
-	}
 
 	private void SetupImages()
 	{
+		// First create in RGBA8 to get automatic conversion
 		worldImage = Image.CreateEmpty(gridWidth, gridHeight, true, Image.Format.Rgbaf);
-		worldImage.Fill(Colors.Transparent);
+		worldImage.Fill(Colors.White);
 		worldTexture = ImageTexture.CreateFromImage(worldImage);
 		worldTextureRect.Texture = worldTexture;
-		worldTextureRect.CustomMinimumSize = new Vector2(width, height);
 	}
 
 	private void SetupDebug()
 	{
-		debugImage = Image.CreateEmpty(gridWidth * pixelSize, gridHeight * pixelSize, false, Image.Format.Rgba8);
-		worldImage.Fill(Colors.Transparent);
-		var debugTexture = ImageTexture.CreateFromImage(debugImage);
+		debugImage = Image.CreateEmpty(gridWidth * pixelSize, gridHeight * pixelSize, false, Image.Format.Rgbaf);
+		debugImage.Fill(Colors.White);
+		debugTexture = ImageTexture.CreateFromImage(debugImage);
 		debugTextureRect.Texture = debugTexture;
+		worldTextureRect.CustomMinimumSize = new Vector2(width, height);
 	}
 
 	private void DebugDrawActiveCells()
 	{
-		debugImage.Fill(Colors.Transparent);
 		var red = new Color(Colors.Red, 1);
 		var blue = new Color(Colors.Blue, 1);
 		foreach (var pos in nextActiveCells.Keys)
