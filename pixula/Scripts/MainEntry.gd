@@ -7,6 +7,8 @@ extends Node
 @onready var spawn_radius_slider: HSlider = $Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius/SpawnRadiusSlider
 @onready var pixel_size_label: Label = $Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize/Panel/PixelSizeLabel
 @onready var pixel_size_slider: HSlider = $Overlay/MainPanelContainer/MarginContainer/VBoxContainer/CellSize/PixelSizeSlider
+@onready var speed_label: Label = $Overlay/MainPanelContainer/MarginContainer/VBoxContainer/Speed/Panel/SpeedLabel
+@onready var speed_slider: HSlider = $Overlay/MainPanelContainer/MarginContainer/VBoxContainer/Speed/SpeedSlider
 @onready var timer = $Timer
 
 # Simulation
@@ -19,6 +21,12 @@ extends Node
 @export var height = 900
 @export var grid_height = height / pixel_size
 @export var grid_width = width / pixel_size
+
+# Sim speed
+@export var simulation_speed: float = 60.0 # 60Hz
+var timestep: float = 1.0/simulation_speed
+var accumulator: float = 0.0
+
 
 var selected_material: MaterialType = MaterialType.SAND
 var _is_pressing_ui: bool = false
@@ -42,7 +50,6 @@ enum MaterialType {
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	simulator.Initialize(width, height, pixel_size, cell_size, spawn_radius)
-
 	get_tree().root.size_changed.connect(_on_window_resize)
 	get_window().size = Vector2i(width, height)
 	setup_ui()
@@ -67,11 +74,15 @@ func _on_window_resize():
 	_is_handling_resize = false
 	simulator.ChangeSize(pixel_size, width, height, grid_width, grid_height)
 
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(_delta: float) -> void:
-	check_mouse_input()
-	simulator.Simulate()
+func _process(delta: float) -> void:
+	accumulator += delta
+
+	while accumulator >= timestep:
+		simulator.Simulate()
+		accumulator = 0.0
+
 	simulator.DrawImages()
+	check_mouse_input()
 
 # UI Setup
 func setup_ui() -> void:
@@ -86,12 +97,24 @@ func setup_ui() -> void:
 	pixel_size_slider.value_changed.connect(on_pixel_size_changed)
 	pixel_size_slider.drag_ended.connect(on_drag_ended)
 
+	# Setup Speed
+	speed_label.text = str(int(simulation_speed))
+	speed_slider.value = simulation_speed
+	speed_slider.value_changed.connect(on_speed_slider_changed)
+
+func on_speed_slider_changed(value: float) -> void:
+	simulation_speed = value
+	timestep = 1.0/simulation_speed
+	speed_label.text = str(int(simulation_speed))
+
 func on_radius_slider_changed(value: float) -> void:
 	spawn_radius = int(value)
+	simulator.SpawnRadius = spawn_radius
 	spawn_radius_label.text = str(spawn_radius)
 
 func on_pixel_size_changed(value: float) -> void:
 	pixel_size = int(value)
+	simulator.PixelSize = pixel_size
 	pixel_size_label.text = str(pixel_size)
 	grid_width = width / pixel_size
 	grid_height = height / pixel_size

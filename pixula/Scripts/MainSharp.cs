@@ -50,8 +50,8 @@ public partial class MainSharp : Node2D
 	private int lastParticleCount = 0;
 
 	// Grid cells
-	private int circleSize { get; set; } = 3;
-	private int pixelSize { get; set; } = 20;
+	public int SpawnRadius { get; set; } = 3;
+	public int PixelSize { get; set; } = 20;
 	private Dictionary<Vector2I, bool> currentActiveCells = [];
 	private Dictionary<Vector2I, bool> nextActiveCells = [];
 	private Dictionary<Vector2I, Color> positionColors = new();
@@ -138,8 +138,8 @@ public partial class MainSharp : Node2D
 		this.height = height;
 		this.gridWidth = width / pixelSize;
 		this.gridHeight = height / pixelSize;
-		this.pixelSize = pixelSize;
-		this.circleSize = spawnRadius;
+		this.PixelSize = pixelSize;
+		this.SpawnRadius = spawnRadius;
 		this.cellSize = cellSize;
 		colorAtlasImage = colorAtlas.GetImage();
 
@@ -234,14 +234,12 @@ public partial class MainSharp : Node2D
 	{
 		debugImage.Fill(Colors.Transparent);
 		foreach (var positionColor in positionColors)
-		{
 			worldImage.SetPixel(positionColor.Key.X, positionColor.Key.Y, positionColor.Value);
-		}
 
 		worldTexture.Update(worldImage);
 		positionColors.Clear();
 
-		DrawSpawnRadiusPreview(MousePosition.X, MousePosition.Y, circleSize);
+		DrawSpawnRadiusPreview(MousePosition.X, MousePosition.Y, SpawnRadius);
 		if (EnableDebug) 
 			DebugDrawActiveCells();
 
@@ -380,8 +378,8 @@ public partial class MainSharp : Node2D
 				return true;
 		}
 
-		// Dying with 0.5% chance per update
-		if (Random.Shared.NextDouble() < 0.005f)
+		// Dying with 0.25% chance per update
+		if (Random.Shared.NextDouble() < 0.0025f)
 		{
 			ConvertTo(x, y, MaterialType.Air);
 			return true;
@@ -623,15 +621,26 @@ public partial class MainSharp : Node2D
 	{
 		foreach (Vector2I direction in directions) 
 		{
-			var checkX = x + direction.X;
-			var checkY = y + direction.Y;
+			int checkX = x + direction.X;
+			int checkY = y + direction.Y;
 			if (!IsValidPosition(checkX, checkY))
 				continue;
 			
 			if (GetMaterialAt(checkX, checkY) == MaterialType.Water)
 			{
-				if (Random.Shared.NextSingle() < 0.5) ConvertTo(x, y, MaterialType.Rock);
+				if (Random.Shared.NextSingle() < 0.1) ConvertTo(x, y, MaterialType.Rock);
 				ConvertTo(checkX, checkY, MaterialType.WaterVapor);
+
+				foreach (Vector2I dirAroundWater in directions)
+				{
+					int checkVaporX = checkX + dirAroundWater.X;
+					int checkVaporY = checkY + dirAroundWater.Y;
+					if (!IsValidPosition(checkVaporX, checkVaporY))
+						continue;
+
+					if (GetMaterialAt(checkVaporX, checkVaporY) == MaterialType.Air)
+						ConvertTo(checkVaporX, checkVaporY, MaterialType.WaterVapor);
+				}
 				return true;
 			} 
 		}
@@ -713,20 +722,20 @@ public partial class MainSharp : Node2D
 		return currentMaterial switch
 		{
 			MaterialType.Fire => new Color(
-				materialColor.R * 2.5f,  
-				materialColor.G * 1.0f, 
+				materialColor.R * 6.5f,  
+				materialColor.G * 1.5f, 
 				materialColor.B * 1.3f,  
 				materialColor.A
 			),
 			MaterialType.Lava => new Color(
-				materialColor.R * 3.0f,
+				materialColor.R * 16.0f,
 				materialColor.G * 1.5f,
-				materialColor.B * 1.0f,
+				materialColor.B * 1.2f,
 				materialColor.A
 			),
 			MaterialType.Acid => new Color(
 				materialColor.R * 1.0f,
-				materialColor.G * 10.15f,
+				materialColor.G * 3.15f,
 				materialColor.B * 1.0f,
 				materialColor.A
 			),
@@ -768,7 +777,7 @@ public partial class MainSharp : Node2D
 			{
 				float distance = new Vector2I(centerX, centerY).DistanceTo(new Vector2I(x, y));
 
-				if (distance <= radius)
+				if (distance < radius)
 					DrawRectFilled(new Vector2I(x, y), new Color(Colors.White, 0.3f));
 			}
 		}
@@ -789,7 +798,7 @@ public partial class MainSharp : Node2D
 
 	public void ChangeSize(int newPixelSize, int width, int height, int gridWidth, int gridHeight)
 	{
-		pixelSize = newPixelSize;
+		PixelSize = newPixelSize;
 		this.width = width;
 		this.height = height;
 		this.gridWidth = gridWidth;
@@ -827,7 +836,7 @@ public partial class MainSharp : Node2D
 			for (int x = Math.Max(0, centerX - radius); x < Math.Min(gridWidth, centerX + radius + 1); x++)
 			{
 				var distance = new Vector2(centerX - x, centerY - y).Length();
-				if (distance <= radius)
+				if (distance < radius)
 				{
 					SetMaterialAt(x, y, materialType, currentPixels);
 					SetMaterialAt(x, y, materialType, nextPixels);
@@ -991,7 +1000,7 @@ public partial class MainSharp : Node2D
 
 	private void SetupDebug()
 	{
-		debugImage = Image.CreateEmpty(gridWidth * pixelSize, gridHeight * pixelSize, false, Image.Format.Rgbaf);
+		debugImage = Image.CreateEmpty(gridWidth * PixelSize, gridHeight * PixelSize, false, Image.Format.Rgbaf);
 		debugImage.Fill(Colors.White);
 		debugTexture = ImageTexture.CreateFromImage(debugImage);
 		debugTextureRect.Texture = debugTexture;
@@ -1010,8 +1019,8 @@ public partial class MainSharp : Node2D
 
 	private void DebugDrawCell(Vector2I cellPos, Color color)
 	{
-		Vector2I pixelDrawPos = cellPos * cellSize * pixelSize;
-		int cellDrawSize = cellSize * pixelSize;
+		Vector2I pixelDrawPos = cellPos * cellSize * PixelSize;
+		int cellDrawSize = cellSize * PixelSize;
 		Rect2I rect = new(pixelDrawPos, new Vector2I(cellDrawSize, cellDrawSize));
 		DrawRectOutline(debugImage, rect, color);
 	}
@@ -1035,7 +1044,7 @@ public partial class MainSharp : Node2D
 
 	private void DrawRectFilled(Vector2I pos, Color color)
 	{
-		var rect = new Rect2I(pos * pixelSize, new Vector2I(pixelSize, pixelSize));
+		var rect = new Rect2I(pos * PixelSize, new Vector2I(PixelSize, PixelSize));
 		rect = rect.Intersection(new Rect2I(0, 0, debugImage.GetWidth(), debugImage.GetHeight()));
 		debugImage.FillRect(rect, color);
 	}

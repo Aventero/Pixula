@@ -6,11 +6,11 @@ float random (vec2 uv) {
 }
 
 void vertex() {
-	float vertical_movement = 1.0 * random(UV) * PI;
-	float interval = PI ;
-	float inner_wobble_amount = (UV.x) * 1.5;
+	float vertical_movement = random(UV) * PI;
+	float speed = 2.5;
+	float inner_wobble_amount = (UV.x) * 1.2;
 
 	// Start of the sin
-	float sin_start = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).y * 0.2 ;
-	VERTEX.y = VERTEX.y + vertical_movement * (sin(sin_start + (TIME * interval) + inner_wobble_amount));
+	float sin_start = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).y * 0.2;
+	VERTEX.y = VERTEX.y + vertical_movement * (sin(sin_start + (TIME * speed) + inner_wobble_amount));
 }
