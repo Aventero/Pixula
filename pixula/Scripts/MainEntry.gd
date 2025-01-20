@@ -40,11 +40,14 @@ enum MaterialType {
 	WALL = 4,
 	WOOD = 5,
 	FIRE = 6,
-	VAPOR = 7,
-	CLOUD = 8,
+	WATER_VAPOR = 7,
+	WATER_CLOUD = 8,
 	LAVA = 9,
 	ACID = 10,
 	ACID_VAPOR = 11,
+	ACID_CLOUD = 12,
+	CURSOR = 13,
+	VOID = 14,
 }
 
 # Called when the node enters the scene tree for the first time.
@@ -141,12 +144,22 @@ func on_gui_input(event: InputEvent) -> void:
 func on_mouse_exit() -> void:
 	_is_pressing_ui = false
 
+func _input(event: InputEvent) -> void:
+	if event.is_pressed():
+		Input.mouse_mode = Input.MouseMode.MOUSE_MODE_HIDDEN
+
 # Mouse
 func check_mouse_input() -> void:
 	simulator.MousePosition = Vector2i(get_mouse_tile_pos())
-	if Input.is_action_pressed("SPAWN_SAND") && not _is_pressing_ui:
-		spawn_material_at_mouse(selected_material)
-	if Input.is_action_pressed("SPAWN_WATER") && not _is_pressing_ui:
+	if _is_pressing_ui:
+		return
+
+	if Input.is_action_pressed("SPAWN_SAND"):
+		if selected_material == MaterialType.CURSOR:
+			simulator.AttractToCursor(get_mouse_tile_pos())
+		else:
+			spawn_material_at_mouse(selected_material)
+	if Input.is_action_pressed("SPAWN_WATER"):
 		spawn_material_at_mouse(MaterialType.AIR)
 
 	if Input.is_action_pressed("STATS") && not _is_pressing_ui:

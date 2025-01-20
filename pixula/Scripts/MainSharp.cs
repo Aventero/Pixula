@@ -13,13 +13,11 @@ public struct Pixel
 		this.material = material;
 		this.variant = variant;
 		this.various = various;
-		this.processed = true;
 	}
 
 	public MainSharp.MaterialType material;
 	public int variant;
 	public int various;
-	public bool processed;
 }
 
 [GlobalClass]
@@ -62,6 +60,7 @@ public partial class MainSharp : Node2D
 	public int PixelSize { get; set; } = 20;
 	private Dictionary<Vector2I, bool> currentActiveCells = [];
 	private Dictionary<Vector2I, bool> nextActiveCells = [];
+	private HashSet<Vector2I> processedPositions = [];
 	private Dictionary<Vector2I, Color> positionColors = new();
 
 	public Vector2I MousePosition {get; set; }
@@ -81,6 +80,7 @@ public partial class MainSharp : Node2D
 		Acid = 10,
 		AcidVapor = 11,
 		AcidCloud = 12,
+		Cursor = 13,
 	}
 
 	private readonly Dictionary<MaterialType, int[]> ColorRanges = new()
@@ -167,8 +167,8 @@ public partial class MainSharp : Node2D
 		if (currentMaterial == MaterialType.Air)
 			return false;
 
-		Pixel p = GetPixel(x, y, currentPixels);
-		p.processed = true;
+		if (processedPositions.Contains(new Vector2I(x, y)))
+			return false;
 
 		return currentMaterial switch
 		{
@@ -201,9 +201,8 @@ public partial class MainSharp : Node2D
 
     private void SimulateActive()
 	{
-		// Copy current frame state
-
-		//nextPixels = currentPixels; //(Pixel[])currentPixels.Clone();
+		processedPositions.Clear();
+		Array.Copy(currentPixels, nextPixels, currentPixels.Length);
 		currentActiveCells = new Dictionary<Vector2I, bool>(nextActiveCells);
 		nextActiveCells.Clear();
 
@@ -234,7 +233,7 @@ public partial class MainSharp : Node2D
 				ActivateNeighboringCells(pixelPos.X, pixelPos.Y);
 		}
 
-		// Cool swap.
+		// // Cool swap.
 		(nextPixels, currentPixels) = (currentPixels, nextPixels);
 	}
 
@@ -550,6 +549,17 @@ public partial class MainSharp : Node2D
 		return false;
 	}
 
+	public void AttractToCursor(Vector2I mousePos) 
+	{
+		for (int i = 0; i < 100; i++)
+		{
+			Vector2I randPos = GetRandomRingPosition(mousePos.X, mousePos.Y, 1, SpawnRadius);
+			MaterialType material = GetMaterialAt(randPos.X, randPos.Y);
+			Vector2I direction = new(Math.Sign(randPos.X - mousePos.X), Math.Sign(randPos.Y - mousePos.Y));
+			MoveTo(randPos.X, randPos.Y, randPos.X + direction.X, randPos.Y + direction.Y, material);
+		}
+	}
+
 	private bool CloudMechanics(int x, int y, MaterialType processMaterial)
 	{
 		ActivateCell(new Vector2I(x, y));
@@ -689,11 +699,11 @@ public partial class MainSharp : Node2D
 		{
 			// Bounce!
 			p.various *= -1;
-			SetPixel(x, y, p, currentPixels);
+			SetPixel(x, y, p, nextPixels);
 			return true;
 		}
 
-		return true;
+		return ableToMoveHorizontal;
 	}
 
 	private bool MoveDown(int x, int y, MaterialType processMaterial)
@@ -735,13 +745,16 @@ public partial class MainSharp : Node2D
 		DrawPixelAt(x, y, nextPixels);
 		DrawPixelAt(newX, newY, nextPixels);
 
+		processedPositions.Add(source);
+		processedPositions.Add(destination);
+
 		ActivateCell(source);
 		ActivateCell(destination);
 
 		return true;
 	}
 
-	private Color GetColorRevamp(MaterialType currentMaterial, Color materialColor)
+	private static Color GetColorRevamp(MaterialType currentMaterial, Color materialColor)
 	{
 		return currentMaterial switch
 		{
@@ -863,7 +876,6 @@ public partial class MainSharp : Node2D
 		}
 	}
 
-
 	// Helper methods
 	private bool IsValidPosition(int x, int y) =>
 		x >= 0 && x < gridWidth && y >= 0 && y < gridHeight;
@@ -916,16 +928,6 @@ public partial class MainSharp : Node2D
 			return Colors.Transparent;
 			
 		return worldImage.GetPixel(x, y);
-	}
-
-	// Event handlers and input processing
-	public override void _Input(InputEvent @event)
-	{
-		if (@event is InputEventMouseButton mouseEvent)
-		{
-			if (mouseEvent.Pressed)
-				Input.MouseMode = Input.MouseModeEnum.Hidden;
-		}
 	}
 
 	public void InitializeBenchmarkParticles()

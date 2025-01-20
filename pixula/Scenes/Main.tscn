@@ -395,16 +395,17 @@ size_flags_vertical = 0
 theme_override_constants/separation = 11
 alignment = 1
 
-[node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer" groups=["element_buttons"]]
+[node name="CursorButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 size_flags_vertical = 3
 theme = ExtResource("3_r6eas")
-text = "Grav."
-icon = ExtResource("4_we8p7")
+text = "Grav"
+icon = ExtResource("10_kjxfc")
 alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
+material_type = 13
 
 [node name="VBoxContainer2" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2"]
 use_parent_material = true
@@ -414,16 +415,16 @@ size_flags_vertical = 0
 theme_override_constants/separation = 11
 alignment = 1
 
-[node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer2" groups=["element_buttons"]]
+[node name="VoidButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer2" groups=["element_buttons"]]
 use_parent_material = true
 layout_mode = 2
 theme = ExtResource("3_r6eas")
 text = "Void"
-icon = ExtResource("8_aswaw")
+icon = ExtResource("9_v0a7p")
 alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
-material_type = 4
+material_type = 14
 
 [node name="World" type="CanvasLayer" parent="."]
 layer = -1
@@ -465,6 +466,7 @@ script = ExtResource("1_u0yqt")
 colorAtlas = ExtResource("14_coue8")
 worldTextureRect = NodePath("../World/WorldTexture")
 debugTextureRect = NodePath("../World/DebugLayer/DebugTexture")
+EnableDebug = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_fq0cl")
@@ -480,5 +482,5 @@ environment = SubResource("Environment_fq0cl")
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/WoodButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/VaporButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2/FumeButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer/AirButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer2/WallButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer/CursorButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer2/VoidButton" to="." method="_on_material_button_pressed"]
