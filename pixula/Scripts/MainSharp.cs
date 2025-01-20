@@ -3,6 +3,25 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
+namespace Pixula {
+
+
+public struct Pixel
+{
+	public Pixel(MainSharp.MaterialType material, int variant, int various)
+	{
+		this.material = material;
+		this.variant = variant;
+		this.various = various;
+		this.processed = true;
+	}
+
+	public MainSharp.MaterialType material;
+	public int variant;
+	public int various;
+	public bool processed;
+}
+
 [GlobalClass]
 public partial class MainSharp : Node2D
 {
@@ -19,8 +38,8 @@ public partial class MainSharp : Node2D
 	private ImageTexture debugTexture;
 
 	// Pixel State
-	private int[][] currentPixels;
-	private int[][] nextPixels;
+	public Pixel[] currentPixels;
+	public Pixel[] nextPixels;
 
 	// Simulation
 	[Export] public bool EnableDebug { get; set; } = false;
@@ -31,12 +50,6 @@ public partial class MainSharp : Node2D
 	private int height { get; set; } = 900;
 	private int gridWidth;
 	private int gridHeight;
-
-	// Pixel Logic
-	private const int MaterialBitsStart = 5;
-	private const int MaterialBitsMask = 0b1111; // 4 Bit = 16 materials
-	private const int VariantBitsStart = 13;
-	private const int VariantBitsMask = 0b1111111; // 7 Bit "of color"
 
 	// Benchmarking
 	private bool isBenchmark = false;
@@ -105,6 +118,8 @@ public partial class MainSharp : Node2D
 		{ MaterialType.AcidCloud, new[] { MaterialType.Air }},
 	};
 
+
+
 	private static bool IsFlammable(MaterialType processMaterial) 
 	{
 		return processMaterial switch
@@ -152,6 +167,9 @@ public partial class MainSharp : Node2D
 		if (currentMaterial == MaterialType.Air)
 			return false;
 
+		Pixel p = GetPixel(x, y, currentPixels);
+		p.processed = true;
+
 		return currentMaterial switch
 		{
 			MaterialType.Sand => SandMechanic(x, y, currentMaterial),
@@ -184,7 +202,8 @@ public partial class MainSharp : Node2D
     private void SimulateActive()
 	{
 		// Copy current frame state
-		nextPixels = currentPixels.Select(row => row.ToArray()).ToArray();
+
+		//nextPixels = currentPixels; //(Pixel[])currentPixels.Clone();
 		currentActiveCells = new Dictionary<Vector2I, bool>(nextActiveCells);
 		nextActiveCells.Clear();
 
@@ -193,9 +212,9 @@ public partial class MainSharp : Node2D
 		{
 			int cellX = cell.X * cellSize;
 			int cellY = cell.Y * cellSize;
-			for (int x = cellX; x < cellX + cellSize; x++)
+			for (int y = cellY; y < cellY + cellSize; y++)
 			{
-				for (int y = cellY; y < cellY + cellSize; y++)
+				for (int x = cellX; x < cellX + cellSize; x++)
 				{
 					if (IsValidPosition(x, y))
 						pixelsToSimulate.Add(new Vector2I(x, y));
@@ -640,11 +659,11 @@ public partial class MainSharp : Node2D
 	{
 		foreach (Vector2I direction in directions) 
 		{
-			var checkX = x + direction.X;
-			var checkY = y + direction.Y;
+			int checkX = x + direction.X;
+			int checkY = y + direction.Y;
 			if (!IsValidPosition(checkX, checkY))
 				continue;
-			var material = GetMaterialAt(checkX, checkY);
+			MaterialType material = GetMaterialAt(checkX, checkY);
 
 			// 5% chance to burn something!
 			if (IsFlammable(material) && Random.Shared.NextDouble() < 0.07f) 
@@ -654,8 +673,27 @@ public partial class MainSharp : Node2D
 
 	private bool MoveHorizontal(int x, int y, MaterialType processMaterial)
 	{
-		var xDirection = y % 2 == 0 ? 1 : -1;
-		return MoveTo(x, y, x + xDirection, y, processMaterial);
+		// Direction not yet set.
+		Pixel p = GetPixel(x, y, currentPixels);
+		if (p.various == 0)
+		{
+			int xDirection = y % 2 == 0 ? 1 : -1;
+			p.various = xDirection;
+		}
+
+		// Various is the direction
+		// Try moving into the direction
+		bool ableToMoveHorizontal = MoveTo(x, y, x + p.various, y, processMaterial);
+
+		if (!ableToMoveHorizontal)
+		{
+			// Bounce!
+			p.various *= -1;
+			SetPixel(x, y, p, currentPixels);
+			return true;
+		}
+
+		return true;
 	}
 
 	private bool MoveDown(int x, int y, MaterialType processMaterial)
@@ -670,22 +708,22 @@ public partial class MainSharp : Node2D
 
 	private bool MoveDiagonalDown(int x, int y, MaterialType processMaterial)
 	{
-		var direction = (x + y) % 2 == 0 ? new Vector2I(-1, 1) : new Vector2I(1, 1);
-		var newPos = new Vector2I(x, y) + direction;
+		Vector2I direction = (x + y) % 2 == 0 ? new Vector2I(-1, 1) : new Vector2I(1, 1);
+		Vector2I newPos = new Vector2I(x, y) + direction;
 		return MoveTo(x, y, newPos.X, newPos.Y, processMaterial);
 	}
 
 	private bool MoveDiagonalUp(int x, int y, MaterialType processMaterial)
 	{
-		var direction = (x + y) % 2 == 0 ? new Vector2I(-1, -1) : new Vector2I(1, -1);
-		var newPos = new Vector2I(x, y) + direction;
+		Vector2I direction = (x + y) % 2 == 0 ? new Vector2I(-1, -1) : new Vector2I(1, -1);
+		Vector2I newPos = new Vector2I(x, y) + direction;
 		return MoveTo(x, y, newPos.X, newPos.Y, processMaterial);
 	}
 
 	private bool MoveTo(int x, int y, int newX, int newY, MaterialType processMaterial) 
 	{
-		var source = new Vector2I(x, y);
-		var destination = new Vector2I(newX, newY);
+		Vector2I source = new(x, y);
+		Vector2I destination = new(newX, newY);
 
 		if (!IsValidPosition(newX, newY))
 			return false;
@@ -741,9 +779,9 @@ public partial class MainSharp : Node2D
 		};
 	}
 
-	private void DrawPixelAt(int x, int y, int[][] pixelArray)
+	private void DrawPixelAt(int x, int y, Pixel[] pixelArray)
 	{
-		int variant = GetVarantAt(x, y, pixelArray);
+		int variant = GetPixel(x, y, pixelArray).variant;
 		MaterialType materialType = GetNewMaterialAt(x, y);
 		Color color = GetColorForVariant(variant);
 		color = GetColorRevamp(materialType, color);
@@ -769,11 +807,6 @@ public partial class MainSharp : Node2D
 		}
 
 		DrawRectFilled(new Vector2I(centerX, centerY), new Color(Colors.White, 0.9f));
-	}
-
-	static private int GetVarantAt(int x, int y, int[][] pixelArray)
-	{
-		return (pixelArray[y][x] >> VariantBitsStart) & VariantBitsMask;
 	}
 
 	private Color GetColorForVariant(int variant)
@@ -803,9 +836,9 @@ public partial class MainSharp : Node2D
 
 	private void SwapParticle(int sourceX, int sourceY, int destinationX, int destinationY)
 	{
-		var temp = nextPixels[destinationY][destinationX];
-		nextPixels[destinationY][destinationX] = currentPixels[sourceY][sourceX];
-		nextPixels[sourceY][sourceX] = temp;
+		Pixel temp = GetPixel(destinationX, destinationY, nextPixels);
+		SetPixel(destinationX, destinationY, GetPixel(sourceX, sourceY, currentPixels), nextPixels);
+		SetPixel(sourceX, sourceY, temp, nextPixels);
 	}
 
 	private void ConvertTo(int x, int y, MaterialType materialType) 
@@ -848,11 +881,9 @@ public partial class MainSharp : Node2D
 		nextActiveCells[cellPos] = true;
 	}
 
-	private MaterialType GetMaterialAt(int x, int y) =>
-		(MaterialType)((currentPixels[y][x] >> MaterialBitsStart) & MaterialBitsMask);
+	private MaterialType GetMaterialAt(int x, int y) => GetPixel(x, y, currentPixels).material;
 
-	private MaterialType GetNewMaterialAt(int x, int y) =>
-		(MaterialType)((nextPixels[y][x] >> MaterialBitsStart) & MaterialBitsMask);
+	private MaterialType GetNewMaterialAt(int x, int y) => GetPixel(x, y, nextPixels).material;
 
 	private bool CanSwap(MaterialType source, MaterialType swappingPartner) =>
 		SwapRules.TryGetValue(source, out var rules) && rules.Contains(swappingPartner);
@@ -860,23 +891,22 @@ public partial class MainSharp : Node2D
 	private void SetupPixels()
 	{
 		// Initialize coloum
-		currentPixels = new int[gridHeight][];
-		nextPixels = new int[gridHeight][]; 
+		currentPixels = new Pixel[gridHeight * gridWidth];
+		nextPixels = new Pixel[gridHeight * gridWidth]; 
 
 		for (int y = 0; y < gridHeight; y++)
 		{
-			// Initialize Rows
-			currentPixels[y] = new int[gridWidth];
-			nextPixels[y] = new int[gridWidth]; 
 			for (int x = 0; x < gridWidth; x++)
+			{
 				SetMaterialAt(x, y, MaterialType.Air, currentPixels);
-			Array.Copy(currentPixels[y], nextPixels[y], gridWidth);
+				SetMaterialAt(x, y, MaterialType.Air, nextPixels);
+			}
 		}
 	}
 
 	private int GetRandomVariant(MaterialType materialType)
 	{
-		var variants = ColorRanges[materialType];
+		int[] variants = ColorRanges[materialType];
 		return GD.RandRange(variants[0], variants[1]);
 	}
 
@@ -928,13 +958,12 @@ public partial class MainSharp : Node2D
 		isBenchmark = true;
 	}
 
-	private void SetMaterialAt(int x, int y, MaterialType materialType, int[][] pixelArray)
+	private void SetMaterialAt(int x, int y, MaterialType materialType, Pixel[] pixelArray)
 	{
 		if (!IsValidPosition(x, y))
 			return;
-
-		pixelArray[y][x] = (((int)materialType) << MaterialBitsStart) |
-							(GetRandomVariant(materialType) << VariantBitsStart);
+		
+		SetPixel(x, y, new Pixel(materialType, GetRandomVariant(materialType), 0), pixelArray);
 		ActivateCell(new Vector2I(x, y));
 		DrawPixelAt(x, y, pixelArray);
 	}
@@ -968,6 +997,16 @@ public partial class MainSharp : Node2D
 		new(-1, -1),
 		new(-1, 0),
 	};
+
+	private Pixel GetPixel(int x, int y, Pixel[] pixelArray) 
+	{
+		return pixelArray[x + gridWidth * y];
+	}
+
+	private void SetPixel(int x, int y, Pixel pixel, Pixel[] pixelArray) 
+	{
+		pixelArray[x + gridWidth * y] = pixel;
+	}
 
 
 	private void SetupImages()
@@ -1029,4 +1068,5 @@ public partial class MainSharp : Node2D
 		rect = rect.Intersection(new Rect2I(0, 0, debugImage.GetWidth(), debugImage.GetHeight()));
 		debugImage.FillRect(rect, color);
 	}
+}
 }
