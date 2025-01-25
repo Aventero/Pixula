@@ -1,4 +1,4 @@
-[gd_scene load_steps=26 format=3 uid="uid://cxcvn0k2w0x3u"]
+[gd_scene load_steps=28 format=3 uid="uid://cxcvn0k2w0x3u"]
 
 [ext_resource type="Script" uid="uid://b0x1m6lhkcbb4" path="res://Scripts/MainEntry.gd" id="1_fjtcw"]
 [ext_resource type="Script" uid="uid://d2xhkm1orqb4f" path="res://Scripts/MainSharp.cs" id="1_u0yqt"]
@@ -25,6 +25,13 @@
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_rwn16"]
 shader = ExtResource("3_8a7hv")
+shader_parameter/speed_multiplier = 1.0
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_hwpts"]
+shader = ExtResource("3_8a7hv")
+shader_parameter/speed_multiplier = 1.0
+
+[sub_resource type="ButtonGroup" id="ButtonGroup_hwpts"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_exg3k"]
 bg_color = Color(0.0807833, 0.0807833, 0.0807833, 0.313726)
@@ -101,10 +108,12 @@ size_flags_vertical = 0
 alignment = 1
 
 [node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 size_flags_vertical = 3
 theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
 text = "Air"
 icon = ExtResource("4_we8p7")
 alignment = 0
@@ -112,10 +121,12 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 
 [node name="SandButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 size_flags_vertical = 3
 theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
 text = "Sand"
 icon = ExtResource("5_tremm")
 alignment = 0
@@ -124,9 +135,11 @@ script = ExtResource("6_sdk4a")
 material_type = 1
 
 [node name="LavaButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
 text = "Lava"
 icon = ExtResource("8_fq0cl")
 alignment = 0
@@ -135,9 +148,11 @@ script = ExtResource("6_sdk4a")
 material_type = 9
 
 [node name="WaterButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
 text = "Water"
 icon = ExtResource("6_hco3j")
 alignment = 0
@@ -146,9 +161,11 @@ script = ExtResource("6_sdk4a")
 material_type = 2
 
 [node name="AcidButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
 text = "Acid"
 icon = ExtResource("11_0sclb")
 alignment = 0
@@ -157,9 +174,11 @@ script = ExtResource("6_sdk4a")
 material_type = 10
 
 [node name="FireButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
 text = "Fire"
 icon = ExtResource("11_2ajil")
 alignment = 0
@@ -175,9 +194,11 @@ size_flags_vertical = 0
 alignment = 1
 
 [node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
 text = "Wall"
 icon = ExtResource("8_aswaw")
 alignment = 0
@@ -186,9 +207,11 @@ script = ExtResource("6_sdk4a")
 material_type = 4
 
 [node name="RockButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
 text = "Rock"
 icon = ExtResource("7_pb25d")
 alignment = 0
@@ -197,9 +220,11 @@ script = ExtResource("6_sdk4a")
 material_type = 3
 
 [node name="WoodButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
 text = "Wood"
 icon = ExtResource("10_s7o1q")
 alignment = 0
@@ -208,9 +233,11 @@ script = ExtResource("6_sdk4a")
 material_type = 5
 
 [node name="VaporButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
 text = "Vapor"
 icon = ExtResource("12_7ks5b")
 alignment = 0
@@ -219,9 +246,11 @@ script = ExtResource("6_sdk4a")
 material_type = 7
 
 [node name="FumeButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
 text = "Fume"
 icon = ExtResource("15_sxkr1")
 alignment = 0
@@ -396,10 +425,11 @@ theme_override_constants/separation = 11
 alignment = 1
 
 [node name="CursorButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 size_flags_vertical = 3
 theme = ExtResource("3_r6eas")
+toggle_mode = true
 text = "Grav"
 icon = ExtResource("10_kjxfc")
 alignment = 0
@@ -416,9 +446,10 @@ theme_override_constants/separation = 11
 alignment = 1
 
 [node name="VoidButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/HBoxContainer2/VBoxContainer2" groups=["element_buttons"]]
-use_parent_material = true
+material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
+toggle_mode = true
 text = "Void"
 icon = ExtResource("9_v0a7p")
 alignment = 0
