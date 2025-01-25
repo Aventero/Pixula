@@ -8,15 +8,15 @@ namespace Pixula {
 
 public struct Pixel
 {
-	public Pixel(MainSharp.MaterialType material, int variant, int various)
+	public Pixel(MainSharp.MaterialType material, Vector2I variantPos, int various)
 	{
 		this.material = material;
-		this.variant = variant;
+		this.variantPos = variantPos;
 		this.various = various;
 	}
 
 	public MainSharp.MaterialType material;
-	public int variant;
+	public Vector2I variantPos;
 	public int various;
 }
 
@@ -62,7 +62,8 @@ public partial class MainSharp : Node2D
 	private Dictionary<Vector2I, bool> nextActiveCells = [];
 	private HashSet<Vector2I> processedPositions = [];
 	private Dictionary<Vector2I, Color> positionColors = new();
-
+	private bool shouldAttract;
+	private Vector2I attractPosition;
 	public Vector2I MousePosition {get; set; }
 
 	public enum MaterialType
@@ -80,24 +81,47 @@ public partial class MainSharp : Node2D
 		Acid = 10,
 		AcidVapor = 11,
 		AcidCloud = 12,
-		Cursor = 13,
+		Void = 13,
+		Mimic = 14,
+		Seed = 15,
+		Poison = 16,
+		Fluff = 17,
+		Ember = 18
+
+		// VOID -> Removes particles touching it
+		// REPEAT -> Spawns the same particle randomly around it or where it touched?
+		// Seed -> Grows when on top of soil 
+		// Seed -> ALSO grows wood under it
+		// Seed -> Can absorb water
+		// Poison -> Eats through things turning them into highly flammable fluff
+		// FLUFF -> Very flammable stuff
+		// Coal? -> Burns for long
+		// EMBER -> Hot Coal basically, can put stuff on fire
 	}
 
+	// Array depicts the start in the color map and how far
+	// -> Color pos + width (normally 1 as it only needs one column)
 	private readonly Dictionary<MaterialType, int[]> ColorRanges = new()
 	{
-		{ MaterialType.Air, new[] { 36, 37 } },
-		{ MaterialType.Sand, new[] { 19, 23 } },
-		{ MaterialType.Water, new[] { 3, 5 } },
-		{ MaterialType.Rock, new[] { 15, 16 } },
-		{ MaterialType.Wall, new[] { 38, 39 } },
-		{ MaterialType.Wood, new[] { 12, 13} },
-		{ MaterialType.Fire, new[] { 27, 29} },
-		{ MaterialType.WaterVapor, new[] { 44, 45} },
-		{ MaterialType.WaterCloud, new[] { 1, 2} },
-		{ MaterialType.Lava, new[] { 25, 26} },
-		{ MaterialType.Acid, new[] { 10, 11} },
-		{ MaterialType.AcidVapor, new[] { 10, 11} },
-		{ MaterialType.AcidCloud, new[] { 6, 7} },
+		{ MaterialType.Air, new[] { 36, 0 } },
+		{ MaterialType.Sand, new[] { 22, 1 } },
+		{ MaterialType.Water, new[] { 2, 1 } },
+		{ MaterialType.Rock, new[] { 18, 0 } },
+		{ MaterialType.Wall, new[] { 37, 0 } },
+		{ MaterialType.Wood, new[] { 12, 1} },
+		{ MaterialType.Fire, new[] { 27, 1} },
+		{ MaterialType.WaterVapor, new[] { 44, 1} },
+		{ MaterialType.WaterCloud, new[] { 1, 0} },
+		{ MaterialType.Lava, new[] { 25, 1} },
+		{ MaterialType.Acid, new[] { 10, 0} },
+		{ MaterialType.AcidVapor, new[] { 10, 0} },
+		{ MaterialType.AcidCloud, new[] { 6, 0} },
+		{ MaterialType.Void, new[] { 6, 0} },
+		{ MaterialType.Mimic, new[] { 6, 0} },
+		{ MaterialType.Seed, new[] { 6, 0} },
+		{ MaterialType.Poison, new[] { 34, 0} },
+		{ MaterialType.Fluff, new[] { 6, 0} },
+		{ MaterialType.Ember, new[] { 6, 0} },
 
 	};
 
@@ -106,7 +130,7 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Air, Array.Empty<MaterialType>() },
 		{ MaterialType.Sand, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud} },
 		{ MaterialType.Water, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud } },
-		{ MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Sand, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Fire, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud } },
+		{ MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Sand, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Fire, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Lava } },
 		{ MaterialType.Wall, Array.Empty<MaterialType>() },
 		{ MaterialType.Wood, Array.Empty<MaterialType>() },
 		{ MaterialType.Fire, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.AcidVapor, MaterialType.AcidCloud } },
@@ -174,7 +198,7 @@ public partial class MainSharp : Node2D
 		{
 			MaterialType.Sand => SandMechanic(x, y, currentMaterial),
 			MaterialType.Water => WaterMechanic(x, y, currentMaterial),
-			MaterialType.Rock => MoveDown(x, y, currentMaterial),
+			MaterialType.Rock => RockMechanics(x, y, currentMaterial),
 			MaterialType.Fire => FireMechanic(x, y, currentMaterial),
 			MaterialType.WaterVapor => VaporMechanics(x, y, currentMaterial),
 			MaterialType.WaterCloud => CloudMechanics(x, y, currentMaterial),
@@ -206,6 +230,8 @@ public partial class MainSharp : Node2D
 		currentActiveCells = new Dictionary<Vector2I, bool>(nextActiveCells);
 		nextActiveCells.Clear();
 
+
+
 		List<Vector2I> pixelsToSimulate = [];
 		foreach (Vector2I cell in currentActiveCells.Keys)
 		{
@@ -223,6 +249,12 @@ public partial class MainSharp : Node2D
 
 		// Randomize to avoid directional bias
 		pixelsToSimulate = pixelsToSimulate.OrderBy(_ => Guid.NewGuid()).ToList();
+
+		if (shouldAttract)
+		{
+			AttractToCursor(attractPosition);
+			shouldAttract = false;
+		}
 
 		// Simulate
 		foreach (var pixelPos in pixelsToSimulate)
@@ -251,6 +283,12 @@ public partial class MainSharp : Node2D
 			DebugDrawActiveCells();
 
 		debugTexture.Update(debugImage);
+	}
+
+	public void RequestAttraction(Vector2I mousePos)
+	{
+		shouldAttract = true;
+		attractPosition = mousePos;
 	}
 
 	private void ActivateNeighboringCells(int x, int y)
@@ -522,6 +560,25 @@ public partial class MainSharp : Node2D
 		return MoveDiagonalUp(x, y, currentMaterial) || MoveHorizontal(x, y, currentMaterial);
 	}
 
+	private bool RockMechanics(int x, int y, MaterialType currentMaterial)
+	{
+		if (IsValidPosition(x, y + 1) && GetMaterialAt(x, y + 1) == MaterialType.Lava)
+		{
+			// Slower in lava
+			if (Random.Shared.NextSingle() < 0.03)
+			{
+				return MoveDown(x, y, currentMaterial);
+			}
+			ActivateCell(new Vector2I(x, y));
+			return true;
+		}
+		
+		// Normal!
+		return MoveDown(x, y, currentMaterial);
+
+	}
+
+
 	private static Vector2I GetRandomRingPosition(int centerX, int centerY, int minDist, int maxDist) 
 	{
 		// 360° Degrees around the pixel are possible 
@@ -551,12 +608,43 @@ public partial class MainSharp : Node2D
 
 	public void AttractToCursor(Vector2I mousePos) 
 	{
-		for (int i = 0; i < 100; i++)
+		for (int y = Math.Max(0, mousePos.Y - SpawnRadius); y < Math.Min(gridHeight, mousePos.Y + SpawnRadius + 1); y++)
 		{
-			Vector2I randPos = GetRandomRingPosition(mousePos.X, mousePos.Y, 1, SpawnRadius);
-			MaterialType material = GetMaterialAt(randPos.X, randPos.Y);
-			Vector2I direction = new(Math.Sign(randPos.X - mousePos.X), Math.Sign(randPos.Y - mousePos.Y));
-			MoveTo(randPos.X, randPos.Y, randPos.X + direction.X, randPos.Y + direction.Y, material);
+			for (int x = Math.Max(0, mousePos.X - SpawnRadius); x < Math.Min(gridWidth, mousePos.X + SpawnRadius + 1); x++)
+			{
+				float distance = new Vector2I(mousePos.X - x, mousePos.Y - y).Length();
+				
+				if (distance < SpawnRadius)
+				{
+					MaterialType material = GetMaterialAt(x, y);
+					
+					if (material == MaterialType.Air || material == MaterialType.Wall)
+						continue;
+					
+					// Calculate strength based on distance
+					int moveStrength = Math.Min(2, (int)(distance / 2));
+					float rand = Random.Shared.NextSingle();
+					if (rand < 0.4f)
+					{
+						// Move toward cursor
+						Vector2I direction = new(Math.Sign(mousePos.X - x), Math.Sign(mousePos.Y - y));
+						MoveTo(x, y, x + direction.X * moveStrength, y + direction.Y * moveStrength, material);
+						continue;
+					}
+
+					// angle to cursor
+					float angle = (float)Math.Atan2(mousePos.Y - y, mousePos.X - x);
+					
+					// Add 90° (π/2)
+					angle += MathF.PI / 2f;
+					Vector2I rotateDirection = new(
+						(int)Math.Round(Math.Cos(angle)),
+						(int)Math.Round(Math.Sin(angle))
+					);
+
+					MoveTo(x, y, x + rotateDirection.X * moveStrength, y + rotateDirection.Y * moveStrength, material);
+				}
+			}
 		}
 	}
 
@@ -616,6 +704,8 @@ public partial class MainSharp : Node2D
 		return false;
 	}
 
+
+
 	private bool ExtinguishFire(int x, int y) 
 	{
 		foreach (Vector2I direction in directions) 
@@ -664,6 +754,7 @@ public partial class MainSharp : Node2D
 		}
 		return false;
 	}
+
 
 	private void SpreadFire(int x, int y)
 	{
@@ -765,7 +856,7 @@ public partial class MainSharp : Node2D
 				materialColor.A
 			),
 			MaterialType.Lava => new Color(
-				materialColor.R * 16.0f,
+				materialColor.R * 12.0f,
 				materialColor.G * 1.5f,
 				materialColor.B * 1.2f,
 				materialColor.A
@@ -794,9 +885,9 @@ public partial class MainSharp : Node2D
 
 	private void DrawPixelAt(int x, int y, Pixel[] pixelArray)
 	{
-		int variant = GetPixel(x, y, pixelArray).variant;
+		Vector2I variantPos = GetPixel(x, y, pixelArray).variantPos;
 		MaterialType materialType = GetNewMaterialAt(x, y);
-		Color color = GetColorForVariant(variant);
+		Color color = GetColorForVariant(variantPos.X, variantPos.Y);
 		color = GetColorRevamp(materialType, color);
 		positionColors[new Vector2I(x, y)] =  color;
 	}
@@ -822,9 +913,9 @@ public partial class MainSharp : Node2D
 		DrawRectFilled(new Vector2I(centerX, centerY), new Color(Colors.White, 0.9f));
 	}
 
-	private Color GetColorForVariant(int variant)
+	private Color GetColorForVariant(int atlasX, int atlasY)
 	{
-		Color color = colorAtlasImage.GetPixel(variant, 0);
+		Color color = colorAtlasImage.GetPixel(atlasX, atlasY);
 		return color.SrgbToLinear(); // THIS IS VERY IMPORTANT FOR HDR.
 	}
 
@@ -916,10 +1007,11 @@ public partial class MainSharp : Node2D
 		}
 	}
 
-	private int GetRandomVariant(MaterialType materialType)
+	private Vector2I GetRandomVariant(MaterialType materialType)
 	{
-		int[] variants = ColorRanges[materialType];
-		return GD.RandRange(variants[0], variants[1]);
+		int start = ColorRanges[materialType][0];
+		int stride = ColorRanges[materialType][1];
+		return new Vector2I(GD.RandRange(start, start + stride), GD.RandRange(0, 1));
 	}
 
 	public Color GetColorAt(int x, int y)

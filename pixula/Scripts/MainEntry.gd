@@ -46,8 +46,12 @@ enum MaterialType {
 	ACID = 10,
 	ACID_VAPOR = 11,
 	ACID_CLOUD = 12,
-	CURSOR = 13,
-	VOID = 14,
+	VOID = 13,
+	MIMIC = 14,
+	SEED = 15,
+	POISON = 16,
+	FLUFF = 17,
+	EMBER = 18
 }
 
 # Called when the node enters the scene tree for the first time.
@@ -155,9 +159,6 @@ func check_mouse_input() -> void:
 		return
 
 	if Input.is_action_pressed("SPAWN_SAND"):
-		if selected_material == MaterialType.CURSOR:
-			simulator.AttractToCursor(get_mouse_tile_pos())
-		else:
 			spawn_material_at_mouse(selected_material)
 	if Input.is_action_pressed("SPAWN_WATER"):
 		spawn_material_at_mouse(MaterialType.AIR)

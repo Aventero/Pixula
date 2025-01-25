@@ -466,7 +466,6 @@ script = ExtResource("1_u0yqt")
 colorAtlas = ExtResource("14_coue8")
 worldTextureRect = NodePath("../World/WorldTexture")
 debugTextureRect = NodePath("../World/DebugLayer/DebugTexture")
-EnableDebug = true
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="."]
 environment = SubResource("Environment_fq0cl")
