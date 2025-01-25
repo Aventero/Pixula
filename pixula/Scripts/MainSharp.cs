@@ -86,7 +86,7 @@ public partial class MainSharp : Node2D
 		Seed = 15,
 		Poison = 16,
 		Fluff = 17,
-		Ember = 18
+		Ember = 18,
 
 		// VOID -> Removes particles touching it
 		// REPEAT -> Spawns the same particle randomly around it or where it touched?
@@ -142,7 +142,50 @@ public partial class MainSharp : Node2D
 		{ MaterialType.AcidCloud, new[] { MaterialType.Air }},
 	};
 
+	private readonly Dictionary<MaterialType, float> FluidViscosity = new()
+	{
+		{ MaterialType.Water, 0.1f},
+		{ MaterialType.Lava, 0.01f},
+		{ MaterialType.Acid, 0.02f},
+	};
 
+	private readonly Dictionary<MaterialType, float> SolidWeight = new()
+	{
+		{ MaterialType.Sand, 1.0f},
+		{ MaterialType.Rock, 4.0f},
+		{ MaterialType.Wall, 0},
+		{ MaterialType.Wood, 0},
+	};
+
+	public enum MaterialState
+	{
+		Solid,
+		Liquid,
+		Gas
+	}
+
+	private MaterialState GetMaterialState(MaterialType material)
+	{
+	return material switch
+	{
+		MaterialType.Sand => MaterialState.Solid,
+		MaterialType.Rock => MaterialState.Solid,
+		MaterialType.Wall => MaterialState.Solid,
+		MaterialType.Wood => MaterialState.Solid,
+		
+		MaterialType.Water => MaterialState.Liquid,
+		MaterialType.Lava => MaterialState.Liquid,
+		MaterialType.Acid => MaterialState.Liquid,
+		
+		MaterialType.WaterVapor => MaterialState.Gas, 
+		MaterialType.WaterCloud => MaterialState.Gas,
+		MaterialType.AcidVapor => MaterialState.Gas,
+		MaterialType.AcidCloud => MaterialState.Gas,
+		MaterialType.Fire => MaterialState.Gas,
+		
+		_ => MaterialState.Solid
+	};
+	}
 
 	private static bool IsFlammable(MaterialType processMaterial) 
 	{
@@ -465,19 +508,20 @@ public partial class MainSharp : Node2D
 		return false;
     }
 
-    private bool SandMechanic(int x, int y, MaterialType processMaterial)
+    private bool SandMechanic(int x, int y, MaterialType currentMaterial)
 	{
-		return MoveDown(x, y, processMaterial) || MoveDiagonalDown(x, y, processMaterial);
+		return 	MoveDown(x, y, currentMaterial) ||
+				MoveDiagonalDown(x, y, currentMaterial);
 	}
 
-	private bool WaterMechanic(int x, int y, MaterialType processMaterial)
+	private bool WaterMechanic(int x, int y, MaterialType currentMaterial)
 	{
-		return MoveDown(x, y, processMaterial) ||
-			   MoveDiagonalDown(x, y, processMaterial) ||
-			   MoveHorizontal(x, y, processMaterial);
+		return MoveDown(x, y, currentMaterial) ||
+			   MoveDiagonalDown(x, y, currentMaterial) ||
+			   MoveHorizontal(x, y, currentMaterial);
 	}
 
-	private bool FireMechanic(int x, int y, MaterialType processMaterial)
+	private bool FireMechanic(int x, int y, MaterialType currentMaterial)
 	{
 		// Always keep fire active!
 		ActivateCell(new Vector2I(x, y));
@@ -501,19 +545,19 @@ public partial class MainSharp : Node2D
 			return true;
 
 		// Try to move
-		if (Random.Shared.NextDouble() < 0.1f && MoveDown(x, y, processMaterial)) return true;
+		if (Random.Shared.NextDouble() < 0.1f && MoveDown(x, y, currentMaterial)) return true;
 
 		// Try to move
-		if (Random.Shared.NextDouble() < 0.6f && MoveUp(x, y, processMaterial)) return true;
+		if (Random.Shared.NextDouble() < 0.6f && MoveUp(x, y, currentMaterial)) return true;
 			
-		if (MoveDiagonalUp(x, y, processMaterial)) return true;
+		if (MoveDiagonalUp(x, y, currentMaterial)) return true;
 		
-		if (MoveHorizontal(x, y, processMaterial)) return true;
+		if (MoveHorizontal(x, y, currentMaterial)) return true;
 
 		return false;
 	}
 
-	private bool LavaMechanics(int x, int y, MaterialType processMaterial)
+	private bool LavaMechanics(int x, int y, MaterialType currentMaterial)
 	{
 
 		// Look for neighboring Water.
@@ -530,7 +574,7 @@ public partial class MainSharp : Node2D
 			return false;
 		}
 
-		return MoveDown(x, y, processMaterial) || MoveDiagonalDown(x, y, processMaterial) || MoveHorizontal(x, y, processMaterial);
+		return MoveDown(x, y, currentMaterial) || MoveDiagonalDown(x, y, currentMaterial) || MoveHorizontal(x, y, currentMaterial);
 	}
 
 	private bool VaporMechanics(int x, int y, MaterialType currentMaterial) 
@@ -562,20 +606,7 @@ public partial class MainSharp : Node2D
 
 	private bool RockMechanics(int x, int y, MaterialType currentMaterial)
 	{
-		if (IsValidPosition(x, y + 1) && GetMaterialAt(x, y + 1) == MaterialType.Lava)
-		{
-			// Slower in lava
-			if (Random.Shared.NextSingle() < 0.03)
-			{
-				return MoveDown(x, y, currentMaterial);
-			}
-			ActivateCell(new Vector2I(x, y));
-			return true;
-		}
-		
-		// Normal!
 		return MoveDown(x, y, currentMaterial);
-
 	}
 
 
@@ -829,8 +860,18 @@ public partial class MainSharp : Node2D
 		if (!IsValidPosition(newX, newY))
 			return false;
 
-		if (!CanSwap(processMaterial, GetMaterialAt(newX, newY)))
+		MaterialType targetMaterial = GetMaterialAt(newX, newY);
+		if (!CanSwap(processMaterial, targetMaterial))
 			return false;
+
+		if (GetMaterialState(processMaterial) == MaterialState.Solid && GetMaterialState(targetMaterial) == MaterialState.Liquid)
+		{
+			// Wait if a solid is being swapped with a liquid based on the weight and viscosity
+			// The multiplied value should be low (0.5 or lower)
+			ActivateCell(new Vector2I(x, y));
+			if (Random.Shared.NextSingle() > Mathf.Min(SolidWeight[processMaterial] * FluidViscosity[targetMaterial], 1))
+				return false;
+		}
 
 		SwapParticle(x, y, newX, newY);
 		DrawPixelAt(x, y, nextPixels);
@@ -984,7 +1025,10 @@ public partial class MainSharp : Node2D
 		nextActiveCells[cellPos] = true;
 	}
 
-	private MaterialType GetMaterialAt(int x, int y) => GetPixel(x, y, currentPixels).material;
+	private MaterialType GetMaterialAt(int x, int y) 
+	{
+		return GetPixel(x, y, currentPixels).material;
+	}
 
 	private MaterialType GetNewMaterialAt(int x, int y) => GetPixel(x, y, nextPixels).material;
 
