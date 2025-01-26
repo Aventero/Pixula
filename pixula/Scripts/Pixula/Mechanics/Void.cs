@@ -16,6 +16,11 @@ namespace Pixula.Mechanics
             if (!Main.IsInBounds(checkLocation.X, checkLocation.Y))
                 return true;
             
+            // Has to activate the location beyond the void spot.
+            Vector2I furtherLocation = checkLocation + (checkLocation - new Vector2I(x, y));
+            if (Main.IsInBounds(furtherLocation.X, furtherLocation.Y))
+                Main.ActivateCell(furtherLocation);
+
             MaterialType mat = Main.GetMaterialAt(checkLocation.X, checkLocation.Y);
             if (mat == MaterialType.Void || mat == MaterialType.Air)
                 return true;

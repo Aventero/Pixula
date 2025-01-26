@@ -69,7 +69,7 @@ public partial class MainSharp : Node2D
 
 	// Simulation
 	[Export] public bool EnableDebug { get; set; } = false;
-	private int cellSize { get; set; } = 3;
+	public int CellSize { get; set; } = 3;
 
 	// Window
 	private int width { get; set; } = 1600;
@@ -240,7 +240,7 @@ public partial class MainSharp : Node2D
 		this.gridHeight = height / pixelSize;
 		this.PixelSize = pixelSize;
 		this.SpawnRadius = spawnRadius;
-		this.cellSize = cellSize;
+		this.CellSize = cellSize;
 		colorAtlasImage = colorAtlas.GetImage();
 
 		SetupImages();
@@ -280,11 +280,11 @@ public partial class MainSharp : Node2D
 		List<Vector2I> pixelsToSimulate = [];
 		foreach (Vector2I cell in currentActiveCells.Keys)
 		{
-			int cellX = cell.X * cellSize;
-			int cellY = cell.Y * cellSize;
-			for (int y = cellY; y < cellY + cellSize; y++)
+			int cellX = cell.X * CellSize;
+			int cellY = cell.Y * CellSize;
+			for (int y = cellY; y < cellY + CellSize; y++)
 			{
-				for (int x = cellX; x < cellX + cellSize; x++)
+				for (int x = cellX; x < cellX + CellSize; x++)
 				{
 					if (IsInBounds(x, y))
 						pixelsToSimulate.Add(new Vector2I(x, y));
@@ -337,17 +337,17 @@ public partial class MainSharp : Node2D
 	private void ActivateNeighboringCells(int x, int y)
 	{
 		var cellPos = GetCell(new Vector2I(x, y));
-		var posInCell = new Vector2I(x % cellSize, y % cellSize);
+		var posInCell = new Vector2I(x % CellSize, y % CellSize);
 		var edgesToActivate = new List<Vector2I>();
 
 		if (posInCell.X == 0)
 			edgesToActivate.Add(Vector2I.Left);
-		else if (posInCell.X == cellSize - 1)
+		else if (posInCell.X == CellSize - 1)
 			edgesToActivate.Add(Vector2I.Right);
 
 		if (posInCell.Y == 0)
 			edgesToActivate.Add(Vector2I.Up);
-		else if (posInCell.Y == cellSize - 1)
+		else if (posInCell.Y == CellSize - 1)
 			edgesToActivate.Add(Vector2I.Down);
 
 		foreach (var edge in edgesToActivate)
@@ -636,11 +636,11 @@ public partial class MainSharp : Node2D
 		x >= 0 && x < gridWidth && y >= 0 && y < gridHeight;
 
 	private bool IsValidCell(Vector2I cellPos) =>
-		cellPos.X >= 0 && cellPos.X < gridWidth/cellSize &&
-		cellPos.Y >= 0 && cellPos.Y < gridHeight/cellSize;
+		cellPos.X >= 0 && cellPos.X < gridWidth/CellSize &&
+		cellPos.Y >= 0 && cellPos.Y < gridHeight/CellSize;
 
 	private Vector2I GetCell(Vector2I pos) =>
-		new(pos.X / cellSize, pos.Y / cellSize);
+		new(pos.X / CellSize, pos.Y / CellSize);
 
 	public void ActivateCell(Vector2I pos)
 	{
@@ -740,8 +740,8 @@ public partial class MainSharp : Node2D
 
 	private void DebugDrawCell(Vector2I cellPos, Color color)
 	{
-		Vector2I pixelDrawPos = cellPos * cellSize * PixelSize;
-		int cellDrawSize = cellSize * PixelSize;
+		Vector2I pixelDrawPos = cellPos * CellSize * PixelSize;
+		int cellDrawSize = CellSize * PixelSize;
 		Rect2I rect = new(pixelDrawPos, new Vector2I(cellDrawSize, cellDrawSize));
 		DrawRectOutline(debugImage, rect, color);
 	}
