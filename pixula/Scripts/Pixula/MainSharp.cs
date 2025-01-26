@@ -2,23 +2,51 @@ using Godot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Pixula.Mechanics;
 
 namespace Pixula {
 
-
-public struct Pixel
+public struct Pixel(MaterialType material, Vector2I variantPos, int various)
 {
-	public Pixel(MainSharp.MaterialType material, Vector2I variantPos, int various)
-	{
-		this.material = material;
-		this.variantPos = variantPos;
-		this.various = various;
-	}
-
-	public MainSharp.MaterialType material;
-	public Vector2I variantPos;
-	public int various;
+	public MaterialType material = material;
+	public Vector2I variantPos = variantPos;
+	public int various = various;
 }
+
+public enum MaterialType
+{
+	Air = 0,
+	Sand = 1,
+	Water = 2,
+	Rock = 3,
+	Wall = 4,
+	Wood = 5,
+	Fire = 6,
+	WaterVapor = 7,
+	WaterCloud = 8,
+	Lava = 9,
+	Acid = 10,
+	AcidVapor = 11,
+	AcidCloud = 12,
+	Void = 13,
+	Mimic = 14,
+	Seed = 15,
+	Plant = 16,
+	Poison = 17,
+	Fluff = 18,
+	Ember = 19,
+
+	// VOID -> Removes particles touching it
+	// REPEAT -> Spawns the same particle randomly around it or where it touched?
+	// Seed -> Grows when on top of soil 
+	// Seed -> ALSO grows wood under it
+	// Seed -> Can absorb water
+	// Poison -> Eats through things turning them into highly flammable fluff
+	// FLUFF -> Very flammable stuff
+	// Coal? -> Burns for long
+	// EMBER -> Hot Coal basically, can put stuff on fire
+}
+
 
 [GlobalClass]
 public partial class MainSharp : Node2D
@@ -36,8 +64,8 @@ public partial class MainSharp : Node2D
 	private ImageTexture debugTexture;
 
 	// Pixel State
-	public Pixel[] currentPixels;
-	public Pixel[] nextPixels;
+	public Pixel[] CurrentPixels;
+	public Pixel[] NextPixels;
 
 	// Simulation
 	[Export] public bool EnableDebug { get; set; } = false;
@@ -48,12 +76,6 @@ public partial class MainSharp : Node2D
 	private int height { get; set; } = 900;
 	private int gridWidth;
 	private int gridHeight;
-
-	// Benchmarking
-	private bool isBenchmark = false;
-	private float highestSimulationTime = 0;
-	private float totalSimulationTime = 0;
-	private int totalFrames = 0;
 
 	// Grid cells
 	public int SpawnRadius { get; set; } = 3;
@@ -66,38 +88,6 @@ public partial class MainSharp : Node2D
 	private Vector2I attractPosition;
 	public Vector2I MousePosition {get; set; }
 
-	public enum MaterialType
-	{
-		Air = 0,
-		Sand = 1,
-		Water = 2,
-		Rock = 3,
-		Wall = 4,
-		Wood = 5,
-		Fire = 6,
-		WaterVapor = 7,
-		WaterCloud = 8,
-		Lava = 9,
-		Acid = 10,
-		AcidVapor = 11,
-		AcidCloud = 12,
-		Void = 13,
-		Mimic = 14,
-		Seed = 15,
-		Poison = 16,
-		Fluff = 17,
-		Ember = 18,
-
-		// VOID -> Removes particles touching it
-		// REPEAT -> Spawns the same particle randomly around it or where it touched?
-		// Seed -> Grows when on top of soil 
-		// Seed -> ALSO grows wood under it
-		// Seed -> Can absorb water
-		// Poison -> Eats through things turning them into highly flammable fluff
-		// FLUFF -> Very flammable stuff
-		// Coal? -> Burns for long
-		// EMBER -> Hot Coal basically, can put stuff on fire
-	}
 
 	// Array depicts the start in the color map and how far
 	// -> Color pos + width (normally 1 as it only needs one column)
@@ -107,7 +97,7 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Sand, new[] { 22, 1 } },
 		{ MaterialType.Water, new[] { 2, 1 } },
 		{ MaterialType.Rock, new[] { 18, 0 } },
-		{ MaterialType.Wall, new[] { 37, 0 } },
+		{ MaterialType.Wall, new[] { 38, 0 } },
 		{ MaterialType.Wood, new[] { 12, 1} },
 		{ MaterialType.Fire, new[] { 27, 1} },
 		{ MaterialType.WaterVapor, new[] { 44, 1} },
@@ -116,23 +106,23 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Acid, new[] { 10, 0} },
 		{ MaterialType.AcidVapor, new[] { 10, 0} },
 		{ MaterialType.AcidCloud, new[] { 6, 0} },
-		{ MaterialType.Void, new[] { 6, 0} },
-		{ MaterialType.Mimic, new[] { 6, 0} },
-		{ MaterialType.Seed, new[] { 6, 0} },
-		{ MaterialType.Poison, new[] { 34, 0} },
-		{ MaterialType.Fluff, new[] { 6, 0} },
-		{ MaterialType.Ember, new[] { 6, 0} },
-
+		{ MaterialType.Void, new[] { 30, 0} },
+		{ MaterialType.Mimic, new[] { 31, 0} },
+		{ MaterialType.Seed, new[] { 14, 0} },
+		{ MaterialType.Plant, new[] { 7, 1} },
+		{ MaterialType.Poison, new[] { 33, 0} },
+		{ MaterialType.Fluff, new[] { 15, 0} },
+		{ MaterialType.Ember, new[] { 27, 0} },
 	};
+
+	private readonly Dictionary<MaterialType, Mechanics.MaterialMechanic> mechanics;
+
 
 	private readonly Dictionary<MaterialType, MaterialType[]> SwapRules = new()
 	{
-		{ MaterialType.Air, Array.Empty<MaterialType>() },
 		{ MaterialType.Sand, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud} },
 		{ MaterialType.Water, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud } },
 		{ MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Sand, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Fire, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Lava } },
-		{ MaterialType.Wall, Array.Empty<MaterialType>() },
-		{ MaterialType.Wood, Array.Empty<MaterialType>() },
 		{ MaterialType.Fire, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.AcidVapor, MaterialType.AcidCloud } },
 		{ MaterialType.WaterVapor, new[] { MaterialType.Air } },
 		{ MaterialType.WaterCloud, new[] { MaterialType.Air }},
@@ -166,25 +156,25 @@ public partial class MainSharp : Node2D
 
 	private MaterialState GetMaterialState(MaterialType material)
 	{
-	return material switch
-	{
-		MaterialType.Sand => MaterialState.Solid,
-		MaterialType.Rock => MaterialState.Solid,
-		MaterialType.Wall => MaterialState.Solid,
-		MaterialType.Wood => MaterialState.Solid,
-		
-		MaterialType.Water => MaterialState.Liquid,
-		MaterialType.Lava => MaterialState.Liquid,
-		MaterialType.Acid => MaterialState.Liquid,
-		
-		MaterialType.WaterVapor => MaterialState.Gas, 
-		MaterialType.WaterCloud => MaterialState.Gas,
-		MaterialType.AcidVapor => MaterialState.Gas,
-		MaterialType.AcidCloud => MaterialState.Gas,
-		MaterialType.Fire => MaterialState.Gas,
-		
-		_ => MaterialState.Solid
-	};
+		return material switch
+		{
+			MaterialType.Sand => MaterialState.Solid,
+			MaterialType.Rock => MaterialState.Solid,
+			MaterialType.Wall => MaterialState.Solid,
+			MaterialType.Wood => MaterialState.Solid,
+			
+			MaterialType.Water => MaterialState.Liquid,
+			MaterialType.Lava => MaterialState.Liquid,
+			MaterialType.Acid => MaterialState.Liquid,
+			
+			MaterialType.WaterVapor => MaterialState.Gas, 
+			MaterialType.WaterCloud => MaterialState.Gas,
+			MaterialType.AcidVapor => MaterialState.Gas,
+			MaterialType.AcidCloud => MaterialState.Gas,
+			MaterialType.Fire => MaterialState.Gas,
+			
+			_ => MaterialState.Solid
+		};
 	}
 
 	private static bool IsFlammable(MaterialType processMaterial) 
@@ -196,7 +186,7 @@ public partial class MainSharp : Node2D
 		};
 	}
 
-	private static bool IsDissolvable(MaterialType processMaterial) 
+	public static bool IsDissolvable(MaterialType processMaterial) 
 	{
 		return processMaterial switch
 		{
@@ -205,7 +195,40 @@ public partial class MainSharp : Node2D
 			MaterialType.Lava => false,
 			MaterialType.Air => false,
 			MaterialType.Wall => false,
+			MaterialType.Mimic => false,
+			MaterialType.Void => false,
 			_ => true
+		};
+	}
+
+	public readonly Vector2I[] Directions = {
+		new(-1, 1),
+		new(0, 1),
+		new(1, 1),
+		new(1, 0),
+		new(1, -1),
+		new(0, -1),
+		new(-1, -1),
+		new(-1, 0),
+	};
+
+	public MainSharp()
+	{
+		mechanics = new() 
+		{
+			{ MaterialType.Sand, new Sand(this) },
+			{ MaterialType.Water, new Water(this) },
+			{ MaterialType.Rock, new Rock(this) },
+			{ MaterialType.Fire, new Fire(this) },
+			{ MaterialType.WaterVapor, new Vapor(this) },
+			{ MaterialType.WaterCloud, new Cloud(this) },
+			{ MaterialType.Lava, new Lava(this) },
+			{ MaterialType.Wood, new Wood(this) },
+			{ MaterialType.Acid, new Acid(this) },
+			{ MaterialType.AcidVapor, new AcidVapor(this) },
+			{ MaterialType.AcidCloud, new AcidCloud(this) },
+			{ MaterialType.Mimic, new Mimic(this) },
+			{ MaterialType.Void, new Mechanics.Void(this) }
 		};
 	}
 
@@ -229,7 +252,7 @@ public partial class MainSharp : Node2D
 
 	private bool SimulateMaterialAt(int x, int y)
 	{
-		var currentMaterial = GetMaterialAt(x, y);
+		MaterialType currentMaterial = GetMaterialAt(x, y);
 
 		if (currentMaterial == MaterialType.Air)
 			return false;
@@ -237,43 +260,22 @@ public partial class MainSharp : Node2D
 		if (processedPositions.Contains(new Vector2I(x, y)))
 			return false;
 
-		return currentMaterial switch
-		{
-			MaterialType.Sand => SandMechanic(x, y, currentMaterial),
-			MaterialType.Water => WaterMechanic(x, y, currentMaterial),
-			MaterialType.Rock => RockMechanics(x, y, currentMaterial),
-			MaterialType.Fire => FireMechanic(x, y, currentMaterial),
-			MaterialType.WaterVapor => VaporMechanics(x, y, currentMaterial),
-			MaterialType.WaterCloud => CloudMechanics(x, y, currentMaterial),
-			MaterialType.Lava => LavaMechanics(x, y, currentMaterial),
-			MaterialType.Wood => WoodMechanics(x, y, currentMaterial),
-			MaterialType.Acid => AcidMechanics(x, y, currentMaterial),
-			MaterialType.AcidVapor => AcidVaporMechanics(x, y, currentMaterial),
-			MaterialType.AcidCloud => AcidCloudMechanics(x, y, currentMaterial),
-			_ => false
-		};
+		return mechanics.TryGetValue(currentMaterial, out MaterialMechanic mechanic) && mechanic.Update(x, y, currentMaterial);
 	}
 
 	
 	public void Simulate()
 	{
-		var startTime = Time.GetTicksMsec();
 		SimulateActive();
-
-		if (isBenchmark)
-			BenchmarkActive(startTime);
-
 		GetWindow().Title = Engine.GetFramesPerSecond().ToString();
 	}
 
     private void SimulateActive()
 	{
 		processedPositions.Clear();
-		Array.Copy(currentPixels, nextPixels, currentPixels.Length);
+		Array.Copy(CurrentPixels, NextPixels, CurrentPixels.Length);
 		currentActiveCells = new Dictionary<Vector2I, bool>(nextActiveCells);
 		nextActiveCells.Clear();
-
-
 
 		List<Vector2I> pixelsToSimulate = [];
 		foreach (Vector2I cell in currentActiveCells.Keys)
@@ -284,7 +286,7 @@ public partial class MainSharp : Node2D
 			{
 				for (int x = cellX; x < cellX + cellSize; x++)
 				{
-					if (IsValidPosition(x, y))
+					if (IsInBounds(x, y))
 						pixelsToSimulate.Add(new Vector2I(x, y));
 				}
 			}
@@ -302,14 +304,12 @@ public partial class MainSharp : Node2D
 		// Simulate
 		foreach (var pixelPos in pixelsToSimulate)
 		{
-			// The return in the machanic states if a change happend that requires the surrounding cells to be activated.
-			// Like MoveTo, Removal of an Material etc.
 			if (SimulateMaterialAt(pixelPos.X, pixelPos.Y))
 				ActivateNeighboringCells(pixelPos.X, pixelPos.Y);
 		}
 
-		// // Cool swap.
-		(nextPixels, currentPixels) = (currentPixels, nextPixels);
+		// Cool swap.
+		(NextPixels, CurrentPixels) = (CurrentPixels, NextPixels);
 	}
 
 	public void DrawImages()
@@ -366,250 +366,6 @@ public partial class MainSharp : Node2D
 		}
 	}
 
-    private bool AcidMechanics(int x, int y, MaterialType currentMaterial)
-	{
-
-		// Do nothing
-		if (Random.Shared.NextDouble() < 0.8f)
-		{
-			ActivateCell(new Vector2I(x, y));
-			return false;
-		}
-
-		// Try moving down
-		if (MoveDown(x, y, currentMaterial)) return true;
-
-		// Can't move? Try dissolving what's below
-		int newX = x;
-		int newY = y + 1;
-		if (Random.Shared.NextDouble() < 0.2f && IsValidPosition(newX, newY) && IsDissolvable(GetMaterialAt(newX, newY)))
-		{
-			ConvertTo(newX, newY, MaterialType.AcidVapor);
-
-			// Chance to Disappear
-			if (Random.Shared.NextDouble() < 0.25f) ConvertTo(x, y, MaterialType.Air);
-			return true;
-		}
-
-		// Try diagonal movement/dissolving
-		var direction = (x + y) % 2 == 0 ? new Vector2I(-1, 1) : new Vector2I(1, 1);
-		var newPos = new Vector2I(x, y) + direction;
-		if (MoveTo(x, y, newPos.X, newPos.Y, currentMaterial)) return true;
-		if (IsValidPosition(newPos.X, newPos.Y) && IsDissolvable(GetMaterialAt(newPos.X, newPos.Y)))
-		{
-			ConvertTo(newPos.X, newPos.Y, MaterialType.AcidVapor);
-			
-			// Chance to Disappear
-			if (Random.Shared.NextDouble() < 0.25f) ConvertTo(x, y, MaterialType.Air);
-			return true;
-		}
-
-		// Try horizontal movement/dissolving
-		int xDirection = y % 2 == 0 ? 1 : -1;
-		newX = x + xDirection;
-		if (MoveTo(x, y, newX, y, currentMaterial)) return true;
-		if (IsValidPosition(newX, y) && IsDissolvable(GetMaterialAt(newX, y)))
-		{
-			ConvertTo(newX, y, MaterialType.AcidVapor);
-
-			// Chance to Disappear
-			if (Random.Shared.NextDouble() < 0.25f) ConvertTo(x, y, MaterialType.Air);
-			return true;
-		}
-
-		return false;
-	}
-
-    private bool AcidVaporMechanics(int x, int y, MaterialType currentMaterial)
-    {
-		ActivateCell(new Vector2I(x, y));
-
-		// Small chance to disappear
-		if (Random.Shared.NextDouble() < 0.01f) 
-		{
-			SetMaterialAt(x, y, MaterialType.Air, nextPixels);
-			return true;
-		}
-
-		for (int i = 0; i < 2; i++) 
-		{
-			if (AttractTowardsMaterial(x, y, 2, 12, MaterialType.WaterVapor))
-				return true;
-		}
-
-		// Chance to turn itself to cloud, based on surroundings
-		FormCloud(x, y, MaterialType.AcidVapor, MaterialType.AcidCloud);
-
-		// Do nothing -> slow
-		if (Random.Shared.NextDouble() < 0.5f) return true;
-
-		if (Random.Shared.NextDouble() < 0.8f && MoveUp(x, y, currentMaterial)) return true; 
-
-		return MoveDiagonalUp(x, y, currentMaterial) || MoveHorizontal(x, y, currentMaterial);
-    }
-
-	private bool AcidCloudMechanics(int x, int y, MaterialType processMaterial)
-	{
-		ActivateCell(new Vector2I(x, y));
-
-		// Chance to spawn acid underneath
-		if (Random.Shared.NextDouble() < 0.005f) 
-		{
-			// Check if space below is empty
-			if (GetMaterialAt(x, y + 1) == MaterialType.Air)
-				ConvertTo(x, y + 1, MaterialType.Acid);
-		}
-
-		for (int i = 0; i < 2; i++) 
-		{
-			if (AttractTowardsMaterial(x, y, 2, 8, MaterialType.AcidCloud))
-				return true;
-		}
-
-		// Dying with 0.25% chance per update
-		if (Random.Shared.NextDouble() < 0.0025f)
-		{
-			ConvertTo(x, y, MaterialType.Air);
-			return true;
-		}
-
-		// Do nothing
-		if (Random.Shared.NextDouble() < 0.4f)
-			return true;
-
-		return MoveUp(x, y, processMaterial) || MoveDiagonalUp(x, y, processMaterial);
-	}
-
-    private bool WoodMechanics(int x, int y, MaterialType currentMaterial)
-    {
-
-		// Very high chance to do nothing
-		if (Random.Shared.NextDouble() < 0.995f)
-		{
-			ActivateCell(new Vector2I(x, y));
-			return true;
-		}
-		
-		// GROW!
-		int randomDirection = Random.Shared.Next(0, directions.Length);
-		Vector2I checkPosition = directions[randomDirection] + new Vector2I(x, y);
-
-		if (!IsValidPosition(checkPosition.X, checkPosition.Y))
-			return false;
-		
-
-		MaterialType mat = GetMaterialAt(checkPosition.X, checkPosition.Y);
-		if (mat is MaterialType.Air or MaterialType.Sand or MaterialType.Water or MaterialType.Rock)
-		{
-			ConvertTo(checkPosition.X, checkPosition.Y, MaterialType.Wood);
-			return true;
-		}
-
-		return false;
-    }
-
-    private bool SandMechanic(int x, int y, MaterialType currentMaterial)
-	{
-		return 	MoveDown(x, y, currentMaterial) ||
-				MoveDiagonalDown(x, y, currentMaterial);
-	}
-
-	private bool WaterMechanic(int x, int y, MaterialType currentMaterial)
-	{
-		return MoveDown(x, y, currentMaterial) ||
-			   MoveDiagonalDown(x, y, currentMaterial) ||
-			   MoveHorizontal(x, y, currentMaterial);
-	}
-
-	private bool FireMechanic(int x, int y, MaterialType currentMaterial)
-	{
-		// Always keep fire active!
-		ActivateCell(new Vector2I(x, y));
-
-		// Chance to go out
-		if (Random.Shared.NextDouble() < 0.025f)
-		{
-			ConvertTo(x, y, MaterialType.Air);
-			return true;
-		}
-
-		// Look for neighboring Water.
-		if (ExtinguishFire(x, y))
-			return true;
-
-		// Spread to flammable materials
-		SpreadFire(x, y);
-
-		// Do nothing
-		if (Random.Shared.NextDouble() < 0.3f)
-			return true;
-
-		// Try to move
-		if (Random.Shared.NextDouble() < 0.1f && MoveDown(x, y, currentMaterial)) return true;
-
-		// Try to move
-		if (Random.Shared.NextDouble() < 0.6f && MoveUp(x, y, currentMaterial)) return true;
-			
-		if (MoveDiagonalUp(x, y, currentMaterial)) return true;
-		
-		if (MoveHorizontal(x, y, currentMaterial)) return true;
-
-		return false;
-	}
-
-	private bool LavaMechanics(int x, int y, MaterialType currentMaterial)
-	{
-
-		// Look for neighboring Water.
-		if (ExtinguishLava(x, y))
-			return false; // was extinguished
-
-		// Spread to flammable materials
-		SpreadFire(x, y);
-
-		// Do nothing 90% of time
-		if (Random.Shared.NextDouble() < 0.7f)
-		{
-			ActivateCell(new Vector2I(x, y));
-			return false;
-		}
-
-		return MoveDown(x, y, currentMaterial) || MoveDiagonalDown(x, y, currentMaterial) || MoveHorizontal(x, y, currentMaterial);
-	}
-
-	private bool VaporMechanics(int x, int y, MaterialType currentMaterial) 
-	{
-		ActivateCell(new Vector2I(x, y));
-
-		// Small chance to disappear
-		if (Random.Shared.NextDouble() < 0.01f) 
-		{
-			SetMaterialAt(x, y, MaterialType.Air, nextPixels);
-			return true;
-		}
-
-		for (int i = 0; i < 2; i++) 
-		{
-			if (AttractTowardsMaterial(x, y, 2, 12, MaterialType.WaterVapor))
-				return true;
-		}
-
-		// Chance to turn itself to cloud, based on surroundings
-		FormCloud(x, y, MaterialType.WaterVapor, MaterialType.WaterCloud);
-		// Do nothing -> slow
-		if (Random.Shared.NextDouble() < 0.5f) return true;
-
-		if (Random.Shared.NextDouble() < 0.8f && MoveUp(x, y, currentMaterial)) return true; 
-
-		return MoveDiagonalUp(x, y, currentMaterial) || MoveHorizontal(x, y, currentMaterial);
-	}
-
-	private bool RockMechanics(int x, int y, MaterialType currentMaterial)
-	{
-		return MoveDown(x, y, currentMaterial);
-	}
-
-
 	private static Vector2I GetRandomRingPosition(int centerX, int centerY, int minDist, int maxDist) 
 	{
 		// 360° Degrees around the pixel are possible 
@@ -625,10 +381,10 @@ public partial class MainSharp : Node2D
 		return new Vector2I(x, y);
 	}
 
-	private bool AttractTowardsMaterial(int x, int y, int rangeMin, int rangeMax, MaterialType materialType)
+	public bool AttractTowardsMaterial(int x, int y, int rangeMin, int rangeMax, MaterialType materialType)
 	{
 		Vector2I pos = GetRandomRingPosition(x, y, rangeMin, rangeMax);
-		if (IsValidPosition(pos.X, pos.Y) && GetMaterialAt(pos.X, pos.Y) == materialType)
+		if (IsInBounds(pos.X, pos.Y) && GetMaterialAt(pos.X, pos.Y) == materialType)
 		{
 			Vector2I direction = new(Math.Sign(pos.X - x), Math.Sign(pos.Y -y));
 			return MoveTo(x, y, x + direction.X, y + direction.Y, materialType);
@@ -679,46 +435,14 @@ public partial class MainSharp : Node2D
 		}
 	}
 
-	private bool CloudMechanics(int x, int y, MaterialType processMaterial)
-	{
-		ActivateCell(new Vector2I(x, y));
-
-		// Chance to spawn water underneath
-		if (Random.Shared.NextDouble() < 0.01f) 
-		{
-			// Check if space below is empty
-			if (GetMaterialAt(x, y + 1) == MaterialType.Air)
-				ConvertTo(x, y + 1, MaterialType.Water);
-		}
-
-		for (int i = 0; i < 2; i++) 
-		{
-			if (AttractTowardsMaterial(x, y, 2, 8, MaterialType.WaterCloud))
-				return true;
-		}
-
-		// Dying with 0.5% chance per update
-		if (Random.Shared.NextDouble() < 0.005f)
-		{
-			ConvertTo(x, y, MaterialType.Air);
-			return true;
-		}
-
-		// Do nothing
-		if (Random.Shared.NextDouble() < 0.6f)
-			return true;
-
-		return MoveUp(x, y, processMaterial) || MoveDiagonalUp(x, y, processMaterial);
-	}
-
-	private bool FormCloud(int x, int y, MaterialType vaporType, MaterialType cloudType) 
+	public bool FormCloud(int x, int y, MaterialType vaporType, MaterialType cloudType) 
 	{
 		int vaporCount = 0;
-		foreach (Vector2I direction in directions) 
+		foreach (Vector2I direction in Directions) 
 		{
 			var checkX = x + direction.X;
 			var checkY = y + direction.Y;
-			if (!IsValidPosition(checkX, checkY))
+			if (!IsInBounds(checkX, checkY))
 				continue;
 
 			if (GetMaterialAt(checkX, checkY) == vaporType)
@@ -735,65 +459,13 @@ public partial class MainSharp : Node2D
 		return false;
 	}
 
-
-
-	private bool ExtinguishFire(int x, int y) 
+	public void SpreadFire(int x, int y)
 	{
-		foreach (Vector2I direction in directions) 
-		{
-			var checkX = x + direction.X;
-			var checkY = y + direction.Y;
-			if (!IsValidPosition(checkX, checkY))
-				continue;
-			
-			if (GetMaterialAt(checkX, checkY) == MaterialType.Water)
-			{
-				ConvertTo(x, y, MaterialType.WaterVapor);
-				ConvertTo(checkX, checkY, MaterialType.WaterVapor);
-				return true;
-			} 
-		}
-		return false;
-	}
-
-	private bool ExtinguishLava(int x, int y) 
-	{
-		foreach (Vector2I direction in directions) 
+		foreach (Vector2I direction in Directions) 
 		{
 			int checkX = x + direction.X;
 			int checkY = y + direction.Y;
-			if (!IsValidPosition(checkX, checkY))
-				continue;
-			
-			if (GetMaterialAt(checkX, checkY) == MaterialType.Water)
-			{
-				if (Random.Shared.NextSingle() < 0.1) ConvertTo(x, y, MaterialType.Rock);
-				ConvertTo(checkX, checkY, MaterialType.WaterVapor);
-
-				foreach (Vector2I dirAroundWater in directions)
-				{
-					int checkVaporX = checkX + dirAroundWater.X;
-					int checkVaporY = checkY + dirAroundWater.Y;
-					if (!IsValidPosition(checkVaporX, checkVaporY))
-						continue;
-
-					if (GetMaterialAt(checkVaporX, checkVaporY) == MaterialType.Air)
-						ConvertTo(checkVaporX, checkVaporY, MaterialType.WaterVapor);
-				}
-				return true;
-			} 
-		}
-		return false;
-	}
-
-
-	private void SpreadFire(int x, int y)
-	{
-		foreach (Vector2I direction in directions) 
-		{
-			int checkX = x + direction.X;
-			int checkY = y + direction.Y;
-			if (!IsValidPosition(checkX, checkY))
+			if (!IsInBounds(checkX, checkY))
 				continue;
 			MaterialType material = GetMaterialAt(checkX, checkY);
 
@@ -803,61 +475,12 @@ public partial class MainSharp : Node2D
 		}
 	}
 
-	private bool MoveHorizontal(int x, int y, MaterialType processMaterial)
-	{
-		// Direction not yet set.
-		Pixel p = GetPixel(x, y, currentPixels);
-		if (p.various == 0)
-		{
-			int xDirection = y % 2 == 0 ? 1 : -1;
-			p.various = xDirection;
-		}
-
-		// Various is the direction
-		// Try moving into the direction
-		bool ableToMoveHorizontal = MoveTo(x, y, x + p.various, y, processMaterial);
-
-		if (!ableToMoveHorizontal)
-		{
-			// Bounce!
-			p.various *= -1;
-			SetPixel(x, y, p, nextPixels);
-			return true;
-		}
-
-		return ableToMoveHorizontal;
-	}
-
-	private bool MoveDown(int x, int y, MaterialType processMaterial)
-	{
-		return MoveTo(x, y, x, y + 1, processMaterial);
-	}
-
-	private bool MoveUp(int x, int y, MaterialType processMaterial)
-	{
-		return MoveTo(x, y, x, y - 1, processMaterial);
-	}
-
-	private bool MoveDiagonalDown(int x, int y, MaterialType processMaterial)
-	{
-		Vector2I direction = (x + y) % 2 == 0 ? new Vector2I(-1, 1) : new Vector2I(1, 1);
-		Vector2I newPos = new Vector2I(x, y) + direction;
-		return MoveTo(x, y, newPos.X, newPos.Y, processMaterial);
-	}
-
-	private bool MoveDiagonalUp(int x, int y, MaterialType processMaterial)
-	{
-		Vector2I direction = (x + y) % 2 == 0 ? new Vector2I(-1, -1) : new Vector2I(1, -1);
-		Vector2I newPos = new Vector2I(x, y) + direction;
-		return MoveTo(x, y, newPos.X, newPos.Y, processMaterial);
-	}
-
-	private bool MoveTo(int x, int y, int newX, int newY, MaterialType processMaterial) 
+	public bool MoveTo(int x, int y, int newX, int newY, MaterialType processMaterial) 
 	{
 		Vector2I source = new(x, y);
 		Vector2I destination = new(newX, newY);
 
-		if (!IsValidPosition(newX, newY))
+		if (!IsInBounds(newX, newY))
 			return false;
 
 		MaterialType targetMaterial = GetMaterialAt(newX, newY);
@@ -874,8 +497,8 @@ public partial class MainSharp : Node2D
 		}
 
 		SwapParticle(x, y, newX, newY);
-		DrawPixelAt(x, y, nextPixels);
-		DrawPixelAt(newX, newY, nextPixels);
+		DrawPixelAt(x, y, NextPixels);
+		DrawPixelAt(newX, newY, NextPixels);
 
 		processedPositions.Add(source);
 		processedPositions.Add(destination);
@@ -981,14 +604,14 @@ public partial class MainSharp : Node2D
 
 	private void SwapParticle(int sourceX, int sourceY, int destinationX, int destinationY)
 	{
-		Pixel temp = GetPixel(destinationX, destinationY, nextPixels);
-		SetPixel(destinationX, destinationY, GetPixel(sourceX, sourceY, currentPixels), nextPixels);
-		SetPixel(sourceX, sourceY, temp, nextPixels);
+		Pixel temp = GetPixel(destinationX, destinationY, NextPixels);
+		SetPixel(destinationX, destinationY, GetPixel(sourceX, sourceY, CurrentPixels), NextPixels);
+		SetPixel(sourceX, sourceY, temp, NextPixels);
 	}
 
-	private void ConvertTo(int x, int y, MaterialType materialType) 
+	public void ConvertTo(int x, int y, MaterialType materialType) 
 	{
-		SetMaterialAt(x, y, materialType, nextPixels);
+		SetMaterialAt(x, y, materialType, NextPixels);
 	}
 
 	public void SpawnInRadius(int centerX, int centerY, int radius, MaterialType materialType)
@@ -1000,8 +623,8 @@ public partial class MainSharp : Node2D
 				var distance = new Vector2(centerX - x, centerY - y).Length();
 				if (distance < radius)
 				{
-					SetMaterialAt(x, y, materialType, currentPixels);
-					SetMaterialAt(x, y, materialType, nextPixels);
+					SetMaterialAt(x, y, materialType, CurrentPixels);
+					SetMaterialAt(x, y, materialType, NextPixels);
 					ActivateCell(new Vector2I(x, y));
 				}
 			}
@@ -1009,7 +632,7 @@ public partial class MainSharp : Node2D
 	}
 
 	// Helper methods
-	private bool IsValidPosition(int x, int y) =>
+	public bool IsInBounds(int x, int y) =>
 		x >= 0 && x < gridWidth && y >= 0 && y < gridHeight;
 
 	private bool IsValidCell(Vector2I cellPos) =>
@@ -1019,18 +642,18 @@ public partial class MainSharp : Node2D
 	private Vector2I GetCell(Vector2I pos) =>
 		new(pos.X / cellSize, pos.Y / cellSize);
 
-	private void ActivateCell(Vector2I pos)
+	public void ActivateCell(Vector2I pos)
 	{
 		var cellPos = GetCell(pos);
 		nextActiveCells[cellPos] = true;
 	}
 
-	private MaterialType GetMaterialAt(int x, int y) 
+	public MaterialType GetMaterialAt(int x, int y) 
 	{
-		return GetPixel(x, y, currentPixels).material;
+		return GetPixel(x, y, CurrentPixels).material;
 	}
 
-	private MaterialType GetNewMaterialAt(int x, int y) => GetPixel(x, y, nextPixels).material;
+	private MaterialType GetNewMaterialAt(int x, int y) => GetPixel(x, y, NextPixels).material;
 
 	private bool CanSwap(MaterialType source, MaterialType swappingPartner) =>
 		SwapRules.TryGetValue(source, out var rules) && rules.Contains(swappingPartner);
@@ -1038,15 +661,15 @@ public partial class MainSharp : Node2D
 	private void SetupPixels()
 	{
 		// Initialize coloum
-		currentPixels = new Pixel[gridHeight * gridWidth];
-		nextPixels = new Pixel[gridHeight * gridWidth]; 
+		CurrentPixels = new Pixel[gridHeight * gridWidth];
+		NextPixels = new Pixel[gridHeight * gridWidth]; 
 
 		for (int y = 0; y < gridHeight; y++)
 		{
 			for (int x = 0; x < gridWidth; x++)
 			{
-				SetMaterialAt(x, y, MaterialType.Air, currentPixels);
-				SetMaterialAt(x, y, MaterialType.Air, nextPixels);
+				SetMaterialAt(x, y, MaterialType.Air, CurrentPixels);
+				SetMaterialAt(x, y, MaterialType.Air, NextPixels);
 			}
 		}
 	}
@@ -1060,88 +683,28 @@ public partial class MainSharp : Node2D
 
 	public Color GetColorAt(int x, int y)
 	{
-		if (!IsValidPosition(x, y))
+		if (!IsInBounds(x, y))
 			return Colors.Transparent;
 			
 		return worldImage.GetPixel(x, y);
 	}
 
-	public void InitializeBenchmarkParticles()
+	public void SetMaterialAt(int x, int y, MaterialType materialType, Pixel[] pixelArray)
 	{
-		// Clear benchmarking stats
-		totalFrames = 0;
-		totalSimulationTime = 0;
-		highestSimulationTime = 0;
-		SetupPixels();
-		currentActiveCells.Clear();
-		nextActiveCells.Clear();
-
-		// Spawn benchmark particles
-		var particlesSpawned = 0;
-		const int benchmarkParticleCount = 8000;
-		GD.Print($"Benchmark with: {benchmarkParticleCount}");
-
-		var random = new Random();
-		while (particlesSpawned < benchmarkParticleCount)
-		{
-			var x = random.Next(0, gridWidth);
-			var y = random.Next(0, gridHeight);
-			if (GetMaterialAt(x, y) == MaterialType.Air)
-			{
-				SetMaterialAt(x, y, MaterialType.Sand, currentPixels);
-				particlesSpawned++;
-			}
-		}
-
-		isBenchmark = true;
-	}
-
-	private void SetMaterialAt(int x, int y, MaterialType materialType, Pixel[] pixelArray)
-	{
-		if (!IsValidPosition(x, y))
+		if (!IsInBounds(x, y))
 			return;
 		
-		SetPixel(x, y, new Pixel(materialType, GetRandomVariant(materialType), 0), pixelArray);
+		SetPixel(x, y, new Pixel(materialType, GetRandomVariant(materialType), (int)MaterialType.Air), pixelArray);
 		ActivateCell(new Vector2I(x, y));
 		DrawPixelAt(x, y, pixelArray);
 	}
 
-	private void BenchmarkActive(ulong startTime)
-	{
-		var endTime = Time.GetTicksMsec();
-		var currentSimulationTime = endTime - startTime;
-		totalSimulationTime += currentSimulationTime;
-		totalFrames++;
-
-		if (highestSimulationTime < currentSimulationTime)
-			highestSimulationTime = currentSimulationTime;
-
-		if (currentActiveCells.Count == 0 && nextActiveCells.Count == 0)
-		{
-			isBenchmark = false;
-			var averageTime = totalSimulationTime / totalFrames;
-			GD.Print($"Total: {totalSimulationTime}ms | Average: {averageTime}ms | " +
-					$"Highest: {highestSimulationTime}ms | FPS: {Engine.GetFramesPerSecond()}");
-		}
-	}
-
-	private readonly Vector2I[] directions = {
-		new(-1, 1),
-		new(0, 1),
-		new(1, 1),
-		new(1, 0),
-		new(1, -1),
-		new(0, -1),
-		new(-1, -1),
-		new(-1, 0),
-	};
-
-	private Pixel GetPixel(int x, int y, Pixel[] pixelArray) 
+	public Pixel GetPixel(int x, int y, Pixel[] pixelArray) 
 	{
 		return pixelArray[x + gridWidth * y];
 	}
 
-	private void SetPixel(int x, int y, Pixel pixel, Pixel[] pixelArray) 
+	public void SetPixel(int x, int y, Pixel pixel, Pixel[] pixelArray) 
 	{
 		pixelArray[x + gridWidth * y] = pixel;
 	}

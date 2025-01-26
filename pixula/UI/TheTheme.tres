@@ -110,3 +110,4 @@ Label/font_sizes/font_size = 26
 Label/fonts/font = ExtResource("1_sgbsl")
 PanelContainer/styles/panel = SubResource("StyleBoxFlat_xgf8h")
 VBoxContainer/constants/separation = 5
+VScrollBar/styles/scroll = null

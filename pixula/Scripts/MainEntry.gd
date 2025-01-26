@@ -49,9 +49,10 @@ enum MaterialType {
 	VOID = 13,
 	MIMIC = 14,
 	SEED = 15,
-	POISON = 16,
-	FLUFF = 17,
-	EMBER = 18
+	PANT = 16,
+	POISON = 17,
+	FLUFF = 18,
+	EMBER = 19
 }
 
 # Called when the node enters the scene tree for the first time.
@@ -134,6 +135,10 @@ func setup_mouse_filter(control: Control) -> void:
 	if control is Button:
 		control.gui_input.connect(on_gui_input)
 
+	if control is ScrollContainer:
+		control.gui_input.connect(on_gui_input)
+		control.mouse_exited.connect(on_mouse_exit)
+
 	if control is HSlider:
 		control.gui_input.connect(on_gui_input)
 		control.mouse_exited.connect(on_mouse_exit)
@@ -149,8 +154,13 @@ func on_mouse_exit() -> void:
 	_is_pressing_ui = false
 
 func _input(event: InputEvent) -> void:
-	if event.is_pressed():
-		Input.mouse_mode = Input.MouseMode.MOUSE_MODE_HIDDEN
+	var ui_layer = $Overlay/MainPanelContainer
+	if ui_layer.get_global_rect().has_point(get_viewport().get_mouse_position()):
+		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+		_is_pressing_ui = true
+	else:
+		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+		_is_pressing_ui = false
 
 # Mouse
 func check_mouse_input() -> void:
