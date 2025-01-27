@@ -30,7 +30,7 @@ namespace Pixula.Mechanics
             if (p.various != (int)MaterialType.Air)
             {
 
-                if (Random.Shared.NextSingle() > 0.5f)
+                if (Random.Shared.NextSingle() > 0.3f)
                     return true;
 
                 // Do the spawning

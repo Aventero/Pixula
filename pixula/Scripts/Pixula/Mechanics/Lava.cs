@@ -22,6 +22,9 @@ namespace Pixula.Mechanics
             // Spread to flammable materials
             Main.SpreadFire(x, y);
 
+            if (Random.Shared.NextDouble() < 0.7f && MoveDown(x, y, currentMaterial))
+                return true;
+
             // Do nothing 90% of time
             if (Random.Shared.NextDouble() < 0.7f)
             {
@@ -29,7 +32,7 @@ namespace Pixula.Mechanics
                 return false;
             }
 
-            return MoveDown(x, y, currentMaterial) || MoveDiagonalDown(x, y, currentMaterial) || MoveHorizontal(x, y, currentMaterial);
+            return MoveDiagonalDown(x, y, currentMaterial) || MoveHorizontal(x, y, currentMaterial);
         }
 
     	public bool ExtinguishLava(int x, int y) 

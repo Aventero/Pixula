@@ -9,10 +9,18 @@ namespace Pixula.Mechanics
 {
     public class Void(MainSharp main) : MaterialMechanic(main) 
     {
+        private Vector2I[] simpleDirections = 
+        {
+            Vector2I.Up,
+            Vector2I.Down,
+            Vector2I.Left,
+            Vector2I.Right
+        };
+
         public override bool Update(int x, int y, MaterialType material)
         {
             // Check surrounding pixels
-            Vector2I checkLocation = Main.Directions[GD.RandRange(0, 7)] + new Vector2I(x, y);
+            Vector2I checkLocation = simpleDirections[GD.RandRange(0, simpleDirections.Length - 1)] + new Vector2I(x, y);
             if (!Main.IsInBounds(checkLocation.X, checkLocation.Y))
                 return true;
             

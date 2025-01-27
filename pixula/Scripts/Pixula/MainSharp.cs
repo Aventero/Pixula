@@ -437,6 +437,11 @@ public partial class MainSharp : Node2D
 
 	public bool FormCloud(int x, int y, MaterialType vaporType, MaterialType cloudType) 
 	{
+
+		// Random chance to not form a cloud
+		if (Random.Shared.NextDouble() > (0.015f * (1 - y / (float)gridHeight)))
+			return false;
+
 		int vaporCount = 0;
 		foreach (Vector2I direction in Directions) 
 		{
@@ -450,7 +455,7 @@ public partial class MainSharp : Node2D
 		}
 
 		// Make me a CLOUD
-		if (vaporCount >= 4 && Random.Shared.NextDouble() < 0.1f) 
+		if (vaporCount >= 4) 
 		{
 			ConvertTo(x, y, cloudType);
 			return true;

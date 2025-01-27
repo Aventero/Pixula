@@ -15,16 +15,17 @@ namespace Pixula.Mechanics
         private bool AcidMechanics(int x, int y, MaterialType currentMaterial)
         {
 
+
+            // Try moving down
+            if (MoveDown(x, y, currentMaterial)) return true;
+
             // Do nothing
             if (Random.Shared.NextDouble() < 0.8f)
             {
                 Main.ActivateCell(new Vector2I(x, y));
                 return false;
             }
-
-            // Try moving down
-            if (MoveDown(x, y, currentMaterial)) return true;
-
+            
             // Can't move? Try dissolving what's below
             int newX = x;
             int newY = y + 1;

@@ -17,26 +17,27 @@ namespace Pixula.Mechanics
             Main.ActivateCell(new Vector2I(x, y));
 
             // Small chance to disappear
-            if (Random.Shared.NextDouble() < 0.01f) 
+            if (Random.Shared.NextDouble() < 0.005f) 
             {
                 Main.SetMaterialAt(x, y, MaterialType.Air, Main.NextPixels);
                 return true;
             }
 
-            for (int i = 0; i < 2; i++) 
+            for (int i = 0; i < 3; i++) 
             {
                 if (Main.AttractTowardsMaterial(x, y, 2, 12, MaterialType.WaterVapor))
                     return true;
             }
 
             // Chance to turn itself to cloud, based on surroundings
-            Main.FormCloud(x, y, MaterialType.WaterVapor, MaterialType.WaterCloud);
-            // Do nothing -> slow
-            if (Random.Shared.NextDouble() < 0.5f) return true;
+            if (Main.FormCloud(x, y, MaterialType.WaterVapor, MaterialType.WaterCloud))
+                return true;
 
             if (Random.Shared.NextDouble() < 0.8f && MoveUp(x, y, currentMaterial)) return true; 
+            if (Random.Shared.NextDouble() < 0.7f && MoveDiagonalUp(x, y, currentMaterial)) return true; 
+            if (Random.Shared.NextDouble() < 0.3f && MoveHorizontal(x, y, currentMaterial)) return true; 
 
-            return MoveDiagonalUp(x, y, currentMaterial) || MoveHorizontal(x, y, currentMaterial);
+            return true;
         }
     }
 }
