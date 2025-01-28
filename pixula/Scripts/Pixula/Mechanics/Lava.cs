@@ -22,11 +22,11 @@ namespace Pixula.Mechanics
             // Spread to flammable materials
             Main.SpreadFire(x, y);
 
-            if (Random.Shared.NextDouble() < 0.7f && MoveDown(x, y, currentMaterial))
+            if (Chance(0.7f) && MoveDown(x, y, currentMaterial))
                 return true;
 
-            // Do nothing 90% of time
-            if (Random.Shared.NextDouble() < 0.7f)
+            // Do nothing
+            if (Chance(0.7f))
             {
                 Main.ActivateCell(new Vector2I(x, y));
                 return false;
@@ -46,7 +46,7 @@ namespace Pixula.Mechanics
                 
                 if (Main.GetMaterialAt(checkX, checkY) == MaterialType.Water)
                 {
-                    if (Random.Shared.NextSingle() < 0.1) Main.ConvertTo(x, y, MaterialType.Rock);
+                    if (Chance(0.1f)) Main.ConvertTo(x, y, MaterialType.Rock);
                     Main.ConvertTo(checkX, checkY, MaterialType.WaterVapor);
 
                     foreach (Vector2I dirAroundWater in Main.Directions)

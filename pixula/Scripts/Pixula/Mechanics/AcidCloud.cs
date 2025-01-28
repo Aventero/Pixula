@@ -17,7 +17,7 @@ namespace Pixula.Mechanics
             Main.ActivateCell(new Vector2I(x, y));
 
             // Chance to spawn acid underneath
-            if (Random.Shared.NextDouble() < 0.005f) 
+            if (Chance(0.005f)) 
             {
                 if (!Main.IsInBounds(x, y + 1))
                     return true;
@@ -34,14 +34,14 @@ namespace Pixula.Mechanics
             }
 
             // Dying with 0.25% chance per update
-            if (Random.Shared.NextDouble() < 0.0025f)
+            if (Chance(0.0025f))
             {
                 Main.ConvertTo(x, y, MaterialType.Air);
                 return true;
             }
 
             // Do nothing
-            if (Random.Shared.NextDouble() < 0.4f)
+            if (Chance(0.4f))
                 return true;
 
             return MoveUp(x, y, processMaterial) || MoveDiagonalUp(x, y, processMaterial);

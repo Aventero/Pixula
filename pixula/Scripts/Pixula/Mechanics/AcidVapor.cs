@@ -17,7 +17,7 @@ namespace Pixula.Mechanics
             Main.ActivateCell(new Vector2I(x, y));
 
             // Small chance to disappear
-            if (Random.Shared.NextDouble() < 0.005f) 
+            if (Chance(0.005f)) 
             {
                 Main.SetMaterialAt(x, y, MaterialType.Air, Main.NextPixels);
                 return true;
@@ -33,9 +33,9 @@ namespace Pixula.Mechanics
             if (Main.FormCloud(x, y, MaterialType.AcidVapor, MaterialType.AcidCloud))
                 return true;
 
-            if (Random.Shared.NextDouble() < 0.8f && MoveUp(x, y, currentMaterial)) return true; 
-            if (Random.Shared.NextDouble() < 0.7f && MoveDiagonalUp(x, y, currentMaterial)) return true; 
-            if (Random.Shared.NextDouble() < 0.3f && MoveHorizontal(x, y, currentMaterial)) return true; 
+            if (Chance(0.8f) && MoveUp(x, y, currentMaterial)) return true; 
+            if (Chance(0.7f) && MoveDiagonalUp(x, y, currentMaterial)) return true; 
+            if (Chance(0.3f) && MoveHorizontal(x, y, currentMaterial)) return true; 
             return true;
         }
     }

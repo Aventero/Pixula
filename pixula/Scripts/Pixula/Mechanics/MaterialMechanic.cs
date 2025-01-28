@@ -1,3 +1,4 @@
+using System;
 using Godot;
 using Godot.Bridge;
 
@@ -57,6 +58,11 @@ namespace Pixula.Mechanics
             Vector2I direction = (x + y) % 2 == 0 ? new Vector2I(-1, -1) : new Vector2I(1, -1);
             Vector2I newPos = new Vector2I(x, y) + direction;
             return Main.MoveTo(x, y, newPos.X, newPos.Y, processMaterial);
+        }
+
+        public static bool Chance(float probability)
+        {
+            return Random.Shared.NextSingle() < probability;
         }
 
     }

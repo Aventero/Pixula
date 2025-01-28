@@ -16,7 +16,7 @@ namespace Pixula.Mechanics
         {
 
             // Very high chance to do nothing
-            if (Random.Shared.NextDouble() < 0.995f)
+            if (Chance(0.995f))
             {
                 Main.ActivateCell(new Vector2I(x, y));
                 return true;
@@ -31,13 +31,23 @@ namespace Pixula.Mechanics
             
 
             MaterialType mat = Main.GetMaterialAt(checkPosition.X, checkPosition.Y);
-            if (mat is MaterialType.Air or MaterialType.Sand or MaterialType.Water or MaterialType.Rock)
+            if (IsGrowable(mat))
             {
                 Main.ConvertTo(checkPosition.X, checkPosition.Y, MaterialType.Wood);
                 return true;
             }
 
             return false;
+        }
+
+        public static bool IsGrowable(MaterialType materialToTest)
+        {
+            return materialToTest switch 
+            {
+                MaterialType.Sand => true,
+                MaterialType.Rock => true,
+                _ => false
+            };
         }
     }
 }

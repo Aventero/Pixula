@@ -18,7 +18,7 @@ namespace Pixula.Mechanics
             Main.ActivateCell(new Vector2I(x, y));
 
             // Chance to go out
-            if (Random.Shared.NextDouble() < 0.025f)
+            if (Chance(0.025f))
             {
                 Main.ConvertTo(x, y, MaterialType.Air);
                 return true;
@@ -32,14 +32,14 @@ namespace Pixula.Mechanics
             Main.SpreadFire(x, y);
 
             // Do nothing
-            if (Random.Shared.NextDouble() < 0.3f)
+            if (Chance(0.3f))
                 return true;
 
             // Try to move
-            if (Random.Shared.NextDouble() < 0.1f && MoveDown(x, y, currentMaterial)) return true;
+            if (Chance(0.1f) && MoveDown(x, y, currentMaterial)) return true;
 
             // Try to move
-            if (Random.Shared.NextDouble() < 0.6f && MoveUp(x, y, currentMaterial)) return true;
+            if (Chance(0.6f) && MoveUp(x, y, currentMaterial)) return true;
                 
             if (MoveDiagonalUp(x, y, currentMaterial)) return true;
             

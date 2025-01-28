@@ -29,9 +29,7 @@ namespace Pixula.Mechanics
             // Mimic has been set already -> return
             if (p.various != (int)MaterialType.Air)
             {
-
-                if (Random.Shared.NextSingle() > 0.3f)
-                    return true;
+                if (Chance(0.7f)) return true;
 
                 // Do the spawning
                 Vector2I spawnLocation = Main.Directions[GD.RandRange(0, 7)] + new Vector2I(x, y);
@@ -45,13 +43,12 @@ namespace Pixula.Mechanics
             Vector2I direction = Main.Directions[GD.RandRange(0, 7)];
             int checkX = x + direction.X;
             int checkY = y + direction.Y;
-            if (!Main.IsInBounds(checkX, checkY))
-                return true;
+            
+            if (!Main.IsInBounds(checkX, checkY)) return true;
 
             MaterialType possibleCopyMaterial = Main.GetMaterialAt(checkX, checkY);
             
-            if (!IsCopyable(possibleCopyMaterial))
-                return true;
+            if (!IsCopyable(possibleCopyMaterial)) return true;
             
             p.various = (int)possibleCopyMaterial;
             Main.SetPixel(x, y, p, Main.NextPixels);

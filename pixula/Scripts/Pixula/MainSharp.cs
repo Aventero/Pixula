@@ -36,8 +36,6 @@ public enum MaterialType
 	Fluff = 18,
 	Ember = 19,
 
-	// VOID -> Removes particles touching it
-	// REPEAT -> Spawns the same particle randomly around it or where it touched?
 	// Seed -> Grows when on top of soil 
 	// Seed -> ALSO grows wood under it
 	// Seed -> Can absorb water
@@ -130,6 +128,8 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Acid, new[] { MaterialType.Air, MaterialType.AcidVapor, MaterialType.WaterVapor }},
 		{ MaterialType.AcidVapor, new[] { MaterialType.Air }},
 		{ MaterialType.AcidCloud, new[] { MaterialType.Air }},
+		{ MaterialType.Seed, new[] { MaterialType.Air }},
+		{ MaterialType.Plant, new[] { MaterialType.Air }},
 	};
 
 	private readonly Dictionary<MaterialType, float> FluidViscosity = new()
@@ -228,7 +228,9 @@ public partial class MainSharp : Node2D
 			{ MaterialType.AcidVapor, new AcidVapor(this) },
 			{ MaterialType.AcidCloud, new AcidCloud(this) },
 			{ MaterialType.Mimic, new Mimic(this) },
-			{ MaterialType.Void, new Mechanics.Void(this) }
+			{ MaterialType.Void, new Mechanics.Void(this) },
+			{ MaterialType.Seed, new Seed(this) },
+			{ MaterialType.Plant, new Plant(this) },
 		};
 	}
 
@@ -370,10 +372,10 @@ public partial class MainSharp : Node2D
 	{
 		// 360° Degrees around the pixel are possible 
 		// 0 - 1 * 2PI 
-		double radians = Random.Shared.NextDouble() * Math.PI * 2;
+		double radians = Random.Shared.NextSingle() * Math.PI * 2;
 
 		// 0 - 1 * (area) + offset
-		double distance = Random.Shared.NextDouble() * (maxDist - minDist) + minDist;
+		double distance = Random.Shared.NextSingle() * (maxDist - minDist) + minDist;
 
 		int x = centerX + (int)(Math.Cos(radians) * distance);
 		int y = centerY + (int)(Math.Sin(radians) * distance);
@@ -410,8 +412,7 @@ public partial class MainSharp : Node2D
 					
 					// Calculate strength based on distance
 					int moveStrength = Math.Min(2, (int)(distance / 2));
-					float rand = Random.Shared.NextSingle();
-					if (rand < 0.4f)
+					if (MaterialMechanic.Chance(0.4f))
 					{
 						// Move toward cursor
 						Vector2I direction = new(Math.Sign(mousePos.X - x), Math.Sign(mousePos.Y - y));
@@ -437,9 +438,8 @@ public partial class MainSharp : Node2D
 
 	public bool FormCloud(int x, int y, MaterialType vaporType, MaterialType cloudType) 
 	{
-
 		// Random chance to not form a cloud
-		if (Random.Shared.NextDouble() > (0.015f * (1 - y / (float)gridHeight)))
+		if (Random.Shared.NextSingle() > (0.015f * (1 - y / (float)gridHeight)))
 			return false;
 
 		int vaporCount = 0;
@@ -475,7 +475,7 @@ public partial class MainSharp : Node2D
 			MaterialType material = GetMaterialAt(checkX, checkY);
 
 			// 5% chance to burn something!
-			if (IsFlammable(material) && Random.Shared.NextDouble() < 0.07f) 
+			if (IsFlammable(material) && MaterialMechanic.Chance(0.07f)) 
 				ConvertTo(checkX, checkY, MaterialType.Fire);
 		}
 	}

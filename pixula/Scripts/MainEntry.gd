@@ -153,7 +153,7 @@ func on_gui_input(event: InputEvent) -> void:
 func on_mouse_exit() -> void:
 	_is_pressing_ui = false
 
-func _input(event: InputEvent) -> void:
+func _input(_event: InputEvent) -> void:
 	var ui_layer = $Overlay/MainPanelContainer
 	if ui_layer.get_global_rect().has_point(get_viewport().get_mouse_position()):
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE

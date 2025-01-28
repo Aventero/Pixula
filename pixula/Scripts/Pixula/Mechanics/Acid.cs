@@ -16,11 +16,9 @@ namespace Pixula.Mechanics
         {
 
 
-            // Try moving down
             if (MoveDown(x, y, currentMaterial)) return true;
-
             // Do nothing
-            if (Random.Shared.NextDouble() < 0.8f)
+            if (Chance(0.8f))
             {
                 Main.ActivateCell(new Vector2I(x, y));
                 return false;
@@ -29,12 +27,12 @@ namespace Pixula.Mechanics
             // Can't move? Try dissolving what's below
             int newX = x;
             int newY = y + 1;
-            if (Random.Shared.NextDouble() < 0.2f && Main.IsInBounds(newX, newY) && MainSharp.IsDissolvable(Main.GetMaterialAt(newX, newY)))
+            if (Chance(0.2f) && Main.IsInBounds(newX, newY) && MainSharp.IsDissolvable(Main.GetMaterialAt(newX, newY)))
             {
                 Main.ConvertTo(newX, newY, MaterialType.AcidVapor);
 
                 // Chance to Disappear
-                if (Random.Shared.NextDouble() < 0.25f) Main.ConvertTo(x, y, MaterialType.Air);
+                if (Chance(0.25f)) Main.ConvertTo(x, y, MaterialType.Air);
                 return true;
             }
 
@@ -47,7 +45,7 @@ namespace Pixula.Mechanics
                 Main.ConvertTo(newPos.X, newPos.Y, MaterialType.AcidVapor);
                 
                 // Chance to Disappear
-                if (Random.Shared.NextDouble() < 0.25f) Main.ConvertTo(x, y, MaterialType.Air);
+                if (Chance(0.25f)) Main.ConvertTo(x, y, MaterialType.Air);
                 return true;
             }
 
@@ -60,7 +58,7 @@ namespace Pixula.Mechanics
                 Main.ConvertTo(newX, y, MaterialType.AcidVapor);
 
                 // Chance to Disappear
-                if (Random.Shared.NextDouble() < 0.25f) Main.ConvertTo(x, y, MaterialType.Air);
+                if (Chance(0.25f)) Main.ConvertTo(x, y, MaterialType.Air);
                 return true;
             }
 
