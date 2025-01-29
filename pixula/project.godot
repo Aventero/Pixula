@@ -23,8 +23,6 @@ gdscript/warnings/integer_division=0
 
 window/size/viewport_width=1920
 window/size/viewport_height=1080
-mouse_cursor/custom_image="uid://ds74b0riuc1as"
-mouse_cursor/custom_image_hotspot=Vector2(5, 5)
 
 [dotnet]
 

@@ -27,11 +27,7 @@ namespace Pixula.Mechanics
                 return true;
             }
 
-            // Growth conditions:
-            // 1. If directly below is soil/ground type (this would need to be defined)
-            // 2. Chance of growth
-            // 3. Optional: Check for water nearby to help growth
-            if (IsGrowable(belowMaterial) && Chance(0.1f)) // Using Rock as placeholder for "soil"
+            if (IsGrowable(belowMaterial) && Chance(0.1f))
             {
                 // Grow wood underneath the seed
                 Main.SetMaterialAt(x, checkBelow, MaterialType.Wood, Main.NextPixels);

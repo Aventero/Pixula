@@ -60,6 +60,7 @@ height = 912
 
 [node name="Overlay" type="CanvasLayer" parent="."]
 layer = 2
+follow_viewport_enabled = true
 
 [node name="MainPanelContainer" type="PanelContainer" parent="Overlay"]
 texture_filter = 1
@@ -492,6 +493,7 @@ rounded = true
 
 [node name="World" type="CanvasLayer" parent="."]
 layer = -1
+follow_viewport_enabled = true
 
 [node name="DebugLayer" type="CanvasLayer" parent="World"]
 

@@ -59,8 +59,8 @@ enum MaterialType {
 func _ready() -> void:
 	simulator.Initialize(width, height, pixel_size, cell_size, spawn_radius)
 	get_tree().root.size_changed.connect(_on_window_resize)
-	get_window().size = Vector2i(width, height)
 	setup_ui()
+	_on_window_resize()
 	setup_mouse_filter($Overlay/MainPanelContainer)
 
 func _on_window_resize():
@@ -68,19 +68,20 @@ func _on_window_resize():
 		return
 	_is_handling_resize = true
 
-	var window_size = Vector2i(get_viewport().get_visible_rect().size)
+	var viewport_rect = get_viewport().get_visible_rect()
 
 	# Find the next fitting size where pixel_size and cell_size fit
 	var fitting_size = pixel_size * cell_size
-	width = (window_size.x / fitting_size) * fitting_size
-	height = (window_size.y / fitting_size) * fitting_size
+	width = (viewport_rect.size.x / fitting_size) * fitting_size
+	height = (viewport_rect.size.y / fitting_size) * fitting_size
 
 	grid_width = width / pixel_size
 	grid_height = height / pixel_size
 
-	get_window().size = Vector2(width, height)
-	_is_handling_resize = false
+	# Set content size instead of window size
 	simulator.ChangeSize(pixel_size, width, height, grid_width, grid_height)
+
+	_is_handling_resize = false
 
 func _process(delta: float) -> void:
 	accumulator += delta
@@ -134,10 +135,20 @@ func on_drag_ended(value_changed: bool) -> void:
 func setup_mouse_filter(control: Control) -> void:
 	if control is Button:
 		control.gui_input.connect(on_gui_input)
-
 	if control is ScrollContainer:
 		control.gui_input.connect(on_gui_input)
 		control.mouse_exited.connect(on_mouse_exit)
+
+		# Get and connect scrollbars
+		var v_scrollbar = control.get_v_scroll_bar()
+		if v_scrollbar:
+			v_scrollbar.gui_input.connect(on_gui_input)
+			v_scrollbar.mouse_exited.connect(on_mouse_exit)
+
+		var h_scrollbar = control.get_h_scroll_bar()
+		if h_scrollbar:
+			h_scrollbar.gui_input.connect(on_gui_input)
+			h_scrollbar.mouse_exited.connect(on_mouse_exit)
 
 	if control is HSlider:
 		control.gui_input.connect(on_gui_input)
@@ -153,14 +164,13 @@ func on_gui_input(event: InputEvent) -> void:
 func on_mouse_exit() -> void:
 	_is_pressing_ui = false
 
-func _input(_event: InputEvent) -> void:
-	var ui_layer = $Overlay/MainPanelContainer
-	if ui_layer.get_global_rect().has_point(get_viewport().get_mouse_position()):
-		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-		_is_pressing_ui = true
-	else:
-		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
-		_is_pressing_ui = false
+func _input(event: InputEvent) -> void:
+	return
+	#var ui_layer = $Overlay/MainPanelContainer
+	#if ui_layer.get_global_rect().has_point(get_viewport().get_mouse_position()):
+		#Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	#else:
+		#Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
 
 # Mouse
 func check_mouse_input() -> void:
@@ -183,8 +193,14 @@ func spawn_material_at_mouse(material_type: MaterialType) -> void:
 	simulator.SpawnInRadius(mouse_pos.x, mouse_pos.y, spawn_radius, material_type)
 
 func get_mouse_tile_pos() -> Vector2i:
-	var mousePos: Vector2i = Vector2i((get_viewport().get_mouse_position() / pixel_size).abs())
-	return mousePos.clamp(Vector2i.ZERO, Vector2i(grid_width - 1, grid_height -1))
+	var mouse_pos = get_viewport().get_mouse_position()
+	var viewport_rect = get_viewport().get_visible_rect()
+
+	# Calculate grid position using viewport rect size
+	var grid_x : int = int(mouse_pos.x * grid_width / viewport_rect.size.x)
+	var grid_y : int = int(mouse_pos.y * grid_height / viewport_rect.size.y)
+
+	return Vector2i(grid_x, grid_y).clamp(Vector2i.ZERO, Vector2i(grid_width - 1, grid_height - 1))
 
 func _on_material_button_pressed(material_type: MaterialType) -> void:
 	selected_material = material_type
