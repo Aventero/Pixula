@@ -34,6 +34,8 @@ namespace Pixula.Mechanics
                 
                 // Convert seed to plant
                 Main.SetMaterialAt(x, y, MaterialType.Plant, Main.NextPixels);
+
+                Main.SetMaterialAt(x, y - 1, MaterialType.Wood, Main.NextPixels);
                 
                 return true;
             }

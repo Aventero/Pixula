@@ -128,7 +128,7 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Acid, new[] { MaterialType.Air, MaterialType.AcidVapor, MaterialType.WaterVapor }},
 		{ MaterialType.AcidVapor, new[] { MaterialType.Air }},
 		{ MaterialType.AcidCloud, new[] { MaterialType.Air }},
-		{ MaterialType.Seed, new[] { MaterialType.Air }},
+		{ MaterialType.Seed, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Lava, MaterialType.Acid }},
 		{ MaterialType.Plant, new[] { MaterialType.Air }},
 	};
 
@@ -143,6 +143,7 @@ public partial class MainSharp : Node2D
 	{
 		{ MaterialType.Sand, 1.0f},
 		{ MaterialType.Rock, 4.0f},
+		{ MaterialType.Seed, 1.5f},
 		{ MaterialType.Wall, 0},
 		{ MaterialType.Wood, 0},
 	};
@@ -162,6 +163,9 @@ public partial class MainSharp : Node2D
 			MaterialType.Rock => MaterialState.Solid,
 			MaterialType.Wall => MaterialState.Solid,
 			MaterialType.Wood => MaterialState.Solid,
+			MaterialType.Seed => MaterialState.Solid,
+			MaterialType.Mimic => MaterialState.Solid,
+			MaterialType.Void => MaterialState.Solid,
 			
 			MaterialType.Water => MaterialState.Liquid,
 			MaterialType.Lava => MaterialState.Liquid,
@@ -182,6 +186,7 @@ public partial class MainSharp : Node2D
 		return processMaterial switch
 		{
 			MaterialType.Wood => true,
+			MaterialType.Seed => true,
 			_ => false
 		};
 	}
@@ -236,21 +241,13 @@ public partial class MainSharp : Node2D
 
 	public void Initialize(int width, int height, int pixelSize, int cellSize, int spawnRadius)
 	{
-		this.width = width;
-		this.height = height;
-		this.gridWidth = width / pixelSize;
-		this.gridHeight = height / pixelSize;
-		this.PixelSize = pixelSize;
-		this.SpawnRadius = spawnRadius;
 		this.CellSize = cellSize;
+		this.SpawnRadius = spawnRadius;
 		colorAtlasImage = colorAtlas.GetImage();
-
-		SetupImages();
-		SetupDebug();
-		SetupPixels();
+		
+		ChangeSize(pixelSize, width, height, width/pixelSize, height/pixelSize);
 		DrawImages();
 	}
-
 
 	private bool SimulateMaterialAt(int x, int y)
 	{
@@ -593,8 +590,8 @@ public partial class MainSharp : Node2D
 		PixelSize = newPixelSize;
 		this.width = width;
 		this.height = height;
-		this.gridWidth = gridWidth;
-		this.gridHeight = gridHeight;
+		this.gridWidth = (int)Math.Floor((float)width / newPixelSize);
+		this.gridHeight = (int)Math.Floor((float)height / newPixelSize);
 
 		// Reset pixel arrays and active cells
 		SetupImages();
@@ -640,9 +637,13 @@ public partial class MainSharp : Node2D
 	public bool IsInBounds(int x, int y) =>
 		x >= 0 && x < gridWidth && y >= 0 && y < gridHeight;
 
-	private bool IsValidCell(Vector2I cellPos) =>
-		cellPos.X >= 0 && cellPos.X < gridWidth/CellSize &&
-		cellPos.Y >= 0 && cellPos.Y < gridHeight/CellSize;
+	private bool IsValidCell(Vector2I cellPos)
+	{
+		int maxCellX = (gridWidth - 1) / CellSize;
+		int maxCellY = (gridHeight - 1) / CellSize;
+		return cellPos.X >= 0 && cellPos.X <= maxCellX &&
+			cellPos.Y >= 0 && cellPos.Y <= maxCellY;
+	}
 
 	private Vector2I GetCell(Vector2I pos) =>
 		new(pos.X / CellSize, pos.Y / CellSize);

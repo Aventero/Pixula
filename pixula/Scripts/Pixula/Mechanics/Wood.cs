@@ -24,7 +24,7 @@ namespace Pixula.Mechanics
         {
 
             // Very high chance to do nothing
-            if (Chance(0.95f))
+            if (Chance(0.8f))
             {
                 Main.ActivateCell(new Vector2I(x, y));
                 return true;
@@ -39,16 +39,50 @@ namespace Pixula.Mechanics
             {
                 if (Main.IsInBounds(x, y + 1) && IsRootable(Main.GetMaterialAt(x, y + 1)))
                     sourcePixel.various = MaxRootGrowths;
+
+                if (Main.IsInBounds(x, y - 1) && IsStickable(Main.GetMaterialAt(x, y - 1)))
+                    sourcePixel.various = MaxStickGrowths;
             }
 
+            // GROW UP
             if (sourcePixel.various > 0)
             {
-                // GROW UP
+                Vector2I stickDir = stickDirections[GD.RandRange(0, stickDirections.Length - 1)];
+                Vector2I growCheck =  new Vector2I(x, y) + stickDir;
+
+                if (!Chance(stickDirectionChance[stickDir]))
+                    return true;
+
+                if (!Main.IsInBounds(growCheck.X, growCheck.Y))
+                    return false;
+
+                if (!CanGrowAt(growCheck))
+                    return false;
+
+                MaterialType mat = Main.GetMaterialAt(growCheck.X, growCheck.Y);
+                if (IsStickable(mat))
+                {
+                    if (sourcePixel.various > MinStickGrowStop) 
+                    {
+                        // Update source pixel
+                        sourcePixel.various -= 1;
+                        Main.SetPixel(x, y, sourcePixel, Main.NextPixels);
+
+                        // Grow a new pixel at the growth position
+                        if (Chance(0.55f))
+                            Main.ConvertTo(growCheck.X, growCheck.Y, MaterialType.Wood);
+
+                        return true;
+                    }
+
+                    // Has Grown MaxPossibleGrowths
+                    return true;
+                }
             }
 
+            // GROW DOWN
             if (sourcePixel.various < 0)
             {
-                // GROW DOWN
                 Vector2I growCheck =  new Vector2I(x, y) + rootDirections[GD.RandRange(0, rootDirections.Length - 1)];
                 if (!Main.IsInBounds(growCheck.X, growCheck.Y))
                     return false;
@@ -103,6 +137,15 @@ namespace Pixula.Mechanics
             };
         }
 
+        public static bool IsStickable(MaterialType materialToTest)
+        {
+            return materialToTest switch 
+            {
+                MaterialType.Air => true,
+                _ => false
+            };
+        }
+
         private static Vector2I[] rootDirections =
         [
             new Vector2I(0, 1),   // Down
@@ -110,7 +153,18 @@ namespace Pixula.Mechanics
             new Vector2I(1, 1),   // Down-right
             new Vector2I(-1, 0),   // Left
             new Vector2I(1, 0),   // Right
+            new Vector2I(0, -1),  // DOWN
         ];
+
+        private static Dictionary<Vector2I, float> stickDirectionChance = new()
+        {
+            { new Vector2I(0, -1), 0.9f}, // UP
+            { new Vector2I(-1, -1), 0.5f}, // UP LEFT
+            { new Vector2I(1, -1), 0.5f}, // UP RIGHT
+            { new Vector2I(-1, 0), 0.1f}, // LEFT
+            { new Vector2I(1, 0), 0.1f}, // RIGHT
+            { new Vector2I(0, 1), 0.2f}, // DOWN
+        };
 
         private static Vector2I[] stickDirections =
         [

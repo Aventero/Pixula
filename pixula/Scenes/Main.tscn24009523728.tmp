@@ -1,4 +1,4 @@
-[gd_scene load_steps=35 format=3 uid="uid://cxcvn0k2w0x3u"]
+[gd_scene load_steps=33 format=3 uid="uid://cxcvn0k2w0x3u"]
 
 [ext_resource type="Script" uid="uid://b0x1m6lhkcbb4" path="res://Scripts/MainEntry.gd" id="1_fjtcw"]
 [ext_resource type="Script" uid="uid://d2xhkm1orqb4f" path="res://Scripts/Pixula/MainSharp.cs" id="1_u0yqt"]
@@ -44,12 +44,6 @@ corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
-
-[sub_resource type="Gradient" id="Gradient_5jffn"]
-colors = PackedColorArray(0, 0, 0, 1, 0, 0, 0, 1)
-
-[sub_resource type="GradientTexture1D" id="GradientTexture1D_kpo4j"]
-gradient = SubResource("Gradient_5jffn")
 
 [sub_resource type="Environment" id="Environment_fq0cl"]
 background_mode = 3
@@ -514,18 +508,6 @@ expand_mode = 3
 stretch_mode = 5
 metadata/_edit_use_anchors_ = true
 metadata/_edit_lock_ = true
-
-[node name="TextureRect" type="TextureRect" parent="World"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -231.0
-offset_top = -117.0
-offset_right = 199.0
-offset_bottom = 150.0
-grow_horizontal = 2
-grow_vertical = 2
-texture = SubResource("GradientTexture1D_kpo4j")
 
 [node name="WorldTexture" type="TextureRect" parent="World"]
 texture_filter = 5

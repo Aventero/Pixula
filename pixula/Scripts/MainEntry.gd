@@ -78,6 +78,11 @@ func _on_window_resize():
 	grid_width = width / pixel_size
 	grid_height = height / pixel_size
 
+	# Ensure we have valid dimensions
+	if grid_width <= 0 or grid_height <= 0:
+		grid_width = max(1, grid_width)
+		grid_height = max(1, grid_height)
+
 	# Set content size instead of window size
 	simulator.ChangeSize(pixel_size, width, height, grid_width, grid_height)
 
