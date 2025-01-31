@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://buao2bt3wt8s5"
-path="res://.godot/imported/Rock.png-585575421f040b30b81d6b4c52b31a64.ctex"
+uid="uid://cdkvu1euv71xl"
+path="res://.godot/imported/Acid_Icon.png-a8e1763c6ba1e62f06edfb8882a22317.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/Rock.png"
-dest_files=["res://.godot/imported/Rock.png-585575421f040b30b81d6b4c52b31a64.ctex"]
+source_file="res://UI/Sprites/Material_Icons/Acid_Icon.png"
+dest_files=["res://.godot/imported/Acid_Icon.png-a8e1763c6ba1e62f06edfb8882a22317.ctex"]
 
 [params]
 

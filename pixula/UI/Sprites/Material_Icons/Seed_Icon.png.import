@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bn405pmy16mf5"
-path="res://.godot/imported/CellSize-export.png-b4cf855c59907f025216b17b79d56dba.ctex"
+uid="uid://bgqfad3jgu3g"
+path="res://.godot/imported/Seed_Icon.png-49e6ddbcfc2ac1df8c69750ac002957f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/CellSize-export.png"
-dest_files=["res://.godot/imported/CellSize-export.png-b4cf855c59907f025216b17b79d56dba.ctex"]
+source_file="res://UI/Sprites/Material_Icons/Seed_Icon.png"
+dest_files=["res://.godot/imported/Seed_Icon.png-49e6ddbcfc2ac1df8c69750ac002957f.ctex"]
 
 [params]
 

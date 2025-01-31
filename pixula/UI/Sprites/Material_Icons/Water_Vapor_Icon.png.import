@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dc77y73ieqks7"
-path="res://.godot/imported/PlantIcon.png-d935fa0e6e68c2c77209fdffa156b26a.ctex"
+uid="uid://dimk1h8crasje"
+path="res://.godot/imported/Water_Vapor_Icon.png-d6543ecec916916a660c1a2e8c8004aa.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/PlantIcon.png"
-dest_files=["res://.godot/imported/PlantIcon.png-d935fa0e6e68c2c77209fdffa156b26a.ctex"]
+source_file="res://UI/Sprites/Material_Icons/Water_Vapor_Icon.png"
+dest_files=["res://.godot/imported/Water_Vapor_Icon.png-d6543ecec916916a660c1a2e8c8004aa.ctex"]
 
 [params]
 

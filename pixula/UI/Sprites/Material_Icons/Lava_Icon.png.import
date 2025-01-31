@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d1b2en56japjq"
-path="res://.godot/imported/WoodIcon.png-bb7071c0d4188cd8243f26159aef57fa.ctex"
+uid="uid://kwnkwo23r5fc"
+path="res://.godot/imported/Lava_Icon.png-76ca1e08f789a5e705676c3051aa5f09.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/WoodIcon.png"
-dest_files=["res://.godot/imported/WoodIcon.png-bb7071c0d4188cd8243f26159aef57fa.ctex"]
+source_file="res://UI/Sprites/Material_Icons/Lava_Icon.png"
+dest_files=["res://.godot/imported/Lava_Icon.png-76ca1e08f789a5e705676c3051aa5f09.ctex"]
 
 [params]
 

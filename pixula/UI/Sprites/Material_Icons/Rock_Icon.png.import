@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b2oxi3cul1py2"
-path="res://.godot/imported/PoisonIcon.png-aadc83fdaa9f2d0a5e78e026068ee99f.ctex"
+uid="uid://dyqwfh5jvgas1"
+path="res://.godot/imported/Rock_Icon.png-49afaf0818e19da3f7ce03bec990251a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/PoisonIcon.png"
-dest_files=["res://.godot/imported/PoisonIcon.png-aadc83fdaa9f2d0a5e78e026068ee99f.ctex"]
+source_file="res://UI/Sprites/Material_Icons/Rock_Icon.png"
+dest_files=["res://.godot/imported/Rock_Icon.png-49afaf0818e19da3f7ce03bec990251a.ctex"]
 
 [params]
 

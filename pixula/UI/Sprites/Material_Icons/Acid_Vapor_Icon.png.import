@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://kwnkwo23r5fc"
-path="res://.godot/imported/Lava_Icon.png-0721d124fa8dc21c3cbd41c344a26e6f.ctex"
+uid="uid://cyxmfog7prka1"
+path="res://.godot/imported/Acid_Vapor_Icon.png-63f71c6654d01b9e94a207b2006175a4.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/Lava_Icon.png"
-dest_files=["res://.godot/imported/Lava_Icon.png-0721d124fa8dc21c3cbd41c344a26e6f.ctex"]
+source_file="res://UI/Sprites/Material_Icons/Acid_Vapor_Icon.png"
+dest_files=["res://.godot/imported/Acid_Vapor_Icon.png-63f71c6654d01b9e94a207b2006175a4.ctex"]
 
 [params]
 

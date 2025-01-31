@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://vso6awjwcax"
-path="res://.godot/imported/Wall_Icon.png-bdb67b1ef9e5a75a13c76434e2aa8205.ctex"
+uid="uid://d1b2en56japjq"
+path="res://.godot/imported/Wood_Icon.png-e61ff5c0ab514663c68d16a52620b658.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/Wall_Icon.png"
-dest_files=["res://.godot/imported/Wall_Icon.png-bdb67b1ef9e5a75a13c76434e2aa8205.ctex"]
+source_file="res://UI/Sprites/Material_Icons/Wood_Icon.png"
+dest_files=["res://.godot/imported/Wood_Icon.png-e61ff5c0ab514663c68d16a52620b658.ctex"]
 
 [params]
 

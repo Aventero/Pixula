@@ -11,9 +11,9 @@ func _ready() -> void:
 func _pressed() -> void:
 	material_pressed.emit(material_type)
 
-func _on_toggled(button_pressed: bool):
+func _on_toggled(_button_pressed: bool):
 	# De selected
-	if !button_pressed:
+	if !_button_pressed:
 		material.set_shader_parameter("speed_multiplier", 1.0)
 	else:
 		material.set_shader_parameter("speed_multiplier", 5.0)

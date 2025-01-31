@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://3ib8qwraev23"
-path="res://.godot/imported/FireIcon.png-f99f90f100c95a6d107443b7593f8bd8.ctex"
+uid="uid://dili5fe4u1uet"
+path="res://.godot/imported/Air_Icon.png-668385c23a3a2b2ac4a0d1103602707b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/FireIcon.png"
-dest_files=["res://.godot/imported/FireIcon.png-f99f90f100c95a6d107443b7593f8bd8.ctex"]
+source_file="res://UI/Sprites/Material_Icons/Air_Icon.png"
+dest_files=["res://.godot/imported/Air_Icon.png-668385c23a3a2b2ac4a0d1103602707b.ctex"]
 
 [params]
 

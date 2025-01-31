@@ -1,6 +1,8 @@
 class_name MainEntry
 extends Node
 
+signal material_changed(material_type : MaterialType, cursor_size : int)
+
 # UI
 @onready var simulator: MainSharp = $MainSharp
 @onready var spawn_radius_label: Label = $Overlay/MainPanelContainer/MarginContainer/VBoxContainer/SpawnRadius/Panel/SpawnRadius
@@ -23,10 +25,9 @@ extends Node
 @export var grid_width = width / pixel_size
 
 # Sim speed
-@export var simulation_speed: float = 60.0 # 60Hz
+@export var simulation_speed: float = 120.0 # 60Hz
 var timestep: float = 1.0/simulation_speed
 var accumulator: float = 0.0
-
 
 var selected_material: MaterialType = MaterialType.SAND
 var _is_pressing_ui: bool = false
@@ -49,7 +50,7 @@ enum MaterialType {
 	VOID = 13,
 	MIMIC = 14,
 	SEED = 15,
-	PANT = 16,
+	PLANT = 16,
 	POISON = 17,
 	FLUFF = 18,
 	EMBER = 19
@@ -58,10 +59,10 @@ enum MaterialType {
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	simulator.Initialize(width, height, pixel_size, cell_size, spawn_radius)
+	setup_mouse_filter($Overlay/MainPanelContainer)
 	get_tree().root.size_changed.connect(_on_window_resize)
 	setup_ui()
 	_on_window_resize()
-	setup_mouse_filter($Overlay/MainPanelContainer)
 
 func _on_window_resize():
 	if _is_handling_resize:
@@ -95,7 +96,7 @@ func _process(delta: float) -> void:
 		simulator.Simulate()
 		accumulator = 0.0
 
-	simulator.DrawImages()
+	simulator.DrawWorld()
 	check_mouse_input()
 
 # UI Setup
@@ -125,6 +126,7 @@ func on_radius_slider_changed(value: float) -> void:
 	spawn_radius = int(value)
 	simulator.SpawnRadius = spawn_radius
 	spawn_radius_label.text = str(spawn_radius)
+	material_changed.emit(selected_material, spawn_radius)
 
 func on_pixel_size_changed(value: float) -> void:
 	pixel_size = int(value)
@@ -169,13 +171,8 @@ func on_gui_input(event: InputEvent) -> void:
 func on_mouse_exit() -> void:
 	_is_pressing_ui = false
 
-func _input(event: InputEvent) -> void:
+func _input(_event: InputEvent) -> void:
 	return
-	#var ui_layer = $Overlay/MainPanelContainer
-	#if ui_layer.get_global_rect().has_point(get_viewport().get_mouse_position()):
-		#Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	#else:
-		#Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
 
 # Mouse
 func check_mouse_input() -> void:
@@ -209,3 +206,4 @@ func get_mouse_tile_pos() -> Vector2i:
 
 func _on_material_button_pressed(material_type: MaterialType) -> void:
 	selected_material = material_type
+	material_changed.emit(selected_material, spawn_radius)

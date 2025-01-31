@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bgqfad3jgu3g"
-path="res://.godot/imported/SeedIcon.png-8274763028fe24e8dc40ccea7610c39c.ctex"
+uid="uid://dc77y73ieqks7"
+path="res://.godot/imported/Plant_Icon.png-8ed911132dc84a7d980da60d551830f5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/SeedIcon.png"
-dest_files=["res://.godot/imported/SeedIcon.png-8274763028fe24e8dc40ccea7610c39c.ctex"]
+source_file="res://UI/Sprites/Material_Icons/Plant_Icon.png"
+dest_files=["res://.godot/imported/Plant_Icon.png-8ed911132dc84a7d980da60d551830f5.ctex"]
 
 [params]
 

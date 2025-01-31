@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bt36fvr56rago"
-path="res://.godot/imported/MimicIcon.png-d8cefc2c10b6c71ae88369c6b2989fec.ctex"
+uid="uid://t1pl3yblqvn2"
+path="res://.godot/imported/Void_Icon.png-a852a73856f1a6ca5d559a1bec288814.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/MimicIcon.png"
-dest_files=["res://.godot/imported/MimicIcon.png-d8cefc2c10b6c71ae88369c6b2989fec.ctex"]
+source_file="res://UI/Sprites/Material_Icons/Void_Icon.png"
+dest_files=["res://.godot/imported/Void_Icon.png-a852a73856f1a6ca5d559a1bec288814.ctex"]
 
 [params]
 

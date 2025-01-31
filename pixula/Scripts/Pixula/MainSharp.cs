@@ -101,7 +101,7 @@ public partial class MainSharp : Node2D
 		{ MaterialType.WaterVapor, new[] { 44, 1} },
 		{ MaterialType.WaterCloud, new[] { 1, 0} },
 		{ MaterialType.Lava, new[] { 25, 1} },
-		{ MaterialType.Acid, new[] { 10, 0} },
+		{ MaterialType.Acid, new[] { 9, 1} },
 		{ MaterialType.AcidVapor, new[] { 10, 0} },
 		{ MaterialType.AcidCloud, new[] { 6, 0} },
 		{ MaterialType.Void, new[] { 30, 0} },
@@ -246,7 +246,7 @@ public partial class MainSharp : Node2D
 		colorAtlasImage = colorAtlas.GetImage();
 		
 		ChangeSize(pixelSize, width, height, width/pixelSize, height/pixelSize);
-		DrawImages();
+		DrawWorld();
 	}
 
 	private bool SimulateMaterialAt(int x, int y)
@@ -311,19 +311,21 @@ public partial class MainSharp : Node2D
 		(NextPixels, CurrentPixels) = (CurrentPixels, NextPixels);
 	}
 
-	public void DrawImages()
+	public void DrawWorld()
 	{
-		debugImage.Fill(Colors.Transparent);
 		foreach (var positionColor in positionColors)
 			worldImage.SetPixel(positionColor.Key.X, positionColor.Key.Y, positionColor.Value);
 
 		worldTexture.Update(worldImage);
 		positionColors.Clear();
+	}
 
+	public void DrawDebug()
+	{
+		debugImage.Fill(Colors.Transparent);
 		DrawSpawnRadiusPreview(MousePosition.X, MousePosition.Y, SpawnRadius);
 		if (EnableDebug) 
 			DebugDrawActiveCells();
-
 		debugTexture.Update(debugImage);
 	}
 
@@ -560,6 +562,8 @@ public partial class MainSharp : Node2D
 
 	public void DrawSpawnRadiusPreview(int centerX, int centerY, int radius)
 	{
+		if (radius <= 1) return;
+
 		int startX = Math.Max(0, centerX - radius);
 		int startY = Math.Max(0, centerY - radius);
 		int endX = Math.Min(gridWidth, centerX + radius + 1);
@@ -572,11 +576,9 @@ public partial class MainSharp : Node2D
 				float distance = new Vector2I(centerX, centerY).DistanceTo(new Vector2I(x, y));
 
 				if (distance < radius)
-					DrawRectFilled(new Vector2I(x, y), new Color(Colors.White, 0.3f));
+					DrawRectFilled(new Vector2I(x, y), new Color(Colors.White, 0.1f));
 			}
 		}
-
-		DrawRectFilled(new Vector2I(centerX, centerY), new Color(Colors.White, 0.9f));
 	}
 
 	private Color GetColorForVariant(int atlasX, int atlasY)

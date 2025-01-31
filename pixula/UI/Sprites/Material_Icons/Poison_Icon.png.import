@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cyxmfog7prka1"
-path="res://.godot/imported/Acid_Vapor_Icon.png-d16edce79814c6d5fef30cd3d530100b.ctex"
+uid="uid://b2oxi3cul1py2"
+path="res://.godot/imported/Poison_Icon.png-a021626f18bebf1a5e8a4768182ecfa9.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/Acid_Vapor_Icon.png"
-dest_files=["res://.godot/imported/Acid_Vapor_Icon.png-d16edce79814c6d5fef30cd3d530100b.ctex"]
+source_file="res://UI/Sprites/Material_Icons/Poison_Icon.png"
+dest_files=["res://.godot/imported/Poison_Icon.png-a021626f18bebf1a5e8a4768182ecfa9.ctex"]
 
 [params]
 

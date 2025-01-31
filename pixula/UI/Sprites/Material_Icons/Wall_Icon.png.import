@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dyqwfh5jvgas1"
-path="res://.godot/imported/Rock_Icon.png-b50d34ca6ddb8e2f63e42bc8b00a59bf.ctex"
+uid="uid://vso6awjwcax"
+path="res://.godot/imported/Wall_Icon.png-32cf82bd08a4dc3fd18bd29fbb258018.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/Rock_Icon.png"
-dest_files=["res://.godot/imported/Rock_Icon.png-b50d34ca6ddb8e2f63e42bc8b00a59bf.ctex"]
+source_file="res://UI/Sprites/Material_Icons/Wall_Icon.png"
+dest_files=["res://.godot/imported/Wall_Icon.png-32cf82bd08a4dc3fd18bd29fbb258018.ctex"]
 
 [params]
 
