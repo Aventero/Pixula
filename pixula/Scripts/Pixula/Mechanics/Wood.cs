@@ -23,13 +23,12 @@ namespace Pixula.Mechanics
         private bool WoodMechanics(int x, int y, MaterialType currentMaterial)
         {
 
-            // Very high chance to do nothing
-            if (Chance(0.8f))
-            {
-                Main.ActivateCell(new Vector2I(x, y));
-                return true;
-            }
+            Main.ActivateCell(new Vector2I(x, y));
+            if (FallAsGroup(x, y, currentMaterial))
+                return false;
 
+            // Very high chance to do nothing
+            if (Chance(0.9f)) return true;
 
             // This Wood, where wood is growing from.
             Pixel sourcePixel = Main.GetPixel(x, y, Main.CurrentPixels);
@@ -66,7 +65,7 @@ namespace Pixula.Mechanics
                     {
                         // Update source pixel
                         sourcePixel.various -= 1;
-                        Main.SetPixel(x, y, sourcePixel, Main.NextPixels);
+                        Main.SetPixelAt(x, y, sourcePixel, Main.NextPixels);
 
                         // Grow a new pixel at the growth position
                         if (Chance(0.55f))
@@ -97,7 +96,7 @@ namespace Pixula.Mechanics
                     {
                         // Update source pixel
                         sourcePixel.various += 1;
-                        Main.SetPixel(x, y, sourcePixel, Main.NextPixels);
+                        Main.SetPixelAt(x, y, sourcePixel, Main.NextPixels);
 
                         // Grow a new pixel at the growth position
                         if (Chance(0.55f))
@@ -111,8 +110,9 @@ namespace Pixula.Mechanics
                 }
             }
 
-            return false;
+           return false;
         }
+
 
         private bool CanGrowAt(Vector2I growCheck)
         {

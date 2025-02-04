@@ -51,6 +51,9 @@ namespace Pixula.Mechanics
 
                     foreach (Vector2I dirAroundWater in Main.Directions)
                     {
+                        if (Chance(0.7f))
+                            return true;
+
                         int checkVaporX = checkX + dirAroundWater.X;
                         int checkVaporY = checkY + dirAroundWater.Y;
                         if (!Main.IsInBounds(checkVaporX, checkVaporY))

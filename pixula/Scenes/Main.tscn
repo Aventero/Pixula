@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://b0x1m6lhkcbb4" path="res://Scripts/MainEntry.gd" id="1_fjtcw"]
 [ext_resource type="Script" uid="uid://d2xhkm1orqb4f" path="res://Scripts/Pixula/MainSharp.cs" id="1_u0yqt"]
-[ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://UI/Sprites/Pixula_Icon.png" id="2_yt66i"]
+[ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://UI/Sprites/Standard_Icons/Pixula_Icon.png" id="2_yt66i"]
 [ext_resource type="Shader" uid="uid://3f2aevp2sl7c" path="res://Shaders/Wobble.gdshader" id="3_8a7hv"]
 [ext_resource type="Theme" uid="uid://x4ngw312h2qp" path="res://UI/TheTheme.tres" id="3_r6eas"]
 [ext_resource type="Texture2D" uid="uid://dili5fe4u1uet" path="res://UI/Sprites/Material_Icons/Air_Icon.png" id="4_we8p7"]
@@ -13,8 +13,8 @@
 [ext_resource type="Texture2D" uid="uid://vso6awjwcax" path="res://UI/Sprites/Material_Icons/Wall_Icon.png" id="8_aswaw"]
 [ext_resource type="Texture2D" uid="uid://kwnkwo23r5fc" path="res://UI/Sprites/Material_Icons/Lava_Icon.png" id="8_fq0cl"]
 [ext_resource type="Texture2D" uid="uid://bsc6urywf5gu" path="res://UI/Sprites/Background.png" id="9_hfhlx"]
-[ext_resource type="Texture2D" uid="uid://vhpnxnjlf2k8" path="res://UI/Sprites/CircleSize.png" id="9_v0a7p"]
-[ext_resource type="Texture2D" uid="uid://drqlem5e5wi0d" path="res://UI/Sprites/CellSize.png" id="10_kjxfc"]
+[ext_resource type="Texture2D" uid="uid://vhpnxnjlf2k8" path="res://UI/Sprites/Standard_Icons/CircleSize.png" id="9_v0a7p"]
+[ext_resource type="Texture2D" uid="uid://drqlem5e5wi0d" path="res://UI/Sprites/Standard_Icons/CellSize.png" id="10_kjxfc"]
 [ext_resource type="Texture2D" uid="uid://d1b2en56japjq" path="res://UI/Sprites/Material_Icons/Wood_Icon.png" id="10_s7o1q"]
 [ext_resource type="Texture2D" uid="uid://cdkvu1euv71xl" path="res://UI/Sprites/Material_Icons/Acid_Icon.png" id="11_0sclb"]
 [ext_resource type="Texture2D" uid="uid://3ib8qwraev23" path="res://UI/Sprites/Material_Icons/Fire_Icon.png" id="11_2ajil"]
@@ -24,10 +24,10 @@
 [ext_resource type="Texture2D" uid="uid://cna2fmjfhqaqh" path="res://UI/Sprites/colorAtlas.png" id="14_coue8"]
 [ext_resource type="Texture2D" uid="uid://cyxmfog7prka1" path="res://UI/Sprites/Material_Icons/Acid_Vapor_Icon.png" id="15_sxkr1"]
 [ext_resource type="Texture2D" uid="uid://bt36fvr56rago" path="res://UI/Sprites/Material_Icons/Mimic_Icon.png" id="17_jyqft"]
-[ext_resource type="Texture2D" uid="uid://kmiq44bkvvy2" path="res://UI/Sprites/Clock_Icon.png" id="19_hwpts"]
+[ext_resource type="Texture2D" uid="uid://kmiq44bkvvy2" path="res://UI/Sprites/Standard_Icons/Clock_Icon.png" id="19_hwpts"]
 [ext_resource type="Texture2D" uid="uid://bgqfad3jgu3g" path="res://UI/Sprites/Material_Icons/Seed_Icon.png" id="20_kpo4j"]
 [ext_resource type="Texture2D" uid="uid://dc77y73ieqks7" path="res://UI/Sprites/Material_Icons/Plant_Icon.png" id="21_4n42c"]
-[ext_resource type="Texture2D" uid="uid://ds74b0riuc1as" path="res://UI/Sprites/Cursor.png" id="25_4n42c"]
+[ext_resource type="Texture2D" uid="uid://ds74b0riuc1as" path="res://UI/Sprites/Standard_Icons/Cursor.png" id="25_4n42c"]
 [ext_resource type="Script" uid="uid://875d85aubtb4" path="res://Scenes/cursor.gd" id="26_c5snn"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_rwn16"]
@@ -518,7 +518,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-expand_mode = 3
+expand_mode = 2
 stretch_mode = 5
 metadata/_edit_use_anchors_ = true
 metadata/_edit_lock_ = true

@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b8u2amtqs01hm"
-path="res://.godot/imported/Pixula_Icon.png-5119026b39c5e478d674a91b0b0e8c3e.ctex"
+uid="uid://ds74b0riuc1as"
+path="res://.godot/imported/Cursor.png-3b491f13abcb74b85c49ba74c46ce348.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/Pixula_Icon.png"
-dest_files=["res://.godot/imported/Pixula_Icon.png-5119026b39c5e478d674a91b0b0e8c3e.ctex"]
+source_file="res://UI/Sprites/Standard_Icons/Cursor.png"
+dest_files=["res://.godot/imported/Cursor.png-3b491f13abcb74b85c49ba74c46ce348.ctex"]
 
 [params]
 

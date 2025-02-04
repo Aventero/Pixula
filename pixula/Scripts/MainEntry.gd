@@ -134,6 +134,8 @@ func on_pixel_size_changed(value: float) -> void:
 	pixel_size_label.text = str(pixel_size)
 	grid_width = width / pixel_size
 	grid_height = height / pixel_size
+	material_changed.emit(selected_material, spawn_radius)
+
 
 func on_drag_ended(value_changed: bool) -> void:
 	if value_changed:
@@ -199,8 +201,8 @@ func get_mouse_tile_pos() -> Vector2i:
 	var viewport_rect = get_viewport().get_visible_rect()
 
 	# Calculate grid position using viewport rect size
-	var grid_x : int = int(mouse_pos.x * grid_width / viewport_rect.size.x)
-	var grid_y : int = int(mouse_pos.y * grid_height / viewport_rect.size.y)
+	var grid_x : int = int(mouse_pos.x / pixel_size)
+	var grid_y : int = int(mouse_pos.y / pixel_size)
 
 	return Vector2i(grid_x, grid_y).clamp(Vector2i.ZERO, Vector2i(grid_width - 1, grid_height - 1))
 

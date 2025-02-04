@@ -20,37 +20,28 @@ namespace Pixula.Mechanics
             MaterialType belowMaterial = Main.GetMaterialAt(x, checkBelow);
 
             // Much lower overall chance of seed survival/growth
-            if (Chance(0.005f))
+            if (Chance(0.01f))
             {
                 // Most seeds will simply disappear
                 Main.SetMaterialAt(x, y, MaterialType.Air, Main.NextPixels);
                 return true;
             }
 
+            if (IsGrowable(belowMaterial) && Chance(0.5f))
+            {
+                Main.ConvertTo(x, y, MaterialType.Plant);
+                return true;
+            }
+
             if (IsGrowable(belowMaterial) && Chance(0.1f))
             {
-                // Grow wood underneath the seed
                 Main.SetMaterialAt(x, checkBelow, MaterialType.Wood, Main.NextPixels);
-                
-                // Convert seed to plant
-                Main.SetMaterialAt(x, y, MaterialType.Plant, Main.NextPixels);
-
                 Main.SetMaterialAt(x, y - 1, MaterialType.Wood, Main.NextPixels);
-                
-                return true;
+                return true;   
             }
 
-            // Optional: Water interaction
-            int waterNeighborCount = CountAdjacentMaterials(x, y, MaterialType.Water);
-            if (Chance(0.15f * waterNeighborCount) && IsGrowable(belowMaterial))
-            {
-                Main.SetMaterialAt(x, checkBelow, MaterialType.Wood, Main.NextPixels);
-                Main.SetMaterialAt(x, y, MaterialType.Plant, Main.NextPixels);
-                return true;
-            }
-
-            MoveDown(x, y, material);
-            return true;
+            if (Chance(0.9f)) return MoveDown(x, y, material);
+            return MoveDiagonalDown(x, y, material);
         }
 
         private int CountAdjacentMaterials(int x, int y, MaterialType materialToCount)

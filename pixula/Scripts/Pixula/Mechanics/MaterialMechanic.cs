@@ -8,6 +8,8 @@ namespace Pixula.Mechanics
     {
         protected MainSharp Main { get; } = main;
 
+
+
         public abstract bool Update(int x, int y, MaterialType material);
 
         
@@ -29,7 +31,7 @@ namespace Pixula.Mechanics
             {
                 // Bounce!
                 p.various *= -1;
-                Main.SetPixel(x, y, p, Main.NextPixels);
+                Main.SetPixelAt(x, y, p, Main.NextPixels);
                 return true;
             }
 
@@ -65,5 +67,40 @@ namespace Pixula.Mechanics
             return Random.Shared.NextSingle() < probability;
         }
 
+
+        Vector2I[] groupFallDirections = 
+        [
+            new Vector2I(0, 1),   // Down
+            new Vector2I(-1, 1),  // Down-left
+            new Vector2I(1, 1),   // Down-right
+        ];
+
+        public bool FallAsGroup(int x, int y, MaterialType sourceMaterial)
+        {
+            bool hasAnySupport = false;
+            
+            foreach (Vector2I dir in groupFallDirections)
+            {
+                Vector2I woodLocation = new(dir.X + x, dir.Y + y);
+                
+                if (!Main.IsInBounds(woodLocation.X, woodLocation.Y))
+                    continue;
+
+                // Check if there's support at this position
+                if (Main.GetMaterialAt(woodLocation.X, woodLocation.Y) == sourceMaterial)
+                {
+                    hasAnySupport = true;
+                    break; // Found support, no need to check further
+                }
+            }
+
+            // If no support was found, move down
+            if (!hasAnySupport)
+            {
+                return MoveDown(x, y, sourceMaterial);
+            }
+
+            return false;
+        }
     }
 }

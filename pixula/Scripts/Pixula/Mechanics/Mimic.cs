@@ -51,7 +51,7 @@ namespace Pixula.Mechanics
             if (!IsCopyable(possibleCopyMaterial)) return true;
             
             p.various = (int)possibleCopyMaterial;
-            Main.SetPixel(x, y, p, Main.NextPixels);
+            Main.SetPixelAt(x, y, p, Main.NextPixels);
             return true;
         }
 

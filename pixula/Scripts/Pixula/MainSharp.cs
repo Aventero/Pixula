@@ -128,8 +128,9 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Acid, new[] { MaterialType.Air, MaterialType.AcidVapor, MaterialType.WaterVapor }},
 		{ MaterialType.AcidVapor, new[] { MaterialType.Air }},
 		{ MaterialType.AcidCloud, new[] { MaterialType.Air }},
-		{ MaterialType.Seed, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Lava, MaterialType.Acid }},
-		{ MaterialType.Plant, new[] { MaterialType.Air }},
+		{ MaterialType.Seed, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Lava, MaterialType.Acid}},
+		{ MaterialType.Plant, new[] { MaterialType.Air, MaterialType.Seed }},
+		{ MaterialType.Wood, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud  }},
 	};
 
 	private readonly Dictionary<MaterialType, float> FluidViscosity = new()
@@ -187,6 +188,7 @@ public partial class MainSharp : Node2D
 		{
 			MaterialType.Wood => true,
 			MaterialType.Seed => true,
+			MaterialType.Plant => true,
 			_ => false
 		};
 	}
@@ -682,7 +684,7 @@ public partial class MainSharp : Node2D
 		}
 	}
 
-	private Vector2I GetRandomVariant(MaterialType materialType)
+	public Vector2I GetRandomVariant(MaterialType materialType)
 	{
 		int start = ColorRanges[materialType][0];
 		int stride = ColorRanges[materialType][1];
@@ -707,16 +709,25 @@ public partial class MainSharp : Node2D
 		DrawPixelAt(x, y, pixelArray);
 	}
 
+	public void SetPixelAt(int x, int y, Pixel p, Pixel[] pixelArray)
+	{
+		if (!IsInBounds(x, y))
+			return;
+
+		SetPixel(x, y, p, pixelArray);
+		ActivateCell(new Vector2I(x, y));
+		DrawPixelAt(x, y, pixelArray);
+	}
+
 	public Pixel GetPixel(int x, int y, Pixel[] pixelArray) 
 	{
 		return pixelArray[x + gridWidth * y];
 	}
 
-	public void SetPixel(int x, int y, Pixel pixel, Pixel[] pixelArray) 
+	private void SetPixel(int x, int y, Pixel pixel, Pixel[] pixelArray) 
 	{
 		pixelArray[x + gridWidth * y] = pixel;
 	}
-
 
 	private void SetupImages()
 	{

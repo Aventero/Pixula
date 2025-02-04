@@ -5,7 +5,7 @@ var material_cursors : Dictionary = {}
 @export var main_entry : MainEntry
 
 func _ready() -> void:
-	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
+	#Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
 	load_material_cursors()
 	set_material_as_cursor(MainEntry.MaterialType.AIR)
 
@@ -38,6 +38,7 @@ func set_material_as_cursor(selected_material: MainEntry.MaterialType, cursor_sc
 		var new_height : int = image.get_height() * cursor_scale
 		image.resize(new_width, new_height, Image.INTERPOLATE_NEAREST)
 
+
 		var border_color : Color = Color.BLACK  # or any color you want
 		## Top and bottom lines
 		for x in range(new_width):
@@ -50,5 +51,8 @@ func set_material_as_cursor(selected_material: MainEntry.MaterialType, cursor_sc
 			image.set_pixel(new_width - 1, y, border_color)  # Right
 
 		# Create new texture from scaled image
+		var viewport_rect = get_viewport().get_visible_rect()
+
 		self.texture = ImageTexture.create_from_image(image)
-		self.offset = Vector2(new_width / cursor_scale, new_height / cursor_scale)
+		print("pixel size", main_entry.pixel_size)
+		self.offset = Vector2(main_entry.pixel_size / 2.0 ,main_entry.pixel_size / 2.0)

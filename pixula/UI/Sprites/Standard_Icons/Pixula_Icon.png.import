@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://drqlem5e5wi0d"
-path="res://.godot/imported/CellSize.png-bc801587454c4394ecc3503dca239a17.ctex"
+uid="uid://b8u2amtqs01hm"
+path="res://.godot/imported/Pixula_Icon.png-72d71047bd8af7fdac5bf8c5461be029.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/CellSize.png"
-dest_files=["res://.godot/imported/CellSize.png-bc801587454c4394ecc3503dca239a17.ctex"]
+source_file="res://UI/Sprites/Standard_Icons/Pixula_Icon.png"
+dest_files=["res://.godot/imported/Pixula_Icon.png-72d71047bd8af7fdac5bf8c5461be029.ctex"]
 
 [params]
 

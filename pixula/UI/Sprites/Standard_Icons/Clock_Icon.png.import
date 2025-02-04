@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ds74b0riuc1as"
-path="res://.godot/imported/Cursor.png-baad88be5cb38d47421d341b6127877d.ctex"
+uid="uid://kmiq44bkvvy2"
+path="res://.godot/imported/Clock_Icon.png-3a22f5e5abb53adce77de20f5b965a6a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://UI/Sprites/Cursor.png"
-dest_files=["res://.godot/imported/Cursor.png-baad88be5cb38d47421d341b6127877d.ctex"]
+source_file="res://UI/Sprites/Standard_Icons/Clock_Icon.png"
+dest_files=["res://.godot/imported/Clock_Icon.png-3a22f5e5abb53adce77de20f5b965a6a.ctex"]
 
 [params]
 

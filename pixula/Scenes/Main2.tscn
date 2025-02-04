@@ -1,7 +1,7 @@
 [gd_scene load_steps=22 format=3 uid="uid://djssb2rxsijsr"]
 
 [ext_resource type="Shader" uid="uid://3f2aevp2sl7c" path="res://Shaders/Wobble.gdshader" id="1_1nx72"]
-[ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://UI/Sprites/Pixula_Icon.png" id="2_e437c"]
+[ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://UI/Sprites/Standard_Icons/Pixula_Icon.png" id="2_e437c"]
 [ext_resource type="Theme" uid="uid://x4ngw312h2qp" path="res://UI/TheTheme.tres" id="3_ghrq1"]
 [ext_resource type="Texture2D" uid="uid://dili5fe4u1uet" path="res://UI/Sprites/Material_Icons/Air_Icon.png" id="4_3arbj"]
 [ext_resource type="Script" uid="uid://c28qfg421io6y" path="res://Scripts/material_button.gd" id="5_0ats1"]
@@ -15,8 +15,8 @@
 [ext_resource type="Texture2D" uid="uid://d1b2en56japjq" path="res://UI/Sprites/Material_Icons/Wood_Icon.png" id="13_iny3t"]
 [ext_resource type="Texture2D" uid="uid://dimk1h8crasje" path="res://UI/Sprites/Material_Icons/Water_Vapor_Icon.png" id="14_kjx0v"]
 [ext_resource type="Texture2D" uid="uid://cyxmfog7prka1" path="res://UI/Sprites/Material_Icons/Acid_Vapor_Icon.png" id="15_wybt3"]
-[ext_resource type="Texture2D" uid="uid://vhpnxnjlf2k8" path="res://UI/Sprites/CircleSize.png" id="16_gjhv0"]
-[ext_resource type="Texture2D" uid="uid://drqlem5e5wi0d" path="res://UI/Sprites/CellSize.png" id="17_btjnx"]
+[ext_resource type="Texture2D" uid="uid://vhpnxnjlf2k8" path="res://UI/Sprites/Standard_Icons/CircleSize.png" id="16_gjhv0"]
+[ext_resource type="Texture2D" uid="uid://drqlem5e5wi0d" path="res://UI/Sprites/Standard_Icons/CellSize.png" id="17_btjnx"]
 [ext_resource type="Texture2D" uid="uid://bsc6urywf5gu" path="res://UI/Sprites/Background.png" id="18_e437c"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_3yktp"]
