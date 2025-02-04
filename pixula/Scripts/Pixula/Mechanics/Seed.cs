@@ -14,9 +14,6 @@ namespace Pixula.Mechanics
         {
             // Check below the seed for potential growth conditions
             int checkBelow = y + 1;
-            if (!Main.IsInBounds(x, checkBelow))
-                return true;
-
             MaterialType belowMaterial = Main.GetMaterialAt(x, checkBelow);
 
             CanGrowMore(x, y, material);
@@ -46,9 +43,6 @@ namespace Pixula.Mechanics
                 int checkX = x + direction.X;
                 int checkY = y + direction.Y;
                 
-                if (!Main.IsInBounds(checkX, checkY))
-                    continue;
-
                 if (Main.GetMaterialAt(checkX, checkY) == materialToCount)
                     count++;
             }

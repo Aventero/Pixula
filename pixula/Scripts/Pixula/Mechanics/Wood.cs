@@ -36,10 +36,10 @@ namespace Pixula.Mechanics
             // This tells if it will grow Sticks or Roots
             if (sourcePixel.various == 0)
             {
-                if (Main.IsInBounds(x, y + 1) && IsRootable(Main.GetMaterialAt(x, y + 1)))
+                if (IsRootable(Main.GetMaterialAt(x, y + 1)))
                     sourcePixel.various = MaxRootGrowths;
 
-                if (Main.IsInBounds(x, y - 1) && IsStickable(Main.GetMaterialAt(x, y - 1)))
+                if (IsStickable(Main.GetMaterialAt(x, y - 1)))
                     sourcePixel.various = MaxStickGrowths;
             }
 
@@ -51,9 +51,6 @@ namespace Pixula.Mechanics
 
                 if (!Chance(stickDirectionChance[stickDir]))
                     return true;
-
-                if (!Main.IsInBounds(growCheck.X, growCheck.Y))
-                    return false;
 
                 if (!CanGrowAt(growCheck))
                     return false;
@@ -83,8 +80,6 @@ namespace Pixula.Mechanics
             if (sourcePixel.various < 0)
             {
                 Vector2I growCheck =  new Vector2I(x, y) + rootDirections[GD.RandRange(0, rootDirections.Length - 1)];
-                if (!Main.IsInBounds(growCheck.X, growCheck.Y))
-                    return false;
 
                 if (!CanGrowAt(growCheck))
                     return false;
@@ -121,9 +116,7 @@ namespace Pixula.Mechanics
             // W W S -> NO
             // S W S -> YES
 
-            return Main.IsInBounds(growCheck.X - 1, growCheck.Y) && 
-                    Main.IsInBounds(growCheck.X + 1, growCheck.Y) && 
-                    Main.GetMaterialAt(growCheck.X - 1, growCheck.Y) != MaterialType.Wood && 
+            return  Main.GetMaterialAt(growCheck.X - 1, growCheck.Y) != MaterialType.Wood && 
                     Main.GetMaterialAt(growCheck.X + 1, growCheck.Y) != MaterialType.Wood;
         }
 

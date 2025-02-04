@@ -83,9 +83,6 @@ namespace Pixula.Mechanics
             {
                 Vector2I woodLocation = new(dir.X + x, dir.Y + y);
                 
-                if (!Main.IsInBounds(woodLocation.X, woodLocation.Y))
-                    continue;
-
                 // Check if there's support at this position
                 if (Main.GetMaterialAt(woodLocation.X, woodLocation.Y) == sourceMaterial)
                 {

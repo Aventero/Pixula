@@ -54,8 +54,6 @@ namespace Pixula.Mechanics
             {
                 var checkX = x + direction.X;
                 var checkY = y + direction.Y;
-                if (!Main.IsInBounds(checkX, checkY))
-                    continue;
                 
                 if (Main.GetMaterialAt(checkX, checkY) == MaterialType.Water)
                 {

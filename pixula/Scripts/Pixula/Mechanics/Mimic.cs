@@ -33,7 +33,7 @@ namespace Pixula.Mechanics
 
                 // Do the spawning
                 Vector2I spawnLocation = Main.Directions[GD.RandRange(0, 7)] + new Vector2I(x, y);
-                if (Main.IsInBounds(spawnLocation.X, spawnLocation.Y) && Main.GetMaterialAt(spawnLocation.X, spawnLocation.Y) == MaterialType.Air)
+                if (Main.GetMaterialAt(spawnLocation.X, spawnLocation.Y) == MaterialType.Air)
                     Main.SetMaterialAt(spawnLocation.X, spawnLocation.Y, (MaterialType)p.various, Main.NextPixels);
 
                 return true;
@@ -44,8 +44,6 @@ namespace Pixula.Mechanics
             int checkX = x + direction.X;
             int checkY = y + direction.Y;
             
-            if (!Main.IsInBounds(checkX, checkY)) return true;
-
             MaterialType possibleCopyMaterial = Main.GetMaterialAt(checkX, checkY);
             
             if (!IsCopyable(possibleCopyMaterial)) return true;

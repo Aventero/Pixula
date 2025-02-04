@@ -21,13 +21,10 @@ namespace Pixula.Mechanics
         {
             // Check surrounding pixels
             Vector2I checkLocation = simpleDirections[GD.RandRange(0, simpleDirections.Length - 1)] + new Vector2I(x, y);
-            if (!Main.IsInBounds(checkLocation.X, checkLocation.Y))
-                return true;
-            
+
             // Has to activate the location beyond the void spot.
             Vector2I furtherLocation = checkLocation + (checkLocation - new Vector2I(x, y));
-            if (Main.IsInBounds(furtherLocation.X, furtherLocation.Y))
-                Main.ActivateCell(furtherLocation);
+            Main.ActivateCell(furtherLocation);
 
             MaterialType mat = Main.GetMaterialAt(checkLocation.X, checkLocation.Y);
             if (mat == MaterialType.Void || mat == MaterialType.Air)

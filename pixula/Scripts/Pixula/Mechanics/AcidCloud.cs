@@ -19,9 +19,6 @@ namespace Pixula.Mechanics
             // Chance to spawn acid underneath
             if (Chance(0.005f)) 
             {
-                if (!Main.IsInBounds(x, y + 1))
-                    return true;
-
                 // Check if space below is empty
                 if (Main.GetMaterialAt(x, y + 1) == MaterialType.Air)
                     Main.ConvertTo(x, y + 1, MaterialType.Acid);

@@ -41,8 +41,6 @@ namespace Pixula.Mechanics
             {
                 int checkX = x + direction.X;
                 int checkY = y + direction.Y;
-                if (!Main.IsInBounds(checkX, checkY))
-                    continue;
                 
                 if (Main.GetMaterialAt(checkX, checkY) == MaterialType.Water)
                 {
@@ -56,8 +54,6 @@ namespace Pixula.Mechanics
 
                         int checkVaporX = checkX + dirAroundWater.X;
                         int checkVaporY = checkY + dirAroundWater.Y;
-                        if (!Main.IsInBounds(checkVaporX, checkVaporY))
-                            continue;
 
                         if (Main.GetMaterialAt(checkVaporX, checkVaporY) == MaterialType.Air)
                             Main.ConvertTo(checkVaporX, checkVaporY, MaterialType.WaterVapor);

@@ -384,7 +384,7 @@ public partial class MainSharp : Node2D
 	public bool AttractTowardsMaterial(int x, int y, int rangeMin, int rangeMax, MaterialType materialType)
 	{
 		Vector2I pos = GetRandomRingPosition(x, y, rangeMin, rangeMax);
-		if (IsInBounds(pos.X, pos.Y) && GetMaterialAt(pos.X, pos.Y) == materialType)
+		if (GetMaterialAt(pos.X, pos.Y) == materialType)
 		{
 			Vector2I direction = new(Math.Sign(pos.X - x), Math.Sign(pos.Y -y));
 			return MoveTo(x, y, x + direction.X, y + direction.Y, materialType);
@@ -445,9 +445,6 @@ public partial class MainSharp : Node2D
 		{
 			var checkX = x + direction.X;
 			var checkY = y + direction.Y;
-			if (!IsInBounds(checkX, checkY))
-				continue;
-
 			if (GetMaterialAt(checkX, checkY) == vaporType)
 				vaporCount++;
 		}
@@ -468,6 +465,7 @@ public partial class MainSharp : Node2D
 		{
 			int checkX = x + direction.X;
 			int checkY = y + direction.Y;
+
 			if (!IsInBounds(checkX, checkY))
 				continue;
 			MaterialType material = GetMaterialAt(checkX, checkY);
@@ -552,6 +550,8 @@ public partial class MainSharp : Node2D
 
 	private void DrawPixelAt(int x, int y, Pixel[] pixelArray)
 	{
+		if (!IsInBounds(x, y)) return;
+
 		Vector2I variantPos = GetPixel(x, y, pixelArray).variantPos;
 		MaterialType materialType = GetNewMaterialAt(x, y);
 		Color color = GetColorForVariant(variantPos.X, variantPos.Y);
@@ -594,10 +594,12 @@ public partial class MainSharp : Node2D
 		this.gridWidth = (int)Math.Floor((float)width / newPixelSize);
 		this.gridHeight = (int)Math.Floor((float)height / newPixelSize);
 
+		positionColors.Clear();
+
 		// Reset pixel arrays and active cells
+		SetupPixels();
 		SetupImages();
 		SetupDebug();
-		SetupPixels();
 		currentActiveCells.Clear();
 		nextActiveCells.Clear();
 
@@ -635,8 +637,7 @@ public partial class MainSharp : Node2D
 	}
 
 	// Helper methods
-	public bool IsInBounds(int x, int y) =>
-		x >= 0 && x < gridWidth && y >= 0 && y < gridHeight;
+
 
 	private bool IsValidCell(Vector2I cellPos)
 	{
@@ -690,17 +691,11 @@ public partial class MainSharp : Node2D
 
 	public Color GetColorAt(int x, int y)
 	{
-		if (!IsInBounds(x, y))
-			return Colors.Transparent;
-			
 		return worldImage.GetPixel(x, y);
 	}
 
 	public void SetMaterialAt(int x, int y, MaterialType materialType, Pixel[] pixelArray)
 	{
-		if (!IsInBounds(x, y))
-			return;
-		
 		SetPixel(x, y, new Pixel(materialType, GetRandomVariant(materialType), (int)MaterialType.Air), pixelArray);
 		ActivateCell(new Vector2I(x, y));
 		DrawPixelAt(x, y, pixelArray);
@@ -708,21 +703,24 @@ public partial class MainSharp : Node2D
 
 	public void SetPixelAt(int x, int y, Pixel p, Pixel[] pixelArray)
 	{
-		if (!IsInBounds(x, y))
-			return;
-
 		SetPixel(x, y, p, pixelArray);
 		ActivateCell(new Vector2I(x, y));
 		DrawPixelAt(x, y, pixelArray);
 	}
 
-	public Pixel GetPixel(int x, int y, Pixel[] pixelArray) 
-	{
-		return pixelArray[x + gridWidth * y];
-	}
+	// Fast bounds check using bit operations
+	private bool IsInBounds(int x, int y) => (uint)x < (uint)gridWidth && (uint)y < (uint)gridHeight;
+
+	public Pixel GetPixel(int x, int y, Pixel[] pixelArray) => 
+		IsInBounds(x, y) ? pixelArray[x + gridWidth * y] : OutOfBoundsPixel;
+
+	private static readonly Pixel OutOfBoundsPixel = new(MaterialType.Air, Vector2I.Zero, 0);
 
 	private void SetPixel(int x, int y, Pixel pixel, Pixel[] pixelArray) 
 	{
+		if (!IsInBounds(x, y)) 
+			return;
+
 		pixelArray[x + gridWidth * y] = pixel;
 	}
 

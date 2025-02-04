@@ -54,9 +54,6 @@ namespace Pixula.Mechanics
         {
             Vector2I absorbPosition = NEIGHBOR_DIRECTIONS[GD.RandRange(0, NEIGHBOR_DIRECTIONS.Length - 1)] + new Vector2I(x, y);
 
-            if (!Main.IsInBounds(absorbPosition.X, absorbPosition.Y))
-                return;
-
             if (CanAbsorb(Main.GetMaterialAt(absorbPosition.X, absorbPosition.Y)))
             {
                 sourcePlant.various = GD.RandRange(0, MAX_GROWTH);
@@ -74,9 +71,6 @@ namespace Pixula.Mechanics
             {
                 Vector2I targetPos = new Vector2I(x, y) + direction;
                 
-                if (!Main.IsInBounds(targetPos.X, targetPos.Y))
-                    continue;
-
                 if (!plantGrowingDirectionsChance.TryGetValue(direction, out float growChance))
                     continue;
 
@@ -106,10 +100,6 @@ namespace Pixula.Mechanics
 
         private bool TryGrowNewPlant(int targetX, int targetY, Pixel sourcePlant)
         {
-            if (!Main.IsInBounds(targetX, targetY))
-                return false;
-
-
             if (!CanGrowAt(new Vector2I(targetX, targetY)))
                 return false;
 
@@ -127,9 +117,7 @@ namespace Pixula.Mechanics
         private bool CanGrowAt(Vector2I growCheck)
         {
             // X <- P -> X
-            return Main.IsInBounds(growCheck.X - 1, growCheck.Y) && 
-                    Main.IsInBounds(growCheck.X + 1, growCheck.Y) && 
-                    Main.GetMaterialAt(growCheck.X - 1, growCheck.Y) != MaterialType.Plant && 
+            return  Main.GetMaterialAt(growCheck.X - 1, growCheck.Y) != MaterialType.Plant && 
                     Main.GetMaterialAt(growCheck.X + 1, growCheck.Y) != MaterialType.Plant;
         }
 
@@ -137,9 +125,6 @@ namespace Pixula.Mechanics
         {
             Vector2I checkPos = Main.Directions[GD.RandRange(0, Main.Directions.Length - 1)] + new Vector2I(x, y);
             
-            if (!Main.IsInBounds(checkPos.X, checkPos.Y))
-                return false;
-
             MaterialType checkMaterial = Main.GetMaterialAt(checkPos.X, checkPos.Y);
             if (!IsGrowable(checkMaterial))
                 return false;
