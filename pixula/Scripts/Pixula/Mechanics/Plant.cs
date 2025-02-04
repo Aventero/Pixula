@@ -10,9 +10,7 @@ namespace Pixula.Mechanics
 {
     public class Plant(MainSharp main) : MaterialMechanic(main) 
     {
-        private const int MAX_GROWTH = 3;
-        private const float GROW_UP_CHANCE = 1.0f;
-        private const float GROW_SIDE_CHANCE = 0.5f;
+        private const int MAX_GROWTH = 10;
 
         private static readonly Vector2I[] NEIGHBOR_DIRECTIONS =
         [
@@ -34,11 +32,10 @@ namespace Pixula.Mechanics
             if (IsNewPlant(plant))
                 return InitializeNewPlant(x, y, plant);
 
-            TryAbsorbWater(x, y, plant);
+            TryAbsorbSurroundings(x, y, plant);
 
             if (IsDeadPlant(plant))
                 return true;
-            
 
             return TryGrowPlant(x, y, plant);
         }
@@ -48,43 +45,72 @@ namespace Pixula.Mechanics
 
         private bool InitializeNewPlant(int x, int y, Pixel plant)
         {
-            plant.various = MAX_GROWTH;
+            plant.various = GD.RandRange(2, MAX_GROWTH);
             Main.SetPixelAt(x, y, plant, Main.NextPixels);
             return true;
         }
 
-        private void TryAbsorbWater(int x, int y, Pixel sourcePlant)
+        private void TryAbsorbSurroundings(int x, int y, Pixel sourcePlant)
         {
-            Vector2I waterCheckPos = NEIGHBOR_DIRECTIONS[GD.RandRange(0, NEIGHBOR_DIRECTIONS.Length - 1)] + new Vector2I(x, y);
+            Vector2I absorbPosition = NEIGHBOR_DIRECTIONS[GD.RandRange(0, NEIGHBOR_DIRECTIONS.Length - 1)] + new Vector2I(x, y);
 
-            if (!Main.IsInBounds(waterCheckPos.X, waterCheckPos.Y))
+            if (!Main.IsInBounds(absorbPosition.X, absorbPosition.Y))
                 return;
 
-            if (Main.GetMaterialAt(waterCheckPos.X, waterCheckPos.Y) == MaterialType.Water)
+            if (CanAbsorb(Main.GetMaterialAt(absorbPosition.X, absorbPosition.Y)))
             {
                 sourcePlant.various = GD.RandRange(0, MAX_GROWTH);
                 Main.SetPixelAt(x, y, sourcePlant, Main.NextPixels);
-                Main.ConvertTo(waterCheckPos.X, waterCheckPos.Y, MaterialType.Air);
+                Main.ConvertTo(absorbPosition.X, absorbPosition.Y, MaterialType.Air);
             }
         }
 
         private bool TryGrowPlant(int x, int y, Pixel plant)
         {
-            if (plant.various <= 1 || !Chance(GROW_UP_CHANCE))
+            if (plant.various <= 1)
                 return true;
 
-            if (TryGrowNewPlant(x, y - 1, plant))
+            foreach (var direction in plantGrowingDirections)
             {
-                DisablePlant(x, y, plant);
-                return true;
+                Vector2I targetPos = new Vector2I(x, y) + direction;
+                
+                if (!Main.IsInBounds(targetPos.X, targetPos.Y))
+                    continue;
+
+                if (!plantGrowingDirectionsChance.TryGetValue(direction, out float growChance))
+                    continue;
+
+                if (!Chance(growChance))
+                    continue;
+
+                if (TryGrowNewPlant(targetPos.X, targetPos.Y, plant))
+                {
+                    DisablePlant(x, y, plant);
+                    return true;
+                }
             }
 
             return ShareGrowthWithNeighbors(x, y, plant);
         }
 
+        private bool CanAbsorb(MaterialType material)
+        {
+            return material switch 
+            {
+                MaterialType.Seed => true,
+                MaterialType.Water => true,
+                _ => false
+            };
+        }
+
+
         private bool TryGrowNewPlant(int targetX, int targetY, Pixel sourcePlant)
         {
             if (!Main.IsInBounds(targetX, targetY))
+                return false;
+
+
+            if (!CanGrowAt(new Vector2I(targetX, targetY)))
                 return false;
 
             Pixel targetPixel = Main.GetPixel(targetX, targetY, Main.CurrentPixels);
@@ -96,6 +122,15 @@ namespace Pixula.Mechanics
             Pixel newPlant = new(MaterialType.Plant, Main.GetRandomVariant(MaterialType.Plant), newGrowth);
             Main.SetPixelAt(targetX, targetY, newPlant, Main.NextPixels);
             return true;
+        }
+
+        private bool CanGrowAt(Vector2I growCheck)
+        {
+            // X <- P -> X
+            return Main.IsInBounds(growCheck.X - 1, growCheck.Y) && 
+                    Main.IsInBounds(growCheck.X + 1, growCheck.Y) && 
+                    Main.GetMaterialAt(growCheck.X - 1, growCheck.Y) != MaterialType.Plant && 
+                    Main.GetMaterialAt(growCheck.X + 1, growCheck.Y) != MaterialType.Plant;
         }
 
         private bool ShareGrowthWithNeighbors(int x, int y, Pixel sourcePlant)
@@ -125,13 +160,24 @@ namespace Pixula.Mechanics
             Main.SetPixelAt(x, y, plant, Main.NextPixels);
         }
 
-        private bool CanGrowAt(Vector2I pos)
+        private static Dictionary<Vector2I, float> plantGrowingDirectionsChance = new()
         {
-            return Main.IsInBounds(pos.X - 1, pos.Y) && 
-                Main.IsInBounds(pos.X + 1, pos.Y) && 
-                Main.GetMaterialAt(pos.X - 1, pos.Y) != MaterialType.Plant && 
-                Main.GetMaterialAt(pos.X + 1, pos.Y) != MaterialType.Plant;
-        }
+            { new Vector2I(0, -1), 0.5f}, // UP
+            { new Vector2I(-1, -1), 0.5f}, // UP LEFT
+            { new Vector2I(1, -1), 0.5f}, // UP RIGHT
+            { new Vector2I(-1, 0), 0.1f}, // LEFT
+            { new Vector2I(1, 0), 0.1f}, // RIGHT
+            { new Vector2I(0, 1), 0.2f}, // DOWN
+        };
+
+        private static Vector2I[] plantGrowingDirections =
+        [
+            new Vector2I(0, -1),   // UP
+            new Vector2I(-1, -1),  // UP-left
+            new Vector2I(1, -1),   // UP-right
+            new Vector2I(-1, 0),   // Left
+            new Vector2I(1, 0),   // Right
+        ];
 
         private bool IsEmpty(MaterialType materialType) => materialType == MaterialType.Air;
         private bool IsGrowable(MaterialType materialType) => materialType == MaterialType.Plant;

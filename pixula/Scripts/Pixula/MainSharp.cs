@@ -36,9 +36,6 @@ public enum MaterialType
 	Fluff = 18,
 	Ember = 19,
 
-	// Seed -> Grows when on top of soil 
-	// Seed -> ALSO grows wood under it
-	// Seed -> Can absorb water
 	// Poison -> Eats through things turning them into highly flammable fluff
 	// FLUFF -> Very flammable stuff
 	// Coal? -> Burns for long

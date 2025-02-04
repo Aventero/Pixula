@@ -28,7 +28,7 @@ namespace Pixula.Mechanics
                 return false;
 
             // Very high chance to do nothing
-            if (Chance(0.9f)) return true;
+            if (Chance(0.8f)) return true;
 
             // This Wood, where wood is growing from.
             Pixel sourcePixel = Main.GetPixel(x, y, Main.CurrentPixels);
@@ -142,6 +142,7 @@ namespace Pixula.Mechanics
             return materialToTest switch 
             {
                 MaterialType.Air => true,
+                MaterialType.Plant => true,
                 _ => false
             };
         }

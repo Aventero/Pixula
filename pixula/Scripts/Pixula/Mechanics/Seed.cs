@@ -19,13 +19,7 @@ namespace Pixula.Mechanics
 
             MaterialType belowMaterial = Main.GetMaterialAt(x, checkBelow);
 
-            // Much lower overall chance of seed survival/growth
-            if (Chance(0.01f))
-            {
-                // Most seeds will simply disappear
-                Main.SetMaterialAt(x, y, MaterialType.Air, Main.NextPixels);
-                return true;
-            }
+            CanGrowMore(x, y, material);
 
             if (IsGrowable(belowMaterial) && Chance(0.5f))
             {
@@ -59,6 +53,15 @@ namespace Pixula.Mechanics
                     count++;
             }
             return count;
+        }
+
+        private bool CanGrowMore(int x, int y, MaterialType material)
+        {
+            int plantCount = CountAdjacentMaterials(x, y, MaterialType.Plant);
+            int woodCount = CountAdjacentMaterials(x, y, MaterialType.Wood);
+            
+            return (material == MaterialType.Plant && plantCount < 2) || 
+                (material == MaterialType.Wood && woodCount < 1);
         }
 
         public static bool IsGrowable(MaterialType materialToTest)
