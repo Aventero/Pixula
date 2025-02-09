@@ -1,172 +1,152 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Godot;
-using Pixula;
-
 
 namespace Pixula.Mechanics
 {
-    public class Wood(MainSharp main) : MaterialMechanic(main) 
+    public class Wood(MainSharp main) : MaterialMechanic(main)
     {
+        private const int MIN_ROOT_GROWTH = -1;
+        private const int MAX_ROOT_GROWTH = -10;
+        private const int MIN_STICK_GROWTH = 1;
+        private const int MAX_STICK_GROWTH = 3;
 
-        // Lower limit (not zero as that would mean its initialized)
-        private int MinRootGrowStop = -1;
-        private int MaxRootGrowths = -3;
+        private readonly GrowthMechanic growing = new(main);
 
-        private int MinStickGrowStop = 1;
-        private int MaxStickGrowths = 3;
-        public override bool Update(int x, int y, MaterialType material)
+        private static readonly Vector2I[] ROOT_DIRECTIONS = 
         {
-            return WoodMechanics(x, y, material);
-        }
-
-        private bool WoodMechanics(int x, int y, MaterialType currentMaterial)
-        {
-
-            Main.ActivateCell(new Vector2I(x, y));
-            if (FallAsGroup(x, y, currentMaterial))
-                return false;
-
-            // Very high chance to do nothing
-            if (Chance(0.8f)) return true;
-
-            // This Wood, where wood is growing from.
-            Pixel sourcePixel = Main.GetPixel(x, y, Main.CurrentPixels);
-
-            // This tells if it will grow Sticks or Roots
-            if (sourcePixel.various == 0)
-            {
-                if (IsRootable(Main.GetMaterialAt(x, y + 1)))
-                    sourcePixel.various = MaxRootGrowths;
-
-                if (IsStickable(Main.GetMaterialAt(x, y - 1)))
-                    sourcePixel.various = MaxStickGrowths;
-            }
-
-            // GROW UP
-            if (sourcePixel.various > 0)
-            {
-                Vector2I stickDir = stickDirections[GD.RandRange(0, stickDirections.Length - 1)];
-                Vector2I growCheck =  new Vector2I(x, y) + stickDir;
-
-                if (!Chance(stickDirectionChance[stickDir]))
-                    return true;
-
-                if (!CanGrowAt(growCheck))
-                    return false;
-
-                MaterialType mat = Main.GetMaterialAt(growCheck.X, growCheck.Y);
-                if (IsStickable(mat))
-                {
-                    if (sourcePixel.various > MinStickGrowStop) 
-                    {
-                        // Update source pixel
-                        sourcePixel.various -= 1;
-                        Main.SetPixelAt(x, y, sourcePixel, Main.NextPixels);
-
-                        // Grow a new pixel at the growth position
-                        if (Chance(0.55f))
-                            Main.ConvertTo(growCheck.X, growCheck.Y, MaterialType.Wood);
-
-                        return true;
-                    }
-
-                    // Has Grown MaxPossibleGrowths
-                    return true;
-                }
-            }
-
-            // GROW DOWN
-            if (sourcePixel.various < 0)
-            {
-                Vector2I growCheck =  new Vector2I(x, y) + rootDirections[GD.RandRange(0, rootDirections.Length - 1)];
-
-                if (!CanGrowAt(growCheck))
-                    return false;
-
-                MaterialType mat = Main.GetMaterialAt(growCheck.X, growCheck.Y);
-                if (IsRootable(mat))
-                {
-                    if (sourcePixel.various < MinRootGrowStop) 
-                    {
-                        // Update source pixel
-                        sourcePixel.various += 1;
-                        Main.SetPixelAt(x, y, sourcePixel, Main.NextPixels);
-
-                        // Grow a new pixel at the growth position
-                        if (Chance(0.55f))
-                            Main.ConvertTo(growCheck.X, growCheck.Y, MaterialType.Wood);
-
-                        return true;
-                    }
-
-                    // Has Grown MaxPossibleGrowths
-                    return true;
-                }
-            }
-
-           return false;
-        }
-
-
-        private bool CanGrowAt(Vector2I growCheck)
-        {
-            // S = Soil, W = Wood
-            // S W W -> NO
-            // W W S -> NO
-            // S W S -> YES
-
-            return  Main.GetMaterialAt(growCheck.X - 1, growCheck.Y) != MaterialType.Wood && 
-                    Main.GetMaterialAt(growCheck.X + 1, growCheck.Y) != MaterialType.Wood;
-        }
-
-        public static bool IsRootable(MaterialType materialToTest)
-        {
-            return materialToTest switch 
-            {
-                MaterialType.Sand => true,
-                MaterialType.Rock => true,
-                _ => false
-            };
-        }
-
-        public static bool IsStickable(MaterialType materialToTest)
-        {
-            return materialToTest switch 
-            {
-                MaterialType.Air => true,
-                MaterialType.Plant => true,
-                _ => false
-            };
-        }
-
-        private static Vector2I[] rootDirections =
-        [
-            new Vector2I(0, 1),   // Down
-            new Vector2I(-1, 1),  // Down-left
-            new Vector2I(1, 1),   // Down-right
-            new Vector2I(-1, 0),   // Left
-            new Vector2I(1, 0),   // Right
-            new Vector2I(0, -1),  // DOWN
-        ];
-
-        private static Dictionary<Vector2I, float> stickDirectionChance = new()
-        {
-            { new Vector2I(0, -1), 0.9f}, // UP
-            { new Vector2I(-1, -1), 0.5f}, // UP LEFT
-            { new Vector2I(1, -1), 0.5f}, // UP RIGHT
-            { new Vector2I(-1, 0), 0.1f}, // LEFT
-            { new Vector2I(1, 0), 0.1f}, // RIGHT
-            { new Vector2I(0, 1), 0.2f}, // DOWN
+            new(0, 1),   // Down
+            new(-1, 1),  // Down-left
+            new(1, 1),   // Down-right
         };
 
-        private static Vector2I[] stickDirections =
-        [
-            new Vector2I(0, -1),   // UP
-            new Vector2I(-1, -1),  // UP-left
-            new Vector2I(1, -1),   // UP-right
-            new Vector2I(-1, 0),   // Left
-            new Vector2I(1, 0),   // Right
-        ];
+        private static readonly Dictionary<Vector2I, float> STICK_GROWTH_CHANCES = new()
+        {
+            { new Vector2I(0, -1), 0.7f },  // UP
+            { new Vector2I(-1, -1), 0.5f }, // UP LEFT
+            { new Vector2I(1, -1), 0.5f },  // UP RIGHT
+        };
+
+        private static readonly Vector2I[] GROWTH_CHECK_POSITIONS = 
+        {
+            new(0, 0),    // Above
+            new(-2, -1),  // Two left and up
+            new(2, -1),   // Two right and up
+            new(2, -2),   // Two right and 2 up
+            new(-2, -2),  // Two left and 2 up
+            new(0, -4),   // Four up
+            new(0, -6),   // Six up
+        };
+
+        public override bool Update(int x, int y, MaterialType material)
+        {
+            Main.ActivateCell(new Vector2I(x, y));
+            
+            if (FallAsGroup(x, y, material))
+                return false;
+
+            Pixel sourcePixel = Main.GetPixel(x, y, Main.CurrentPixels);
+
+            if (growing.IsNew(sourcePixel.various))
+                sourcePixel = InitializeGrowthDirection(sourcePixel, x, y);
+            
+            if (sourcePixel.various > 0)
+                sourcePixel = growing.TryAbsorb(x, y, sourcePixel, MIN_STICK_GROWTH, MAX_STICK_GROWTH);
+            else if (sourcePixel.various < 0)
+                 sourcePixel = growing.TryAbsorb(x, y, sourcePixel, MIN_ROOT_GROWTH, MAX_ROOT_GROWTH);
+
+            if (growing.IsDisabled(sourcePixel.various))
+            {
+                return true;
+            }
+
+            if (sourcePixel.various > 0 )
+                ProcessStickGrowth(x, y, sourcePixel);
+
+            if (sourcePixel.various < 0)
+                ProcessRootGrowth(x, y, sourcePixel);
+
+            return growing.ShareGrowthToNeighbor(x, y, sourcePixel);
+        }
+
+        private Pixel InitializeGrowthDirection(Pixel pixel, int x, int y)
+        {
+            if (IsRootable(Main.GetMaterialAt(x, y + 1)))
+                pixel.various = MAX_ROOT_GROWTH;
+            
+            if (IsStickable(Main.GetMaterialAt(x, y - 1)))
+                pixel.various = MAX_STICK_GROWTH;
+
+            Main.SetPixelAt(x, y, pixel, Main.NextPixels);
+            return pixel;
+        }
+
+        private bool ProcessStickGrowth(int x, int y, Pixel sourcePixel)
+        {
+            if (sourcePixel.various <= MIN_STICK_GROWTH)
+            {
+                growing.Disable(x, y, sourcePixel);
+                return false;
+            }
+
+            Vector2I stickDir = STICK_GROWTH_CHANCES.Keys.ToArray()[GD.RandRange(0, STICK_GROWTH_CHANCES.Count - 1)];
+            Vector2I growthPos = new Vector2I(x, y) + stickDir;
+
+            if (!STICK_GROWTH_CHANCES.TryGetValue(stickDir, out float chance) || !Chance(chance))
+                return true;
+
+            if (!CanGrowAt(growthPos, 1) || !IsStickable(Main.GetMaterialAt(growthPos.X, growthPos.Y)))
+                return false;
+
+            return GrowWood(x, y, growthPos, sourcePixel.various - 1);
+        }
+
+        private bool ProcessRootGrowth(int x, int y, Pixel sourcePixel)
+        {
+            if (sourcePixel.various >= MIN_ROOT_GROWTH)
+            {
+                growing.Disable(x, y, sourcePixel);
+                return false;
+            }
+
+            Vector2I rootDir = ROOT_DIRECTIONS[GD.RandRange(0, ROOT_DIRECTIONS.Length - 1)];
+            Vector2I growthPos = new Vector2I(x, y) + rootDir;
+
+            if (!CanGrowAt(growthPos, -1) || !IsRootable(Main.GetMaterialAt(growthPos.X, growthPos.Y)))
+                return false;
+
+            return GrowWood(x, y, growthPos, sourcePixel.various + 1);
+        }
+
+        private bool GrowWood(int x, int y, Vector2I target, int growthValue)
+        {
+            // Create new wood with new growthValue
+            Pixel newWood = new(MaterialType.Wood, Main.GetRandomVariant(MaterialType.Wood), growthValue);
+            Main.SetPixelAt(target.X, target.Y, newWood, Main.NextPixels);
+
+            // Disable Source pixel
+            Pixel sourcePixel = Main.GetPixel(x, y, Main.CurrentPixels);
+            growing.Disable(x, y, sourcePixel);
+            return true;
+        }
+
+
+        private bool CanGrowAt(Vector2I growPos, int upDirection)
+        {
+            foreach (var checkOffset in GROWTH_CHECK_POSITIONS)
+            {
+                var checkPos = growPos + checkOffset * upDirection;
+                if (Main.GetMaterialAt(checkPos.X, checkPos.Y) == MaterialType.Wood)
+                    return false;
+            }
+            return true;
+        }
+
+        private static bool IsRootable(MaterialType material) => 
+            material is MaterialType.Sand or MaterialType.Rock;
+
+        private static bool IsStickable(MaterialType material) => 
+            material is MaterialType.Air or MaterialType.Plant;
     }
 }

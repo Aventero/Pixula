@@ -125,7 +125,7 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Acid, new[] { MaterialType.Air, MaterialType.AcidVapor, MaterialType.WaterVapor }},
 		{ MaterialType.AcidVapor, new[] { MaterialType.Air }},
 		{ MaterialType.AcidCloud, new[] { MaterialType.Air }},
-		{ MaterialType.Seed, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Lava, MaterialType.Acid}},
+		{ MaterialType.Seed, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Lava, MaterialType.Acid, MaterialType.Plant}},
 		{ MaterialType.Plant, new[] { MaterialType.Air, MaterialType.Seed }},
 		{ MaterialType.Wood, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud  }},
 	};
@@ -220,6 +220,7 @@ public partial class MainSharp : Node2D
 	{
 		mechanics = new() 
 		{
+			{ MaterialType.Void, new Mechanics.Void(this) },
 			{ MaterialType.Sand, new Sand(this) },
 			{ MaterialType.Water, new Water(this) },
 			{ MaterialType.Rock, new Rock(this) },
@@ -232,7 +233,6 @@ public partial class MainSharp : Node2D
 			{ MaterialType.AcidVapor, new AcidVapor(this) },
 			{ MaterialType.AcidCloud, new AcidCloud(this) },
 			{ MaterialType.Mimic, new Mimic(this) },
-			{ MaterialType.Void, new Mechanics.Void(this) },
 			{ MaterialType.Seed, new Seed(this) },
 			{ MaterialType.Plant, new Plant(this) },
 		};
@@ -552,10 +552,14 @@ public partial class MainSharp : Node2D
 	{
 		if (!IsInBounds(x, y)) return;
 
-		Vector2I variantPos = GetPixel(x, y, pixelArray).variantPos;
+		Pixel pixel = GetPixel(x, y, pixelArray);
 		MaterialType materialType = GetNewMaterialAt(x, y);
-		Color color = GetColorForVariant(variantPos.X, variantPos.Y);
+		Color color = GetColorForVariant(pixel.variantPos.X, pixel.variantPos.Y);
 		color = GetColorRevamp(materialType, color);
+
+		if (pixel.various < 50 && pixel.various > -50 && !(pixel.various == 1))
+			color *= 1 + Mathf.Min(1, Mathf.Abs(pixel.various) * 0.1f);
+
 		positionColors[new Vector2I(x, y)] =  color;
 	}
 
@@ -637,8 +641,6 @@ public partial class MainSharp : Node2D
 	}
 
 	// Helper methods
-
-
 	private bool IsValidCell(Vector2I cellPos)
 	{
 		int maxCellX = (gridWidth - 1) / CellSize;
@@ -661,7 +663,7 @@ public partial class MainSharp : Node2D
 		return GetPixel(x, y, CurrentPixels).material;
 	}
 
-	private MaterialType GetNewMaterialAt(int x, int y) => GetPixel(x, y, NextPixels).material;
+	public MaterialType GetNewMaterialAt(int x, int y) => GetPixel(x, y, NextPixels).material;
 
 	private bool CanSwap(MaterialType source, MaterialType swappingPartner) =>
 		SwapRules.TryGetValue(source, out var rules) && rules.Contains(swappingPartner);
@@ -710,6 +712,8 @@ public partial class MainSharp : Node2D
 
 	// Fast bounds check using bit operations
 	private bool IsInBounds(int x, int y) => (uint)x < (uint)gridWidth && (uint)y < (uint)gridHeight;
+
+	public bool IsEmpty(MaterialType materialType) => materialType == MaterialType.Air;
 
 	public Pixel GetPixel(int x, int y, Pixel[] pixelArray) => 
 		IsInBounds(x, y) ? pixelArray[x + gridWidth * y] : OutOfBoundsPixel;

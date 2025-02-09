@@ -10,7 +10,9 @@ namespace Pixula.Mechanics
 {
     public class Plant(MainSharp main) : MaterialMechanic(main) 
     {
-        private const int MAX_GROWTH = 10;
+        private const int MAX_GROWTH = 3;
+
+        private readonly GrowthMechanic growing = new(main);
 
         private static readonly Vector2I[] NEIGHBOR_DIRECTIONS =
         [
@@ -29,19 +31,16 @@ namespace Pixula.Mechanics
 
             Pixel plant = Main.GetPixel(x, y, Main.CurrentPixels);
             
-            if (IsNewPlant(plant))
+            if (growing.IsNew(plant.various))
                 return InitializeNewPlant(x, y, plant);
 
-            TryAbsorbSurroundings(x, y, plant);
+            plant = growing.TryAbsorb(x, y, plant, 2, MAX_GROWTH);
 
-            if (IsDeadPlant(plant))
+            if (growing.IsDisabled(plant.various))
                 return true;
 
             return TryGrowPlant(x, y, plant);
         }
-
-        private bool IsNewPlant(Pixel plant) => plant.various == 0;
-        private bool IsDeadPlant(Pixel plant) => plant.various < 0;
 
         private bool InitializeNewPlant(int x, int y, Pixel plant)
         {
@@ -50,24 +49,15 @@ namespace Pixula.Mechanics
             return true;
         }
 
-        private void TryAbsorbSurroundings(int x, int y, Pixel sourcePlant)
+        private bool TryGrowPlant(int x, int y, Pixel sourcePlant)
         {
-            Vector2I absorbPosition = NEIGHBOR_DIRECTIONS[GD.RandRange(0, NEIGHBOR_DIRECTIONS.Length - 1)] + new Vector2I(x, y);
-
-            if (CanAbsorb(Main.GetMaterialAt(absorbPosition.X, absorbPosition.Y)))
+            if (sourcePlant.various <= 1)
             {
-                sourcePlant.various = GD.RandRange(0, MAX_GROWTH);
-                Main.SetPixelAt(x, y, sourcePlant, Main.NextPixels);
-                Main.ConvertTo(absorbPosition.X, absorbPosition.Y, MaterialType.Air);
-            }
-        }
-
-        private bool TryGrowPlant(int x, int y, Pixel plant)
-        {
-            if (plant.various <= 1)
+                growing.Disable(x, y, sourcePlant);
                 return true;
+            }
 
-            foreach (var direction in plantGrowingDirections)
+            foreach (Vector2I direction in plantGrowingDirections)
             {
                 Vector2I targetPos = new Vector2I(x, y) + direction;
                 
@@ -77,26 +67,15 @@ namespace Pixula.Mechanics
                 if (!Chance(growChance))
                     continue;
 
-                if (TryGrowNewPlant(targetPos.X, targetPos.Y, plant))
+                if (TryGrowNewPlant(targetPos.X, targetPos.Y, sourcePlant))
                 {
-                    DisablePlant(x, y, plant);
+                    sourcePlant = growing.Disable(x, y, sourcePlant);
                     return true;
                 }
             }
 
-            return ShareGrowthWithNeighbors(x, y, plant);
+            return growing.ShareGrowthToNeighbor(x, y, sourcePlant);
         }
-
-        private bool CanAbsorb(MaterialType material)
-        {
-            return material switch 
-            {
-                MaterialType.Seed => true,
-                MaterialType.Water => true,
-                _ => false
-            };
-        }
-
 
         private bool TryGrowNewPlant(int targetX, int targetY, Pixel sourcePlant)
         {
@@ -105,7 +84,7 @@ namespace Pixula.Mechanics
 
             Pixel targetPixel = Main.GetPixel(targetX, targetY, Main.CurrentPixels);
             
-            if (!IsEmpty(targetPixel.material))
+            if (!Main.IsEmpty(targetPixel.material))
                 return false;
 
             int newGrowth = sourcePlant.various - 1;
@@ -116,55 +95,58 @@ namespace Pixula.Mechanics
 
         private bool CanGrowAt(Vector2I growCheck)
         {
-            // X <- P -> X
-            return  Main.GetMaterialAt(growCheck.X - 1, growCheck.Y) != MaterialType.Plant && 
-                    Main.GetMaterialAt(growCheck.X + 1, growCheck.Y) != MaterialType.Plant;
-        }
+            // Check additional positions further left and right
+            // X   X  -2
+            // XXXXX  -1
+            //  XXX   0
+            //   P
 
-        private bool ShareGrowthWithNeighbors(int x, int y, Pixel sourcePlant)
-        {
-            Vector2I checkPos = Main.Directions[GD.RandRange(0, Main.Directions.Length - 1)] + new Vector2I(x, y);
-            
-            MaterialType checkMaterial = Main.GetMaterialAt(checkPos.X, checkPos.Y);
-            if (!IsGrowable(checkMaterial))
-                return false;
+            Vector2I[] checks = 
+            [
+                new Vector2I(0, 0), // Above
+                new Vector2I(1, 0), // Above Right
+                new Vector2I(-1, 0), // Above Left
 
-            Pixel neighborPlant = Main.GetPixel(checkPos.X, checkPos.Y, Main.CurrentPixels);
-            if (neighborPlant.various >= sourcePlant.various)
-                return false;
+                new Vector2I(0, -1), // Above Grow Spot
+                new Vector2I(1, -1), // One Right and up
+                new Vector2I(-1, -1), // One left and up
+                new Vector2I(-2, -1), // Two left and up
+                new Vector2I(2, -1),   // Two right and up
 
-            neighborPlant.various = sourcePlant.various;
-            Main.SetPixelAt(checkPos.X, checkPos.Y, neighborPlant, Main.NextPixels);
-            DisablePlant(x, y, sourcePlant);
+                // new Vector2I(2, -2),   // Two right and 2 up
+                // new Vector2I(-2, -2),   // Two right and 2 up
+
+            ];
+
+            // Check standard 8 surrounding positions offset up by 1
+            foreach (Vector2I direction in checks)
+            {
+                Vector2I checkPos = growCheck + direction;
+                if (Main.GetMaterialAt(checkPos.X, checkPos.Y) == MaterialType.Plant)
+                    return false;
+            }
+
             return true;
         }
 
-        private void DisablePlant(int x, int y, Pixel plant)
-        {
-            plant.various = -1;
-            Main.SetPixelAt(x, y, plant, Main.NextPixels);
-        }
-
+ 
         private static Dictionary<Vector2I, float> plantGrowingDirectionsChance = new()
         {
-            { new Vector2I(0, -1), 0.5f}, // UP
+            { new Vector2I(0, -1), 0.2f}, // UP
+            { new Vector2I(0, 1), 1.0f}, // DOWN
+
             { new Vector2I(-1, -1), 0.5f}, // UP LEFT
             { new Vector2I(1, -1), 0.5f}, // UP RIGHT
-            { new Vector2I(-1, 0), 0.1f}, // LEFT
-            { new Vector2I(1, 0), 0.1f}, // RIGHT
-            { new Vector2I(0, 1), 0.2f}, // DOWN
         };
 
         private static Vector2I[] plantGrowingDirections =
         [
             new Vector2I(0, -1),   // UP
+            new Vector2I(0, 1),   // DOWN
+
             new Vector2I(-1, -1),  // UP-left
             new Vector2I(1, -1),   // UP-right
-            new Vector2I(-1, 0),   // Left
-            new Vector2I(1, 0),   // Right
         ];
 
-        private bool IsEmpty(MaterialType materialType) => materialType == MaterialType.Air;
-        private bool IsGrowable(MaterialType materialType) => materialType == MaterialType.Plant;
     }
 }

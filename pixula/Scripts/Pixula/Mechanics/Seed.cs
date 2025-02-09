@@ -24,7 +24,7 @@ namespace Pixula.Mechanics
                 return true;
             }
 
-            if (IsGrowable(belowMaterial) && Chance(0.1f))
+            if (IsGrowable(belowMaterial) && Chance(0.25f))
             {
                 Main.SetMaterialAt(x, checkBelow, MaterialType.Wood, Main.NextPixels);
                 Main.SetMaterialAt(x, y - 1, MaterialType.Wood, Main.NextPixels);

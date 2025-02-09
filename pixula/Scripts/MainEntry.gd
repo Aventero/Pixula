@@ -58,6 +58,7 @@ enum MaterialType {
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_HIDDEN
 	simulator.Initialize(width, height, pixel_size, cell_size, spawn_radius)
 	setup_mouse_filter($Overlay/MainPanelContainer)
 	get_tree().root.size_changed.connect(_on_window_resize)

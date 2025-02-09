@@ -8,11 +8,8 @@ namespace Pixula.Mechanics
     {
         protected MainSharp Main { get; } = main;
 
-
-
         public abstract bool Update(int x, int y, MaterialType material);
 
-        
         public bool MoveHorizontal(int x, int y, MaterialType processMaterial)
         {
             // Direction not yet set.
@@ -67,7 +64,6 @@ namespace Pixula.Mechanics
             return Random.Shared.NextSingle() < probability;
         }
 
-
         Vector2I[] groupFallDirections = 
         [
             new Vector2I(0, 1),   // Down
@@ -99,5 +95,8 @@ namespace Pixula.Mechanics
 
             return false;
         }
+    
+    
+
     }
 }
