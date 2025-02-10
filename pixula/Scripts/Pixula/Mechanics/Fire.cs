@@ -32,11 +32,11 @@ namespace Pixula.Mechanics
             Main.SpreadFire(x, y);
 
             // Do nothing
-            if (Chance(0.3f))
+            if (Chance(0.5f))
                 return true;
 
             // Try to move
-            if (Chance(0.1f) && MoveDown(x, y, currentMaterial)) return true;
+            if (Chance(0.15f) && MoveDown(x, y, currentMaterial)) return true;
 
             // Try to move
             if (Chance(0.6f) && MoveUp(x, y, currentMaterial)) return true;

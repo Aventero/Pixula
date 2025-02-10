@@ -1,4 +1,4 @@
-[gd_scene load_steps=37 format=3 uid="uid://cxcvn0k2w0x3u"]
+[gd_scene load_steps=38 format=3 uid="uid://cxcvn0k2w0x3u"]
 
 [ext_resource type="Script" uid="uid://b0x1m6lhkcbb4" path="res://Scripts/MainEntry.gd" id="1_fjtcw"]
 [ext_resource type="Script" uid="uid://d2xhkm1orqb4f" path="res://Scripts/Pixula/MainSharp.cs" id="1_u0yqt"]
@@ -21,6 +21,7 @@
 [ext_resource type="Texture2D" uid="uid://t1pl3yblqvn2" path="res://UI/Sprites/Material_Icons/Void_Icon.png" id="12_3tgeq"]
 [ext_resource type="Texture2D" uid="uid://dimk1h8crasje" path="res://UI/Sprites/Material_Icons/Water_Vapor_Icon.png" id="12_7ks5b"]
 [ext_resource type="Texture2D" uid="uid://b2oxi3cul1py2" path="res://UI/Sprites/Material_Icons/Poison_Icon.png" id="13_5jffn"]
+[ext_resource type="Texture2D" uid="uid://du4ee2a4ra02k" path="res://UI/Sprites/Material_Icons/Ash_Icon.png" id="14_c5snn"]
 [ext_resource type="Texture2D" uid="uid://cna2fmjfhqaqh" path="res://UI/Sprites/colorAtlas.png" id="14_coue8"]
 [ext_resource type="Texture2D" uid="uid://cyxmfog7prka1" path="res://UI/Sprites/Material_Icons/Acid_Vapor_Icon.png" id="15_sxkr1"]
 [ext_resource type="Texture2D" uid="uid://bt36fvr56rago" path="res://UI/Sprites/Material_Icons/Mimic_Icon.png" id="17_jyqft"]
@@ -234,6 +235,19 @@ alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 17
+
+[node name="AshButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+material = SubResource("ShaderMaterial_hwpts")
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
+text = "Ash"
+icon = ExtResource("14_c5snn")
+alignment = 0
+expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 18
 
 [node name="VBoxContainer2" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer"]
 use_parent_material = true
@@ -571,6 +585,7 @@ environment = SubResource("Environment_fq0cl")
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/FireButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/VoidButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/PoisonButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/AshButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2/WallButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2/RockButton" to="." method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2/WoodButton" to="." method="_on_material_button_pressed"]

@@ -52,7 +52,7 @@ enum MaterialType {
 	SEED = 15,
 	PLANT = 16,
 	POISON = 17,
-	FLUFF = 18,
+	Ash = 18,
 	EMBER = 19
 }
 

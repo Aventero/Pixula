@@ -33,13 +33,8 @@ public enum MaterialType
 	Seed = 15,
 	Plant = 16,
 	Poison = 17,
-	Fluff = 18,
+	Ash = 18,
 	Ember = 19,
-
-	// Poison -> Eats through things turning them into highly flammable fluff
-	// FLUFF -> Very flammable stuff
-	// Coal? -> Burns for long
-	// EMBER -> Hot Coal basically, can put stuff on fire
 }
 
 
@@ -106,7 +101,7 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Seed, new[] { 14, 0} },
 		{ MaterialType.Plant, new[] { 7, 1} },
 		{ MaterialType.Poison, new[] { 33, 0} },
-		{ MaterialType.Fluff, new[] { 15, 0} },
+		{ MaterialType.Ash, new[] { 42, 1} },
 		{ MaterialType.Ember, new[] { 27, 0} },
 	};
 
@@ -115,9 +110,9 @@ public partial class MainSharp : Node2D
 
 	private readonly Dictionary<MaterialType, MaterialType[]> SwapRules = new()
 	{
-		{ MaterialType.Sand, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud} },
+		{ MaterialType.Sand, new[] { MaterialType.Air, MaterialType.Ash, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud} },
 		{ MaterialType.Water, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud } },
-		{ MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Sand, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Fire, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Lava } },
+		{ MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Ash, MaterialType.Sand, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Fire, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Lava } },
 		{ MaterialType.Fire, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.AcidVapor, MaterialType.AcidCloud } },
 		{ MaterialType.WaterVapor, new[] { MaterialType.Air } },
 		{ MaterialType.WaterCloud, new[] { MaterialType.Air }},
@@ -126,8 +121,10 @@ public partial class MainSharp : Node2D
 		{ MaterialType.AcidVapor, new[] { MaterialType.Air }},
 		{ MaterialType.AcidCloud, new[] { MaterialType.Air }},
 		{ MaterialType.Seed, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Lava, MaterialType.Acid, MaterialType.Plant}},
-		{ MaterialType.Plant, new[] { MaterialType.Air, MaterialType.Seed }},
-		{ MaterialType.Wood, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud  }},
+		{ MaterialType.Plant, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Poison }},
+		{ MaterialType.Wood, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Poison  }},
+		{ MaterialType.Poison, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
+		{ MaterialType.Ash, new[] { MaterialType.Air, MaterialType.Lava, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
 	};
 
 	private readonly Dictionary<MaterialType, float> FluidViscosity = new()
@@ -135,6 +132,7 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Water, 0.1f},
 		{ MaterialType.Lava, 0.01f},
 		{ MaterialType.Acid, 0.02f},
+		{ MaterialType.Poison, 0.005f},
 	};
 
 	private readonly Dictionary<MaterialType, float> SolidWeight = new()
@@ -143,7 +141,9 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Rock, 4.0f},
 		{ MaterialType.Seed, 1.5f},
 		{ MaterialType.Wall, 0},
-		{ MaterialType.Wood, 0},
+		{ MaterialType.Wood, 5.0f},
+		{ MaterialType.Plant, 5.5f},
+		{ MaterialType.Ash, 1.5f},
 	};
 
 	public enum MaterialState
@@ -164,10 +164,12 @@ public partial class MainSharp : Node2D
 			MaterialType.Seed => MaterialState.Solid,
 			MaterialType.Mimic => MaterialState.Solid,
 			MaterialType.Void => MaterialState.Solid,
+			MaterialType.Ash => MaterialState.Solid,
 			
 			MaterialType.Water => MaterialState.Liquid,
 			MaterialType.Lava => MaterialState.Liquid,
 			MaterialType.Acid => MaterialState.Liquid,
+			MaterialType.Poison => MaterialState.Liquid,
 			
 			MaterialType.WaterVapor => MaterialState.Gas, 
 			MaterialType.WaterCloud => MaterialState.Gas,
@@ -186,6 +188,7 @@ public partial class MainSharp : Node2D
 			MaterialType.Wood => true,
 			MaterialType.Seed => true,
 			MaterialType.Plant => true,
+			MaterialType.Poison => true,
 			_ => false
 		};
 	}
@@ -235,6 +238,8 @@ public partial class MainSharp : Node2D
 			{ MaterialType.Mimic, new Mimic(this) },
 			{ MaterialType.Seed, new Seed(this) },
 			{ MaterialType.Plant, new Plant(this) },
+			{ MaterialType.Poison, new Poison(this) },
+			{ MaterialType.Ash, new Ash(this) },
 		};
 	}
 
@@ -461,6 +466,8 @@ public partial class MainSharp : Node2D
 
 	public void SpreadFire(int x, int y)
 	{
+		bool burned = false;
+		Vector2I burnSpot = Vector2I.Zero;
 		foreach (Vector2I direction in Directions) 
 		{
 			int checkX = x + direction.X;
@@ -468,12 +475,29 @@ public partial class MainSharp : Node2D
 
 			if (!IsInBounds(checkX, checkY))
 				continue;
+
 			MaterialType material = GetMaterialAt(checkX, checkY);
 
-			// 5% chance to burn something!
-			if (IsFlammable(material) && MaterialMechanic.Chance(0.07f)) 
+			// The material burned, now just spawn fire
+			if (burned && material == MaterialType.Air)
+			{
 				ConvertTo(checkX, checkY, MaterialType.Fire);
+				continue;
+			}
+
+			// 5% chance to burn something!
+			if (IsFlammable(material) && MaterialMechanic.Chance(0.2f)) 
+			{
+				burned = true;
+				burnSpot = new Vector2I(checkX, checkY);
+			}
 		}
+
+		if (burned && MaterialMechanic.Chance(0.1f))
+			ConvertTo(burnSpot.X, burnSpot.Y, MaterialType.Ash);
+		else if (burned)
+			ConvertTo(burnSpot.X, burnSpot.Y, MaterialType.Air);
+
 	}
 
 	public bool MoveTo(int x, int y, int newX, int newY, MaterialType processMaterial) 
