@@ -25,7 +25,7 @@ namespace Pixula.Mechanics
             // Can't move? Try dissolving what's below
             int newX = x;
             int newY = y + 1;
-            if (Chance(0.2f) && MainSharp.IsDissolvable(Main.GetMaterialAt(newX, newY)))
+            if (Chance(0.2f) && IsDissolvable(Main.GetMaterialAt(newX, newY)))
             {
                 Main.ConvertTo(newX, newY, MaterialType.AcidVapor);
 
@@ -38,7 +38,7 @@ namespace Pixula.Mechanics
             var direction = (x + y) % 2 == 0 ? new Vector2I(-1, 1) : new Vector2I(1, 1);
             var newPos = new Vector2I(x, y) + direction;
             if (Main.MoveTo(x, y, newPos.X, newPos.Y, currentMaterial)) return true;
-            if (MainSharp.IsDissolvable(Main.GetMaterialAt(newPos.X, newPos.Y)))
+            if (IsDissolvable(Main.GetMaterialAt(newPos.X, newPos.Y)))
             {
                 Main.ConvertTo(newPos.X, newPos.Y, MaterialType.AcidVapor);
                 
@@ -51,7 +51,7 @@ namespace Pixula.Mechanics
             int xDirection = y % 2 == 0 ? 1 : -1;
             newX = x + xDirection;
             if (Main.MoveTo(x, y, newX, y, currentMaterial)) return true;
-            if (MainSharp.IsDissolvable(Main.GetMaterialAt(newX, y)))
+            if (IsDissolvable(Main.GetMaterialAt(newX, y)))
             {
                 Main.ConvertTo(newX, y, MaterialType.AcidVapor);
 
@@ -61,6 +61,21 @@ namespace Pixula.Mechanics
             }
 
             return false;
+        }
+
+        public static bool IsDissolvable(MaterialType processMaterial) 
+        {
+            return processMaterial switch
+            {
+                MaterialType.Acid => false,
+                MaterialType.Water => false,
+                MaterialType.Lava => false,
+                MaterialType.Air => false,
+                MaterialType.Wall => false,
+                MaterialType.Mimic => false,
+                MaterialType.Void => false,
+                _ => true
+            };
         }
     }
 }

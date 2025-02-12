@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Pixula.Mechanics;
+using GodotPlugins.Game;
 
 namespace Pixula {
 
@@ -34,7 +35,9 @@ public enum MaterialType
 	Plant = 16,
 	Poison = 17,
 	Ash = 18,
-	Ember = 19,
+	Oil = 19,
+	Ember = 20,
+	Smoke = 21,
 }
 
 
@@ -102,7 +105,9 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Plant, new[] { 7, 1} },
 		{ MaterialType.Poison, new[] { 33, 0} },
 		{ MaterialType.Ash, new[] { 42, 1} },
-		{ MaterialType.Ember, new[] { 27, 0} },
+		{ MaterialType.Oil, new[] { 24, 0} },
+		{ MaterialType.Ember, new[] { 24, 2} },
+		{ MaterialType.Smoke, new[] { 37, 0} },
 	};
 
 	private readonly Dictionary<MaterialType, Mechanics.MaterialMechanic> mechanics;
@@ -111,7 +116,7 @@ public partial class MainSharp : Node2D
 	private readonly Dictionary<MaterialType, MaterialType[]> SwapRules = new()
 	{
 		{ MaterialType.Sand, new[] { MaterialType.Air, MaterialType.Ash, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud} },
-		{ MaterialType.Water, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud } },
+		{ MaterialType.Water, new[] { MaterialType.Air, MaterialType.Oil, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud } },
 		{ MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Ash, MaterialType.Sand, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Fire, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Lava } },
 		{ MaterialType.Fire, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.AcidVapor, MaterialType.AcidCloud } },
 		{ MaterialType.WaterVapor, new[] { MaterialType.Air } },
@@ -124,7 +129,10 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Plant, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Poison }},
 		{ MaterialType.Wood, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Poison  }},
 		{ MaterialType.Poison, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
-		{ MaterialType.Ash, new[] { MaterialType.Air, MaterialType.Lava, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
+		{ MaterialType.Ash, new[] { MaterialType.Air, MaterialType.Fire, MaterialType.Lava, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
+		{ MaterialType.Oil, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
+		{ MaterialType.Ember, new[] { MaterialType.Air, MaterialType.Fire, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
+		{ MaterialType.Smoke, new[] { MaterialType.Air }},
 	};
 
 	private readonly Dictionary<MaterialType, float> FluidViscosity = new()
@@ -133,6 +141,7 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Lava, 0.01f},
 		{ MaterialType.Acid, 0.02f},
 		{ MaterialType.Poison, 0.005f},
+		{ MaterialType.Oil, 0.05f},
 	};
 
 	private readonly Dictionary<MaterialType, float> SolidWeight = new()
@@ -144,6 +153,7 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Wood, 5.0f},
 		{ MaterialType.Plant, 5.5f},
 		{ MaterialType.Ash, 1.5f},
+		{ MaterialType.Ember, 2.5f},
 	};
 
 	public enum MaterialState
@@ -157,19 +167,11 @@ public partial class MainSharp : Node2D
 	{
 		return material switch
 		{
-			MaterialType.Sand => MaterialState.Solid,
-			MaterialType.Rock => MaterialState.Solid,
-			MaterialType.Wall => MaterialState.Solid,
-			MaterialType.Wood => MaterialState.Solid,
-			MaterialType.Seed => MaterialState.Solid,
-			MaterialType.Mimic => MaterialState.Solid,
-			MaterialType.Void => MaterialState.Solid,
-			MaterialType.Ash => MaterialState.Solid,
-			
 			MaterialType.Water => MaterialState.Liquid,
 			MaterialType.Lava => MaterialState.Liquid,
 			MaterialType.Acid => MaterialState.Liquid,
 			MaterialType.Poison => MaterialState.Liquid,
+			MaterialType.Oil => MaterialState.Liquid,
 			
 			MaterialType.WaterVapor => MaterialState.Gas, 
 			MaterialType.WaterCloud => MaterialState.Gas,
@@ -181,42 +183,15 @@ public partial class MainSharp : Node2D
 		};
 	}
 
-	private static bool IsFlammable(MaterialType processMaterial) 
-	{
-		return processMaterial switch
-		{
-			MaterialType.Wood => true,
-			MaterialType.Seed => true,
-			MaterialType.Plant => true,
-			MaterialType.Poison => true,
-			_ => false
-		};
-	}
-
-	public static bool IsDissolvable(MaterialType processMaterial) 
-	{
-		return processMaterial switch
-		{
-			MaterialType.Acid => false,
-			MaterialType.Water => false,
-			MaterialType.Lava => false,
-			MaterialType.Air => false,
-			MaterialType.Wall => false,
-			MaterialType.Mimic => false,
-			MaterialType.Void => false,
-			_ => true
-		};
-	}
-
 	public readonly Vector2I[] Directions = {
+		new(0, -1),
+		new(1, -1),
+		new(-1, -1),
+		new(-1, 0),
+		new(1, 0),
 		new(-1, 1),
 		new(0, 1),
 		new(1, 1),
-		new(1, 0),
-		new(1, -1),
-		new(0, -1),
-		new(-1, -1),
-		new(-1, 0),
 	};
 
 	public MainSharp()
@@ -240,6 +215,9 @@ public partial class MainSharp : Node2D
 			{ MaterialType.Plant, new Plant(this) },
 			{ MaterialType.Poison, new Poison(this) },
 			{ MaterialType.Ash, new Ash(this) },
+			{ MaterialType.Oil, new Oil(this) },
+			{ MaterialType.Ember, new Ember(this) },
+			{ MaterialType.Smoke, new Smoke(this) },
 		};
 	}
 
@@ -464,41 +442,7 @@ public partial class MainSharp : Node2D
 		return false;
 	}
 
-	public void SpreadFire(int x, int y)
-	{
-		bool burned = false;
-		Vector2I burnSpot = Vector2I.Zero;
-		foreach (Vector2I direction in Directions) 
-		{
-			int checkX = x + direction.X;
-			int checkY = y + direction.Y;
 
-			if (!IsInBounds(checkX, checkY))
-				continue;
-
-			MaterialType material = GetMaterialAt(checkX, checkY);
-
-			// The material burned, now just spawn fire
-			if (burned && material == MaterialType.Air)
-			{
-				ConvertTo(checkX, checkY, MaterialType.Fire);
-				continue;
-			}
-
-			// 5% chance to burn something!
-			if (IsFlammable(material) && MaterialMechanic.Chance(0.2f)) 
-			{
-				burned = true;
-				burnSpot = new Vector2I(checkX, checkY);
-			}
-		}
-
-		if (burned && MaterialMechanic.Chance(0.1f))
-			ConvertTo(burnSpot.X, burnSpot.Y, MaterialType.Ash);
-		else if (burned)
-			ConvertTo(burnSpot.X, burnSpot.Y, MaterialType.Air);
-
-	}
 
 	public bool MoveTo(int x, int y, int newX, int newY, MaterialType processMaterial) 
 	{
@@ -581,8 +525,8 @@ public partial class MainSharp : Node2D
 		Color color = GetColorForVariant(pixel.variantPos.X, pixel.variantPos.Y);
 		color = GetColorRevamp(materialType, color);
 
-		if (pixel.various < 50 && pixel.various > -50 && !(pixel.various == 1))
-			color *= 1 + Mathf.Min(1, Mathf.Abs(pixel.various) * 0.1f);
+		if ((pixel.various > 2 && pixel.various < 50) || (pixel.various > -50 && pixel.various < -2))
+			color *= 1 + Mathf.Min(1, Mathf.Abs(pixel.various) * 0.25f);
 
 		positionColors[new Vector2I(x, y)] =  color;
 	}
@@ -637,8 +581,10 @@ public partial class MainSharp : Node2D
 
 	private void SwapParticle(int sourceX, int sourceY, int destinationX, int destinationY)
 	{
+		// Get from NextPixels since that has our modified data
 		Pixel temp = GetPixel(destinationX, destinationY, NextPixels);
-		SetPixel(destinationX, destinationY, GetPixel(sourceX, sourceY, CurrentPixels), NextPixels);
+		Pixel sourcePixel = GetPixel(sourceX, sourceY, NextPixels); 
+		SetPixel(destinationX, destinationY, sourcePixel, NextPixels);
 		SetPixel(sourceX, sourceY, temp, NextPixels);
 	}
 
@@ -735,7 +681,7 @@ public partial class MainSharp : Node2D
 	}
 
 	// Fast bounds check using bit operations
-	private bool IsInBounds(int x, int y) => (uint)x < (uint)gridWidth && (uint)y < (uint)gridHeight;
+	public bool IsInBounds(int x, int y) => (uint)x < (uint)gridWidth && (uint)y < (uint)gridHeight;
 
 	public bool IsEmpty(MaterialType materialType) => materialType == MaterialType.Air;
 

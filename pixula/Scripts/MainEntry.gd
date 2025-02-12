@@ -53,7 +53,9 @@ enum MaterialType {
 	PLANT = 16,
 	POISON = 17,
 	Ash = 18,
-	EMBER = 19
+	OIL = 19,
+	EMBER = 20,
+	SMOKE = 21,
 }
 
 # Called when the node enters the scene tree for the first time.

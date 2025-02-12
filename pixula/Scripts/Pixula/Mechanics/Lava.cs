@@ -20,7 +20,7 @@ namespace Pixula.Mechanics
                 return false; // was extinguished
 
             // Spread to flammable materials
-            Main.SpreadFire(x, y);
+            SpreadFire(x, y, currentMaterial);
 
             if (Chance(0.7f) && MoveDown(x, y, currentMaterial))
                 return true;

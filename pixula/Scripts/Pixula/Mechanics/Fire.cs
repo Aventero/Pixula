@@ -20,7 +20,7 @@ namespace Pixula.Mechanics
             // Chance to go out
             if (Chance(0.025f))
             {
-                Main.ConvertTo(x, y, MaterialType.Air);
+                Main.ConvertTo(x, y, MaterialType.Smoke);
                 return true;
             }
 
@@ -29,7 +29,7 @@ namespace Pixula.Mechanics
                 return true;
 
             // Spread to flammable materials
-            Main.SpreadFire(x, y);
+            SpreadFire(x, y, currentMaterial);
 
             // Do nothing
             if (Chance(0.5f))
@@ -63,6 +63,46 @@ namespace Pixula.Mechanics
                 } 
             }
             return false;
+        }
+
+        public static bool IsFlammable(MaterialType processMaterial) 
+        {
+            return processMaterial switch
+            {
+                MaterialType.Wood => true,
+                MaterialType.Seed => true,
+                MaterialType.Plant => true,
+                MaterialType.Poison => true,
+                MaterialType.Oil => true,
+                _ => false
+            };
+        }
+
+        public static float BurnChance(MaterialType processMaterial)
+        {
+            return processMaterial switch
+            {
+                MaterialType.Wood => 0.5f,
+                MaterialType.Seed => 0.25f,
+                MaterialType.Plant => 0.5f,
+                MaterialType.Poison => 0.25f,
+                MaterialType.Oil => 1.0f,
+                MaterialType.Ember => 0.1f,
+                _ => 0f,
+            };
+        }
+
+        public static MaterialType BurnProduct(MaterialType processMaterial)
+        {
+            return processMaterial switch
+            {
+                MaterialType.Wood => MaterialType.Ember,
+                MaterialType.Seed => MaterialType.Ember,
+                MaterialType.Plant => MaterialType.Ember,
+                MaterialType.Poison => MaterialType.Air,
+                MaterialType.Oil => MaterialType.Air,
+                _ => MaterialType.Air,
+            };
         }
     }
 }

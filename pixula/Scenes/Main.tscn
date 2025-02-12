@@ -1,4 +1,4 @@
-[gd_scene load_steps=38 format=3 uid="uid://cxcvn0k2w0x3u"]
+[gd_scene load_steps=40 format=3 uid="uid://cxcvn0k2w0x3u"]
 
 [ext_resource type="Script" uid="uid://b0x1m6lhkcbb4" path="res://Scripts/MainEntry.gd" id="1_fjtcw"]
 [ext_resource type="Script" uid="uid://d2xhkm1orqb4f" path="res://Scripts/Pixula/MainSharp.cs" id="1_u0yqt"]
@@ -24,10 +24,12 @@
 [ext_resource type="Texture2D" uid="uid://du4ee2a4ra02k" path="res://UI/Sprites/Material_Icons/Ash_Icon.png" id="14_c5snn"]
 [ext_resource type="Texture2D" uid="uid://cna2fmjfhqaqh" path="res://UI/Sprites/colorAtlas.png" id="14_coue8"]
 [ext_resource type="Texture2D" uid="uid://cyxmfog7prka1" path="res://UI/Sprites/Material_Icons/Acid_Vapor_Icon.png" id="15_sxkr1"]
+[ext_resource type="Texture2D" uid="uid://bnqvkt6cyri4x" path="res://UI/Sprites/Material_Icons/Ember_Icon.png" id="15_u7mjy"]
 [ext_resource type="Texture2D" uid="uid://bt36fvr56rago" path="res://UI/Sprites/Material_Icons/Mimic_Icon.png" id="17_jyqft"]
 [ext_resource type="Texture2D" uid="uid://kmiq44bkvvy2" path="res://UI/Sprites/Standard_Icons/Clock_Icon.png" id="19_hwpts"]
 [ext_resource type="Texture2D" uid="uid://bgqfad3jgu3g" path="res://UI/Sprites/Material_Icons/Seed_Icon.png" id="20_kpo4j"]
 [ext_resource type="Texture2D" uid="uid://dc77y73ieqks7" path="res://UI/Sprites/Material_Icons/Plant_Icon.png" id="21_4n42c"]
+[ext_resource type="Texture2D" uid="uid://vrkufrvqqkrv" path="res://UI/Sprites/Material_Icons/Oil_Icon.png" id="24_4yxf6"]
 [ext_resource type="Texture2D" uid="uid://ds74b0riuc1as" path="res://UI/Sprites/Standard_Icons/Cursor.png" id="25_4n42c"]
 [ext_resource type="Script" uid="uid://875d85aubtb4" path="res://Scenes/cursor.gd" id="26_c5snn"]
 
@@ -77,10 +79,10 @@ texture_filter = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -316.0
+offset_left = -353.0
 offset_top = 22.0
 offset_right = -48.0
-offset_bottom = 550.0
+offset_bottom = 661.0
 grow_horizontal = 0
 size_flags_vertical = 3
 
@@ -118,20 +120,29 @@ follow_focus = true
 horizontal_scroll_mode = 0
 vertical_scroll_mode = 2
 
-[node name="HBoxContainer" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer"]
+[node name="MarginContainer" type="MarginContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_left = 5
+theme_override_constants/margin_top = 5
+theme_override_constants/margin_right = 5
+theme_override_constants/margin_bottom = 5
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer"]
 use_parent_material = true
 layout_mode = 2
 size_flags_horizontal = 3
 alignment = 1
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer"]
 use_parent_material = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 alignment = 1
 
-[node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+[node name="AirButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 size_flags_vertical = 3
@@ -144,7 +155,7 @@ alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
 
-[node name="SandButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+[node name="SandButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 size_flags_vertical = 3
@@ -158,7 +169,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 1
 
-[node name="LavaButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+[node name="LavaButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -171,7 +182,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 9
 
-[node name="WaterButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+[node name="WaterButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -184,7 +195,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 2
 
-[node name="AcidButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+[node name="AcidButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -197,7 +208,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 10
 
-[node name="FireButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+[node name="FireButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -210,7 +221,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 6
 
-[node name="VoidButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+[node name="VoidButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -223,7 +234,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 13
 
-[node name="PoisonButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+[node name="PoisonButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -236,7 +247,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 17
 
-[node name="AshButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+[node name="AshButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -249,14 +260,27 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 18
 
-[node name="VBoxContainer2" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer"]
+[node name="EmberButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer" groups=["element_buttons"]]
+material = SubResource("ShaderMaterial_hwpts")
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
+text = "Ember"
+icon = ExtResource("15_u7mjy")
+alignment = 0
+expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 20
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer"]
 use_parent_material = true
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 alignment = 1
 
-[node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
+[node name="WallButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -269,7 +293,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 4
 
-[node name="RockButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
+[node name="RockButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -282,7 +306,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 3
 
-[node name="WoodButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
+[node name="WoodButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -295,7 +319,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 5
 
-[node name="VaporButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
+[node name="VaporButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -308,7 +332,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 7
 
-[node name="FumeButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
+[node name="FumeButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -321,7 +345,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 11
 
-[node name="MimicButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
+[node name="MimicButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -334,7 +358,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 14
 
-[node name="SeedButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
+[node name="SeedButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -347,7 +371,7 @@ expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 15
 
-[node name="PlantButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
+[node name="PlantButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
 material = SubResource("ShaderMaterial_hwpts")
 layout_mode = 2
 theme = ExtResource("3_r6eas")
@@ -359,6 +383,19 @@ alignment = 0
 expand_icon = true
 script = ExtResource("6_sdk4a")
 material_type = 16
+
+[node name="OilButton" type="Button" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2" groups=["element_buttons"]]
+material = SubResource("ShaderMaterial_hwpts")
+layout_mode = 2
+theme = ExtResource("3_r6eas")
+toggle_mode = true
+button_group = SubResource("ButtonGroup_hwpts")
+text = "Oil"
+icon = ExtResource("24_4yxf6")
+alignment = 0
+expand_icon = true
+script = ExtResource("6_sdk4a")
+material_type = 19
 
 [node name="SpawnRadius" type="HBoxContainer" parent="Overlay/MainPanelContainer/MarginContainer/VBoxContainer"]
 use_parent_material = true
@@ -543,7 +580,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 offset_left = -231.0
 offset_top = -117.0
-offset_right = 199.0
+offset_right = 197.0
 offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -577,20 +614,22 @@ debugTextureRect = NodePath("../World/DebugLayer/DebugTexture")
 environment = SubResource("Environment_fq0cl")
 
 [connection signal="material_changed" from="." to="Overlay/Cursor" method="_on_main_material_changed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/AirButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/SandButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/LavaButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/WaterButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/AcidButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/FireButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/VoidButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/PoisonButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer/AshButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2/WallButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2/RockButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2/WoodButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2/VaporButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2/FumeButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2/MimicButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2/SeedButton" to="." method="_on_material_button_pressed"]
-[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/HBoxContainer/VBoxContainer2/PlantButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer/AirButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer/SandButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer/LavaButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer/WaterButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer/AcidButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer/FireButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer/VoidButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer/PoisonButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer/AshButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer/EmberButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2/WallButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2/RockButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2/WoodButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2/VaporButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2/FumeButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2/MimicButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2/SeedButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2/PlantButton" to="." method="_on_material_button_pressed"]
+[connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer2/OilButton" to="." method="_on_material_button_pressed"]

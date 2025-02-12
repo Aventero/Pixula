@@ -96,7 +96,38 @@ namespace Pixula.Mechanics
             return false;
         }
     
-    
+    	public void SpreadFire(int x, int y, MaterialType activelyBurningMaterial = MaterialType.Air, bool spotOnFire = false)
+        {
+            foreach (Vector2I direction in Main.Directions) 
+            {
+                int checkX = x + direction.X;
+                int checkY = y + direction.Y;
+
+                if (!Main.IsInBounds(checkX, checkY))
+                    continue;
+
+                MaterialType possiblyBurningMaterial = Main.GetMaterialAt(checkX, checkY);
+
+                // The material burned, now just spawn fire on empty spaces (AIR)
+                if (spotOnFire && Main.IsEmpty(possiblyBurningMaterial) && Chance(Fire.BurnChance(activelyBurningMaterial)))
+                {
+                    Main.ConvertTo(checkX, checkY, MaterialType.Fire);
+                    continue;
+                }
+
+                if (Fire.IsFlammable(possiblyBurningMaterial) && Chance(Fire.BurnChance(possiblyBurningMaterial))) 
+                {
+                    spotOnFire = true;
+                    activelyBurningMaterial = possiblyBurningMaterial;
+                    
+
+                    if (Chance(0.25f))
+                        Main.ConvertTo(checkX, checkY, Fire.BurnProduct(activelyBurningMaterial));
+                    else 
+                        Main.ConvertTo(checkX, checkY, MaterialType.Air);
+                }
+            }
+        }
 
     }
 }
