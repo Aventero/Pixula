@@ -521,11 +521,11 @@ public partial class MainSharp : Node2D
 		if (!IsInBounds(x, y)) return;
 
 		Pixel pixel = GetPixel(x, y, pixelArray);
-		MaterialType materialType = GetNewMaterialAt(x, y);
 		Color color = GetColorForVariant(pixel.variantPos.X, pixel.variantPos.Y);
-		color = GetColorRevamp(materialType, color);
+		color = GetColorRevamp(pixel.material, color);
 
-		if ((pixel.various > 2 && pixel.various < 50) || (pixel.various > -50 && pixel.various < -2))
+		// if ((pixel.various > 2 && pixel.various < 50) || (pixel.various > -50 && pixel.various < -2))
+		if (pixel.various < Math.Abs(50))
 			color *= 1 + Mathf.Min(1, Mathf.Abs(pixel.various) * 0.25f);
 
 		positionColors[new Vector2I(x, y)] =  color;
@@ -603,7 +603,6 @@ public partial class MainSharp : Node2D
 				if (distance < radius)
 				{
 					SetMaterialAt(x, y, materialType, CurrentPixels);
-					SetMaterialAt(x, y, materialType, NextPixels);
 					ActivateCell(new Vector2I(x, y));
 				}
 			}
@@ -633,7 +632,7 @@ public partial class MainSharp : Node2D
 		return GetPixel(x, y, CurrentPixels).material;
 	}
 
-	public MaterialType GetNewMaterialAt(int x, int y) => GetPixel(x, y, NextPixels).material;
+	// public MaterialType GetNewMaterialAt(int x, int y) => GetPixel(x, y, NextPixels).material;
 
 	private bool CanSwap(MaterialType source, MaterialType swappingPartner) =>
 		SwapRules.TryGetValue(source, out var rules) && rules.Contains(swappingPartner);

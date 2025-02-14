@@ -85,7 +85,7 @@ namespace Pixula.Mechanics
                 MaterialType.Wood => 0.5f,
                 MaterialType.Seed => 0.25f,
                 MaterialType.Plant => 0.5f,
-                MaterialType.Poison => 0.25f,
+                MaterialType.Poison => 0.4f,
                 MaterialType.Oil => 1.0f,
                 MaterialType.Ember => 0.1f,
                 _ => 0f,

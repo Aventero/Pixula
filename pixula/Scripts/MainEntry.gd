@@ -149,22 +149,22 @@ func setup_mouse_filter(control: Control) -> void:
 		control.gui_input.connect(on_gui_input)
 	if control is ScrollContainer:
 		control.gui_input.connect(on_gui_input)
-		control.mouse_exited.connect(on_mouse_exit)
+		control.mouse_exited.connect(on_mouse_exit_ui)
 
 		# Get and connect scrollbars
 		var v_scrollbar = control.get_v_scroll_bar()
 		if v_scrollbar:
 			v_scrollbar.gui_input.connect(on_gui_input)
-			v_scrollbar.mouse_exited.connect(on_mouse_exit)
+			v_scrollbar.mouse_exited.connect(on_mouse_exit_ui)
 
 		var h_scrollbar = control.get_h_scroll_bar()
 		if h_scrollbar:
 			h_scrollbar.gui_input.connect(on_gui_input)
-			h_scrollbar.mouse_exited.connect(on_mouse_exit)
+			h_scrollbar.mouse_exited.connect(on_mouse_exit_ui)
 
 	if control is HSlider:
 		control.gui_input.connect(on_gui_input)
-		control.mouse_exited.connect(on_mouse_exit)
+		control.mouse_exited.connect(on_mouse_exit_ui)
 
 	for child in control.get_children():
 		setup_mouse_filter(child)
@@ -173,27 +173,83 @@ func on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		_is_pressing_ui = event.pressed
 
-func on_mouse_exit() -> void:
+# Mouse
+var previous_mouse_pos: Vector2i
+var is_drawing: bool
+
+
+func on_mouse_exit_ui() -> void:
 	_is_pressing_ui = false
 
-func _input(_event: InputEvent) -> void:
-	return
+func _input(event: InputEvent) -> void:
+	if event.is_action_released("SPAWN_WATER") or event.is_action_released("SPAWN_SAND"):
+		is_drawing = false
 
-# Mouse
+
 func check_mouse_input() -> void:
-	simulator.MousePosition = Vector2i(get_mouse_tile_pos())
+	var current_mouse_pos: Vector2i = get_mouse_tile_pos()
+	simulator.MousePosition = current_mouse_pos
+
 	if _is_pressing_ui:
+		is_drawing = false
 		return
 
-	if Input.is_action_pressed("SPAWN_SAND"):
-			spawn_material_at_mouse(selected_material)
-	if Input.is_action_pressed("SPAWN_WATER"):
-		spawn_material_at_mouse(MaterialType.AIR)
+	# Start drawing on first press
+	if Input.is_action_just_pressed("SPAWN_SAND") or Input.is_action_just_pressed("SPAWN_WATER"):
+		is_drawing = true
+		previous_mouse_pos = current_mouse_pos
 
-	if Input.is_action_pressed("STATS") && not _is_pressing_ui:
-		var mouse_pos = get_mouse_tile_pos()
-		var color = simulator.GetColorAt(mouse_pos.x, mouse_pos.y)
-		print("Color at: ", mouse_pos, ": ", color)
+	# Draw line while holding button
+	if is_drawing:
+		var material: MaterialType = MaterialType.AIR if Input.is_action_pressed("SPAWN_WATER") else selected_material
+		var points: Array[Vector2i] = get_line_points(previous_mouse_pos, current_mouse_pos)
+
+		for point in points:
+			simulator.SpawnInRadius(point.x, point.y, spawn_radius, material)
+
+		previous_mouse_pos = current_mouse_pos
+
+
+func get_line_points(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
+	# Array to hold points in line
+	var line_points: Array[Vector2i] = []
+
+	# Calculate distances between points
+	var distance_x: int = abs(end.x - start.x)
+	var distance_y: int = abs(end.y - start.y)
+
+	# Track current position
+	var current_x: int = start.x
+	var current_y: int = start.y
+
+	# Direction to step in each axis
+	var step_x: int = 1 if start.x < end.x else -1
+	var step_y: int = 1 if start.y < end.y else -1
+
+	# Decision variable for path
+	var decision: int = distance_x - distance_y
+
+	while true:
+		line_points.append(Vector2i(current_x, current_y))
+
+		if current_x == end.x and current_y == end.y:
+			break
+
+		# Double decision to avoid floating point
+		var doubled_decision: int = 2 * decision
+
+		# Step in x direction if needed
+		if doubled_decision > -distance_y:
+			decision -= distance_y
+			current_x += step_x
+
+		# Step in y direction if needed
+		if doubled_decision < distance_x:
+			decision += distance_x
+			current_y += step_y
+
+	return line_points
+
 
 func spawn_material_at_mouse(material_type: MaterialType) -> void:
 	var mouse_pos: Vector2i = get_mouse_tile_pos()

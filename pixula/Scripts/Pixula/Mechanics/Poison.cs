@@ -5,16 +5,16 @@ namespace Pixula.Mechanics
 {
     public class Poison(MainSharp main) : MaterialMechanic(main) 
     {
-        private int InitialPoison = 10;
+        private int InitialPoison = 6;
 
         public override bool Update(int x, int y, MaterialType material)
         {
 
             Vector2I spreadPos = Main.Directions[GD.RandRange(0, Main.Directions.Length - 1)] + new Vector2I(x, y);
-            MaterialType targetMaterial = Main.GetNewMaterialAt(spreadPos.X, spreadPos.Y);
+            MaterialType targetMaterial = Main.GetMaterialAt(spreadPos.X, spreadPos.Y);
             if (IsSpreadable(targetMaterial))
             {
-                Pixel poisonPixel = new(MaterialType.Poison, Main.GetRandomVariant(MaterialType.Poison), 10);
+                Pixel poisonPixel = new(MaterialType.Poison, Main.GetRandomVariant(MaterialType.Poison), InitialPoison);
                 Main.SetPixelAt(spreadPos.X, spreadPos.Y, poisonPixel, Main.NextPixels);
                 return true;
             }
@@ -26,24 +26,23 @@ namespace Pixula.Mechanics
                 return true;
             }
 
-            Pixel sourcePixel = Main.GetPixel(x, y, Main.NextPixels);
-            if (sourcePixel.various > 2)
+            Pixel sourcePixel = Main.GetPixel(x, y, Main.CurrentPixels);
+
+
+            if (sourcePixel.various <= 3)
+            {
+                sourcePixel.various = InitialPoison;
+                Main.SetPixelAt(x, y, sourcePixel, Main.NextPixels);
+            }
+
+            if (sourcePixel.various > 3)
             {
                 sourcePixel.various -= 1;
                 Main.SetPixelAt(x, y, sourcePixel, Main.NextPixels);
-                return true;
             }
 
 
-            bool moved = MoveDown(x, y, material) || MoveDiagonalDown(x, y, material);
-            if (!moved)
-            {
-                // Stop poison once it first stopped to go down
-                sourcePixel.various = 10;
-                Main.SetPixelAt(x, y, sourcePixel, Main.NextPixels);
-            }
-
-            return false;
+            return MoveDown(x, y, material) || MoveDiagonalDown(x, y, material);
         }
 
         public static bool IsSpreadable(MaterialType materialToTest)

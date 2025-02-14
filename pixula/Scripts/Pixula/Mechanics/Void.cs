@@ -28,7 +28,7 @@ namespace Pixula.Mechanics
                 Vector2I furtherLocation = checkLocation + (checkLocation - new Vector2I(x, y));
                 Main.ActivateCell(furtherLocation);
 
-                MaterialType mat = Main.GetNewMaterialAt(checkLocation.X, checkLocation.Y);
+                MaterialType mat = Main.GetMaterialAt(checkLocation.X, checkLocation.Y);
                 if (mat == MaterialType.Void || mat == MaterialType.Air)
                     continue;
 

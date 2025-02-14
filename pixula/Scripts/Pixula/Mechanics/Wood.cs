@@ -48,18 +48,16 @@ namespace Pixula.Mechanics
 
             Pixel sourcePixel = Main.GetPixel(x, y, Main.CurrentPixels);
 
-            if (growing.IsNew(sourcePixel.various))
+            if (sourcePixel.various == 0)
                 sourcePixel = InitializeGrowthDirection(sourcePixel, x, y);
             
             if (sourcePixel.various > 0)
-                sourcePixel = growing.TryAbsorb(x, y, sourcePixel, MIN_STICK_GROWTH, MAX_STICK_GROWTH);
+                growing.TryAbsorb(x, y, ref sourcePixel, MIN_STICK_GROWTH, MAX_STICK_GROWTH);
             else if (sourcePixel.various < 0)
-                 sourcePixel = growing.TryAbsorb(x, y, sourcePixel, MIN_ROOT_GROWTH, MAX_ROOT_GROWTH);
+                growing.TryAbsorb(x, y, ref sourcePixel, MIN_ROOT_GROWTH, MAX_ROOT_GROWTH);
 
             if (growing.IsDisabled(sourcePixel.various))
-            {
                 return true;
-            }
 
             if (sourcePixel.various > 0 )
                 ProcessStickGrowth(x, y, sourcePixel);
@@ -67,7 +65,7 @@ namespace Pixula.Mechanics
             if (sourcePixel.various < 0)
                 ProcessRootGrowth(x, y, sourcePixel);
 
-            return growing.ShareGrowthToNeighbor(x, y, sourcePixel);
+            return growing.ShareGrowthToNeighbor(x, y, ref sourcePixel);
         }
 
         private Pixel InitializeGrowthDirection(Pixel pixel, int x, int y)
@@ -86,7 +84,7 @@ namespace Pixula.Mechanics
         {
             if (sourcePixel.various <= MIN_STICK_GROWTH)
             {
-                growing.Disable(x, y, sourcePixel);
+                growing.Disable(x, y, ref sourcePixel);
                 return false;
             }
 
@@ -106,7 +104,7 @@ namespace Pixula.Mechanics
         {
             if (sourcePixel.various >= MIN_ROOT_GROWTH)
             {
-                growing.Disable(x, y, sourcePixel);
+                growing.Disable(x, y, ref sourcePixel);
                 return false;
             }
 
@@ -127,7 +125,7 @@ namespace Pixula.Mechanics
 
             // Disable Source pixel
             Pixel sourcePixel = Main.GetPixel(x, y, Main.CurrentPixels);
-            growing.Disable(x, y, sourcePixel);
+            growing.Disable(x, y, ref sourcePixel);
             return true;
         }
 

@@ -18,7 +18,7 @@ namespace Pixula.Mechanics
         {
 
             Vector2I absorbPosition = WATER_ABSORB_DIRECTIONS[GD.RandRange(0, WATER_ABSORB_DIRECTIONS.Length - 1)] + new Vector2I(x, y);
-            MaterialType targetMaterial = Main.GetNewMaterialAt(absorbPosition.X, absorbPosition.Y);
+            MaterialType targetMaterial = Main.GetMaterialAt(absorbPosition.X, absorbPosition.Y);
             
             if (targetMaterial == MaterialType.Water)
             {

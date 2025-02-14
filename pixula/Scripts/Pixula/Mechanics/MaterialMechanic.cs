@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Godot;
 using Godot.Bridge;
 
@@ -119,7 +120,6 @@ namespace Pixula.Mechanics
                 {
                     spotOnFire = true;
                     activelyBurningMaterial = possiblyBurningMaterial;
-                    
 
                     if (Chance(0.25f))
                         Main.ConvertTo(checkX, checkY, Fire.BurnProduct(activelyBurningMaterial));
@@ -128,6 +128,5 @@ namespace Pixula.Mechanics
                 }
             }
         }
-
     }
 }

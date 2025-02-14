@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Numerics;
 using Godot;
 using GodotPlugins.Game;
@@ -7,7 +9,7 @@ namespace Pixula.Mechanics
 {
     public class GrowthMechanic(MainSharp main)
     {
-        private readonly MainSharp main = main;
+        private readonly MainSharp Main = main;
 
         private static readonly Vector2I[] ABSORB_DIRECTIONS = 
         [
@@ -19,9 +21,6 @@ namespace Pixula.Mechanics
 
         private static readonly Vector2I[] GROWTH_SHARE_DIRECTIONS = 
         [
-            // new Vector2I(-1, 1),  // DOWN-left
-            // new Vector2I(1, 1),   // DOWN-right
-            // new Vector2I(0, 1),   // DOWN
             new Vector2I(0, -1),   // UP
             new Vector2I(-1, -1),  // UP-left
             new Vector2I(1, -1),   // UP-right
@@ -33,34 +32,102 @@ namespace Pixula.Mechanics
             new Vector2I(2, -2),   // UP-right
         ];
 
-        public Pixel TryAbsorb(int x, int y, Pixel sourcePixel, int minGrowth, int maxGrowth)
+        public bool TryAbsorb(int x, int y, ref Pixel sourcePixel, int minGrowth, int maxGrowth)
         {
+
             // Pick randomly around source pixel
             Vector2I absorbPosition = ABSORB_DIRECTIONS[GD.RandRange(0, ABSORB_DIRECTIONS.Length - 1)] + new Vector2I(x, y);
-            MaterialType targetMaterial = main.GetNewMaterialAt(absorbPosition.X, absorbPosition.Y);
+            MaterialType targetMaterial = Main.GetMaterialAt(absorbPosition.X, absorbPosition.Y);
 
-            if (!CanAbsorb(targetMaterial)) return sourcePixel; 
+            if (!CanAbsorb(targetMaterial)) 
+                return false; 
             
             // Absorb into the source pixel
             sourcePixel.various = GD.RandRange(minGrowth, maxGrowth);
-            main.SetPixelAt(x, y, sourcePixel, main.NextPixels);
+            Main.SetPixelAt(x, y, sourcePixel, Main.NextPixels);
 
             // Convert absorbed material to air
-            main.ConvertTo(absorbPosition.X, absorbPosition.Y, MaterialType.Air);
-            
+            Main.ConvertTo(absorbPosition.X, absorbPosition.Y, MaterialType.Air);
+            return true;
+        }
+
+        public bool ShareGrowthToNeighbor(int x, int y, ref Pixel sourcePixel)
+        {
+            // Random chance to disable
+            if (MaterialMechanic.Chance(0.01f)) 
+            {
+                Disable(x, y, ref sourcePixel);
+                return false;
+            }
+
+            // Check if source is now dry then disable
+            if (Math.Abs(sourcePixel.various) <= 1)
+            {
+                Disable(x, y, ref sourcePixel);
+                return true;
+            }
+
+            // Find all valid neighbors first
+            List<Vector2I> validNeighbors = new();
+            foreach (Vector2I dir in GROWTH_SHARE_DIRECTIONS.OrderBy(_ => Random.Shared.Next()))
+            {
+                Vector2I checkPos = new(x + dir.X, y + dir.Y);
+                if (IsGrowthSharable(Main.GetMaterialAt(checkPos.X, checkPos.Y)))
+                    validNeighbors.Add(checkPos);
+            }
+
+            if (validNeighbors.Count == 0)
+                return false;
+
+            int shareAmount = Math.Sign(sourcePixel.various);
+            foreach (Vector2I neighborPos in validNeighbors)
+            {
+                Pixel neighbor = Main.GetPixel(neighborPos.X, neighborPos.Y, Main.CurrentPixels);
+
+                // Has to be enabled and set with some growth
+                if (IsDisabled(neighbor.various))
+                {
+                    neighbor.various = shareAmount;
+                    Main.SetPixelAt(neighborPos.X, neighborPos.Y, neighbor, Main.NextPixels);
+                }
+                
+                neighbor.various += shareAmount;
+                sourcePixel.various -= shareAmount;
+                Main.SetPixelAt(neighborPos.X, neighborPos.Y, neighbor, Main.NextPixels);
+
+                // Check if source is now dry then disable
+                if (ShouldStopGrowing(ref sourcePixel))
+                {
+                    Disable(x, y, ref sourcePixel);
+                    return true;
+                }
+            }
+
+            // Still has juice left, just set.
+            Main.SetPixelAt(x, y, sourcePixel, Main.NextPixels);
+
+            // Check if source is now dry then disable
+            if (Math.Abs(sourcePixel.various) <= 0)
+            {
+                Disable(x, y, ref sourcePixel);
+                return true;
+            }
+            return true;
+        }
+
+        public bool ShouldStopGrowing(ref Pixel sourcePixel)
+        {
+            return Math.Abs(sourcePixel.various) <= 1;
+        }
+
+        public Pixel Disable(int x, int y, ref Pixel sourcePixel)
+        {
+            sourcePixel.various = 100 * Math.Sign(sourcePixel.various);
+            Main.SetPixelAt(x, y, sourcePixel, Main.NextPixels);
             return sourcePixel;
         }
 
-        public Pixel Disable(int x, int y, Pixel growable)
-        {
-            growable.various = 100 * Math.Sign(growable.various);
-            main.SetPixelAt(x, y, growable, main.NextPixels);
-            return growable;
-        }
-
-        public bool IsDisabled(int various) => various < -99 || various >= 99;
-
-        public bool IsNew(int various) => various == 0;
+        public bool IsDisabled(int value) => Math.Abs(value) >= 100;
 
         private bool IsGrowthSharable(MaterialType material)
         {
@@ -72,27 +139,7 @@ namespace Pixula.Mechanics
             };
         }
 
-        public bool ShareGrowthToNeighbor(int x, int y, Pixel sourcePixel)
-        {
-            if (MaterialMechanic.Chance(0.01f)) 
-            {
-                Disable(x, y, sourcePixel);
-                return false;
-            }
 
-            int growDir = Math.Sign(sourcePixel.various);
-            Vector2I checkPos = growDir * GROWTH_SHARE_DIRECTIONS[Random.Shared.Next(0, GROWTH_SHARE_DIRECTIONS.Length)] + new Vector2I(x, y);
-            MaterialType checkMaterial = main.GetMaterialAt(checkPos.X, checkPos.Y);
-
-            if (!IsGrowthSharable(checkMaterial)) 
-                return false;
-
-            Pixel growable = main.GetPixel(checkPos.X, checkPos.Y, main.CurrentPixels);
-            growable.various = sourcePixel.various;
-            main.SetPixelAt(checkPos.X, checkPos.Y, growable, main.NextPixels);
-            Disable(x, y, sourcePixel);
-            return true;
-        }
 
         private static bool CanAbsorb(MaterialType material)
         {
