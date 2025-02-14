@@ -68,10 +68,11 @@ namespace Pixula.Mechanics
             }
 
             // Find all valid neighbors first
-            List<Vector2I> validNeighbors = new();
+            int upDirection = Math.Sign(sourcePixel.various);
+            List<Vector2I> validNeighbors = [];
             foreach (Vector2I dir in GROWTH_SHARE_DIRECTIONS.OrderBy(_ => Random.Shared.Next()))
             {
-                Vector2I checkPos = new(x + dir.X, y + dir.Y);
+                Vector2I checkPos = new Vector2I(x, y) + (dir * upDirection);
                 if (IsGrowthSharable(Main.GetMaterialAt(checkPos.X, checkPos.Y)))
                     validNeighbors.Add(checkPos);
             }
@@ -79,7 +80,6 @@ namespace Pixula.Mechanics
             if (validNeighbors.Count == 0)
                 return false;
 
-            int shareAmount = Math.Sign(sourcePixel.various);
             foreach (Vector2I neighborPos in validNeighbors)
             {
                 Pixel neighbor = Main.GetPixel(neighborPos.X, neighborPos.Y, Main.CurrentPixels);
@@ -87,12 +87,12 @@ namespace Pixula.Mechanics
                 // Has to be enabled and set with some growth
                 if (IsDisabled(neighbor.various))
                 {
-                    neighbor.various = shareAmount;
+                    neighbor.various = upDirection;
                     Main.SetPixelAt(neighborPos.X, neighborPos.Y, neighbor, Main.NextPixels);
                 }
                 
-                neighbor.various += shareAmount;
-                sourcePixel.various -= shareAmount;
+                neighbor.various += upDirection;
+                sourcePixel.various -= upDirection;
                 Main.SetPixelAt(neighborPos.X, neighborPos.Y, neighbor, Main.NextPixels);
 
                 // Check if source is now dry then disable
@@ -115,7 +115,7 @@ namespace Pixula.Mechanics
             return true;
         }
 
-        public bool ShouldStopGrowing(ref Pixel sourcePixel)
+        public static bool ShouldStopGrowing(ref Pixel sourcePixel)
         {
             return Math.Abs(sourcePixel.various) <= 1;
         }
@@ -127,9 +127,9 @@ namespace Pixula.Mechanics
             return sourcePixel;
         }
 
-        public bool IsDisabled(int value) => Math.Abs(value) >= 100;
+        public static bool IsDisabled(int value) => Math.Abs(value) >= 100;
 
-        private bool IsGrowthSharable(MaterialType material)
+        private static bool IsGrowthSharable(MaterialType material)
         {
             return material switch
             {
@@ -138,8 +138,6 @@ namespace Pixula.Mechanics
                 _ => false
             };
         }
-
-
 
         private static bool CanAbsorb(MaterialType material)
         {

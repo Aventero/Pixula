@@ -110,7 +110,7 @@ namespace Pixula.Mechanics
                 MaterialType possiblyBurningMaterial = Main.GetMaterialAt(checkX, checkY);
 
                 // The material burned, now just spawn fire on empty spaces (AIR)
-                if (spotOnFire && Main.IsEmpty(possiblyBurningMaterial) && Chance(Fire.BurnChance(activelyBurningMaterial)))
+                if (spotOnFire && MainSharp.IsEmpty(possiblyBurningMaterial) && Chance(Fire.BurnChance(activelyBurningMaterial)))
                 {
                     Main.ConvertTo(checkX, checkY, MaterialType.Fire);
                     continue;

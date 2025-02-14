@@ -125,7 +125,7 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Acid, new[] { MaterialType.Air, MaterialType.AcidVapor, MaterialType.WaterVapor }},
 		{ MaterialType.AcidVapor, new[] { MaterialType.Air }},
 		{ MaterialType.AcidCloud, new[] { MaterialType.Air }},
-		{ MaterialType.Seed, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Lava, MaterialType.Acid, MaterialType.Plant}},
+		{ MaterialType.Seed, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Lava, MaterialType.Acid, MaterialType.Plant, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.AcidCloud, MaterialType.AcidVapor}},
 		{ MaterialType.Plant, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Poison }},
 		{ MaterialType.Wood, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Poison  }},
 		{ MaterialType.Poison, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
@@ -163,7 +163,7 @@ public partial class MainSharp : Node2D
 		Gas
 	}
 
-	private MaterialState GetMaterialState(MaterialType material)
+	private static MaterialState GetMaterialState(MaterialType material)
 	{
 		return material switch
 		{
@@ -524,8 +524,7 @@ public partial class MainSharp : Node2D
 		Color color = GetColorForVariant(pixel.variantPos.X, pixel.variantPos.Y);
 		color = GetColorRevamp(pixel.material, color);
 
-		// if ((pixel.various > 2 && pixel.various < 50) || (pixel.various > -50 && pixel.various < -2))
-		if (pixel.various < Math.Abs(50))
+		if (Math.Abs(pixel.various) < 50)
 			color *= 1 + Mathf.Min(1, Mathf.Abs(pixel.various) * 0.25f);
 
 		positionColors[new Vector2I(x, y)] =  color;
@@ -682,7 +681,7 @@ public partial class MainSharp : Node2D
 	// Fast bounds check using bit operations
 	public bool IsInBounds(int x, int y) => (uint)x < (uint)gridWidth && (uint)y < (uint)gridHeight;
 
-	public bool IsEmpty(MaterialType materialType) => materialType == MaterialType.Air;
+	public static bool IsEmpty(MaterialType materialType) => materialType == MaterialType.Air;
 
 	public Pixel GetPixel(int x, int y, Pixel[] pixelArray) => 
 		IsInBounds(x, y) ? pixelArray[x + gridWidth * y] : OutOfBoundsPixel;

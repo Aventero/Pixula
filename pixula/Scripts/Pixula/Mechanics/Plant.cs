@@ -32,10 +32,10 @@ namespace Pixula.Mechanics
             if (growing.TryAbsorb(x, y, ref sourcePixel, 2, GROWTH))
                 return true;
 
-            if (growing.ShouldStopGrowing(ref sourcePixel))
+            if (GrowthMechanic.ShouldStopGrowing(ref sourcePixel))
                 growing.Disable(x, y, ref sourcePixel);
 
-            if (growing.IsDisabled(sourcePixel.various))
+            if (GrowthMechanic.IsDisabled(sourcePixel.various))
                 return true;
 
             if (TryGrowPlant(x, y, ref sourcePixel))
@@ -44,8 +44,7 @@ namespace Pixula.Mechanics
                 return true;
             }
 
-            growing.ShareGrowthToNeighbor(x, y, ref sourcePixel);
-            return true;
+            return growing.ShareGrowthToNeighbor(x, y, ref sourcePixel);
         }
 
         private bool TryGrowPlant(int x, int y, ref Pixel sourcePlant)
@@ -68,10 +67,10 @@ namespace Pixula.Mechanics
         {
             Pixel targetPixel = Main.GetPixel(targetX, targetY, Main.CurrentPixels);
             
-            if (!Main.IsEmpty(targetPixel.material))
+            if (!MainSharp.IsEmpty(targetPixel.material))
                 return false;
 
-            sourcePlant.various -= 1;
+            sourcePlant.various -= Mathf.Sign(sourcePlant.various);
             Pixel newPlant = new(MaterialType.Plant, Main.GetRandomVariant(MaterialType.Plant), sourcePlant.various);
             Main.SetPixelAt(targetX, targetY, newPlant, Main.NextPixels);
             return true;
