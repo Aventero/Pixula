@@ -39,7 +39,7 @@ namespace Pixula.Mechanics
             Vector2I absorbPosition = ABSORB_DIRECTIONS[GD.RandRange(0, ABSORB_DIRECTIONS.Length - 1)] + new Vector2I(x, y);
             MaterialType targetMaterial = Main.GetMaterialAt(absorbPosition.X, absorbPosition.Y);
 
-            if (!CanAbsorb(targetMaterial)) 
+            if (!CanAbsorbMaterial(targetMaterial)) 
                 return false; 
             
             // Absorb into the source pixel
@@ -139,7 +139,7 @@ namespace Pixula.Mechanics
             };
         }
 
-        private static bool CanAbsorb(MaterialType material)
+        private static bool CanAbsorbMaterial(MaterialType material)
         {
             return material switch 
             {

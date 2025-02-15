@@ -87,7 +87,7 @@ namespace Pixula.Mechanics
             if (IsRootable(Main.GetMaterialAt(x, y + 1)))
                 pixel.various = MAX_ROOT_GROWTH;
             
-            if (IsStickable(Main.GetMaterialAt(x, y - 1)))
+            else if (IsStickable(Main.GetMaterialAt(x, y - 1)))
                 pixel.various = MAX_STICK_GROWTH;
 
             Main.SetPixelAt(x, y, pixel, Main.NextPixels);
