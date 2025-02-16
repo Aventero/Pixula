@@ -24,7 +24,6 @@ namespace Pixula.Mechanics
             // Various is the direction
             // Try moving into the direction
             bool ableToMoveHorizontal = Main.MoveTo(x, y, x + p.various, y, processMaterial);
-
             if (!ableToMoveHorizontal)
             {
                 // Bounce!
@@ -110,7 +109,8 @@ namespace Pixula.Mechanics
                 MaterialType possiblyBurningMaterial = Main.GetMaterialAt(checkX, checkY);
 
                 // The material burned, now just spawn fire on empty spaces (AIR)
-                if (spotOnFire && MainSharp.IsEmpty(possiblyBurningMaterial) && Chance(Fire.BurnChance(activelyBurningMaterial)))
+                bool emptySpot = MainSharp.IsEmpty(possiblyBurningMaterial) || possiblyBurningMaterial == MaterialType.Water;
+                if (spotOnFire && emptySpot && Chance(Fire.BurnChance(activelyBurningMaterial)))
                 {
                     Main.ConvertTo(checkX, checkY, MaterialType.Fire);
                     continue;

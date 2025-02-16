@@ -21,7 +21,6 @@ namespace Pixula.Mechanics
                 // Not initialized yet
                 pixel.various = Random.Shared.Next(MIN_BURN_TICKS, MAX_BURN_TICKS);
                 Main.SetPixelAt(x, y, pixel, Main.NextPixels);
-                return true;
             }
 
 
@@ -32,7 +31,6 @@ namespace Pixula.Mechanics
                 pixel.various -= 1;
                 Main.SetPixelAt(x, y, pixel, Main.NextPixels);
 
-                // TODO: has to change
                 SpreadFire(x, y, MaterialType.Ember, true);
                 return MoveDown(x, y, material) || MoveDiagonalDown(x, y, material);
             }

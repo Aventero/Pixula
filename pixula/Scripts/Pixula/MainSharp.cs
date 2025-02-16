@@ -115,9 +115,9 @@ public partial class MainSharp : Node2D
 
 	private readonly Dictionary<MaterialType, MaterialType[]> SwapRules = new()
 	{
-		{ MaterialType.Sand, new[] { MaterialType.Air, MaterialType.Ash, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud} },
+		{ MaterialType.Sand, new[] { MaterialType.Air, MaterialType.Oil, MaterialType.Ash, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud} },
 		{ MaterialType.Water, new[] { MaterialType.Air, MaterialType.Oil, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud } },
-		{ MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Ash, MaterialType.Sand, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Fire, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Lava } },
+		{ MaterialType.Rock, new[] { MaterialType.Air, MaterialType.Oil, MaterialType.Ash, MaterialType.Sand, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Fire, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Lava } },
 		{ MaterialType.Fire, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.AcidVapor, MaterialType.AcidCloud } },
 		{ MaterialType.WaterVapor, new[] { MaterialType.Air } },
 		{ MaterialType.WaterCloud, new[] { MaterialType.Air }},
@@ -125,13 +125,13 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Acid, new[] { MaterialType.Air, MaterialType.AcidVapor, MaterialType.WaterVapor }},
 		{ MaterialType.AcidVapor, new[] { MaterialType.Air }},
 		{ MaterialType.AcidCloud, new[] { MaterialType.Air }},
-		{ MaterialType.Seed, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Lava, MaterialType.Acid, MaterialType.Plant, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.AcidCloud, MaterialType.AcidVapor}},
-		{ MaterialType.Plant, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Poison }},
-		{ MaterialType.Wood, new[] { MaterialType.Air, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Poison  }},
-		{ MaterialType.Poison, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
-		{ MaterialType.Ash, new[] { MaterialType.Air, MaterialType.Fire, MaterialType.Lava, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
+		{ MaterialType.Seed, new[] { MaterialType.Air, MaterialType.Oil, MaterialType.Water, MaterialType.Lava, MaterialType.Acid, MaterialType.Plant, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.AcidCloud, MaterialType.AcidVapor}},
+		{ MaterialType.Plant, new[] { MaterialType.Air, MaterialType.Oil, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Poison }},
+		{ MaterialType.Wood, new[] { MaterialType.Air, MaterialType.Oil, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud, MaterialType.Poison  }},
+		{ MaterialType.Poison, new[] { MaterialType.Air, MaterialType.Water, MaterialType.Lava, MaterialType.Acid, MaterialType.Oil, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
+		{ MaterialType.Ash, new[] { MaterialType.Air, MaterialType.Oil, MaterialType.Fire, MaterialType.Lava, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
 		{ MaterialType.Oil, new[] { MaterialType.Air, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
-		{ MaterialType.Ember, new[] { MaterialType.Air, MaterialType.Fire, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
+		{ MaterialType.Ember, new[] { MaterialType.Air,MaterialType.Oil,  MaterialType.Fire, MaterialType.Water, MaterialType.WaterVapor, MaterialType.WaterCloud, MaterialType.Lava, MaterialType.Acid, MaterialType.AcidVapor, MaterialType.AcidCloud}},
 		{ MaterialType.Smoke, new[] { MaterialType.Air }},
 	};
 
@@ -140,7 +140,7 @@ public partial class MainSharp : Node2D
 		{ MaterialType.Water, 0.1f},
 		{ MaterialType.Lava, 0.01f},
 		{ MaterialType.Acid, 0.02f},
-		{ MaterialType.Poison, 0.005f},
+		{ MaterialType.Poison, 0.05f},
 		{ MaterialType.Oil, 0.05f},
 	};
 
@@ -456,12 +456,28 @@ public partial class MainSharp : Node2D
 		if (!CanSwap(processMaterial, targetMaterial))
 			return false;
 
-		if (GetMaterialState(processMaterial) == MaterialState.Solid && GetMaterialState(targetMaterial) == MaterialState.Liquid)
+		// Solid with Liquid interaction
+		if (GetMaterialState(processMaterial) == MaterialState.Solid && 
+			GetMaterialState(targetMaterial) == MaterialState.Liquid)
 		{
 			// Wait if a solid is being swapped with a liquid based on the weight and viscosity
 			// The multiplied value should be low (0.5 or lower)
-			ActivateCell(new Vector2I(x, y));
 			if (Random.Shared.NextSingle() > Mathf.Min(SolidWeight[processMaterial] * FluidViscosity[targetMaterial], 1))
+				return false;
+		}
+
+		// Handle liquid-liquid interaction
+		if (GetMaterialState(processMaterial) == MaterialState.Liquid && 
+			GetMaterialState(targetMaterial) == MaterialState.Liquid)
+		{
+			// Use the viscosity of both fluids to determine mixing behavior
+			float sourceViscosity = FluidViscosity[processMaterial];
+			float targetViscosity = FluidViscosity[targetMaterial];
+			
+			// Average the viscosities for the interaction
+			float mixingViscosity = (sourceViscosity + targetViscosity) / 2;
+			
+			if (Random.Shared.NextSingle() > mixingViscosity)
 				return false;
 		}
 

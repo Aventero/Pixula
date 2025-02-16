@@ -1,4 +1,4 @@
-[gd_scene load_steps=40 format=3 uid="uid://cxcvn0k2w0x3u"]
+[gd_scene load_steps=41 format=3 uid="uid://cxcvn0k2w0x3u"]
 
 [ext_resource type="Script" uid="uid://b0x1m6lhkcbb4" path="res://Scripts/MainEntry.gd" id="1_fjtcw"]
 [ext_resource type="Script" uid="uid://d2xhkm1orqb4f" path="res://Scripts/Pixula/MainSharp.cs" id="1_u0yqt"]
@@ -49,6 +49,10 @@ corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_u7mjy"]
+shader = ExtResource("3_8a7hv")
+shader_parameter/speed_multiplier = 1.0
 
 [sub_resource type="Gradient" id="Gradient_5jffn"]
 offsets = PackedFloat32Array(1)
@@ -552,6 +556,7 @@ value = 60.0
 rounded = true
 
 [node name="Cursor" type="Sprite2D" parent="Overlay" node_paths=PackedStringArray("main_entry")]
+material = SubResource("ShaderMaterial_u7mjy")
 texture = ExtResource("25_4n42c")
 script = ExtResource("26_c5snn")
 main_entry = NodePath("../..")
