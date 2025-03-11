@@ -116,12 +116,3 @@ size_flags_vertical = 3
 texture = SubResource("CanvasTexture_3k7wv")
 script = SubResource("GDScript_vsi1d")
 world_viewport = NodePath("..")
-
-[node name="TabContainer" type="TabContainer" parent="."]
-offset_right = 40.0
-offset_bottom = 40.0
-current_tab = 0
-
-[node name="CodeEdit" type="CodeEdit" parent="TabContainer"]
-layout_mode = 2
-metadata/_tab_index = 0
