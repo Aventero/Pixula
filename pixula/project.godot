@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Pixula"
-run/main_scene="uid://cxcvn0k2w0x3u"
+run/main_scene="uid://deitx1xawyjvd"
 config/features=PackedStringArray("4.4", "C#", "Forward Plus")
 config/icon="res://UI/Sprites/icon.svg"
 
@@ -30,7 +30,7 @@ project/assembly_name="Pixula"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/ridiculous_coding/plugin.cfg", "res://addons/script-ide/plugin.cfg")
+enabled=PackedStringArray("res://addons/osu_sounds/plugin.cfg", "res://addons/script-ide/plugin.cfg")
 
 [global_group]
 
@@ -67,6 +67,10 @@ CHECK_MATERIAL={
 "events": [Object(InputEventMouseButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"button_mask":0,"position":Vector2(0, 0),"global_position":Vector2(0, 0),"factor":1.0,"button_index":9,"canceled":false,"pressed":false,"double_click":false,"script":null)
 ]
 }
+
+[osu_sounds]
+
+volume_db=-35.0
 
 [physics]
 

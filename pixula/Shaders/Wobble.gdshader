@@ -12,7 +12,7 @@ void vertex() {
 	float speed = 2.5 * speed_multiplier;
 	float inner_wobble_amount = (UV.x) * 1.2;
 
-	// Start of the sin
+	// Start of the sind
 	float sin_start = (MODEL_MATRIX * vec4(VERTEX, 0.0, 1.0)).y * 0.2;
 	VERTEX.y = VERTEX.y + vertical_movement * (sin(sin_start + (TIME * speed) + inner_wobble_amount));
 }
