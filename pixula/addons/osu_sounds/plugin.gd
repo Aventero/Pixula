@@ -12,12 +12,17 @@ var caret_sound_player: AudioStreamPlayer = null
 var undo_sound_player: AudioStreamPlayer = null
 var redo_sound_player: AudioStreamPlayer = null
 var save_sound_player: AudioStreamPlayer = null
+var copy_sound_player: AudioStreamPlayer = null
+var paste_sound_player: AudioStreamPlayer = null
+
+var sound_players_multiplier: Dictionary[AudioStreamPlayer, float]
 
 # sounds
 var typing_sounds: Array[Resource]
 
 # general settings
-var volume_db = -30.0
+var initial_volume_db: int = -35
+var volume_db: int = initial_volume_db
 
 # Editor scanning
 var primary_shader_wrapper = null
@@ -37,21 +42,24 @@ enum ActionType {
 	CARET_MOVING,
 	UNDO,
 	REDO,
+	COPY,
+	PASTE,
 }
 
 # Then in your main script
 var editors: Dictionary[String, SoundEditorInfo] = {}
 
-
 func _enter_tree() -> void:
 	initialize()
 	load_sounds()
+	add_volume_setting()
 
 	# Set up process for checking typing
 	set_process(true)
 
 	# Find shader container after UI is fully loaded
 	get_tree().create_timer(1.0).timeout.connect(find_shader_editor_wrapper)
+	ProjectSettings.settings_changed.connect(_on_settings_changed)
 
 func _shortcut_input(event: InputEvent) -> void:
 	if event is InputEventKey:
@@ -59,34 +67,23 @@ func _shortcut_input(event: InputEvent) -> void:
 			save_sound_player.play()
 
 func _exit_tree() -> void:
-	if typing_sound_player:
-		typing_sound_player.queue_free()
-	if selecting_sound_player:
-		selecting_sound_player.queue_free()
-	if deleting_sound_player:
-		deleting_sound_player.queue_free()
-	if selecting_word_sound_player:
-		selecting_word_sound_player.queue_free()
-	if selecting_all_sound_player:
-		selecting_all_sound_player.queue_free()
-	if deselecting_sound_player:
-		deselecting_sound_player.queue_free()
-	if caret_sound_player:
-		caret_sound_player.queue_free()
-	if undo_sound_player:
-		undo_sound_player.queue_free()
-	if redo_sound_player:
-		redo_sound_player.queue_free()
-	if save_sound_player:
-		save_sound_player.queue_free()
-
+	for player in sound_players_multiplier.keys():
+		player.queue_free()
+	sound_players_multiplier.clear()
 	set_process(false)
 
 func create_sound_player(volume_multiplier: float = 1.0) -> AudioStreamPlayer:
 	var player: AudioStreamPlayer = AudioStreamPlayer.new()
 	player.volume_db = volume_db * volume_multiplier
 	add_child(player)
+	sound_players_multiplier[player] = volume_multiplier
 	return player
+
+func _on_settings_changed() -> void:
+	if ProjectSettings.has_setting("osu_sounds/volume_db"):
+		volume_db = ProjectSettings.get_setting("osu_sounds/volume_db")
+		for player in sound_players_multiplier.keys():
+			player.volume_db = volume_db * sound_players_multiplier[player]
 
 func initialize() -> void:
 	typing_sound_player = create_sound_player()
@@ -99,6 +96,8 @@ func initialize() -> void:
 	undo_sound_player = create_sound_player()
 	save_sound_player = create_sound_player(1.5)
 	deleting_sound_player = create_sound_player()
+	copy_sound_player = create_sound_player(1.5)
+	paste_sound_player = create_sound_player(1.5)
 
 func load_sounds() -> void:
 	typing_sounds.append(load("res://addons/osu_sounds/keyboard_sounds/key-press-1.mp3"))
@@ -115,7 +114,10 @@ func load_sounds() -> void:
 	redo_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-confirm.mp3")
 	caret_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-movement.mp3")
 	save_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/badge-dink.wav")
+	copy_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/date-impact.wav")
+	paste_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/badge-dink-max.wav")
 	deleting_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-delete.mp3")
+
 
 func add_new_editor(code_edit: CodeEdit, editor_id: String) -> void:
 	if not editors.has(editor_id):
@@ -128,24 +130,27 @@ func play_random_typing_sound() -> void:
 
 func _enable_plugin() -> void:
 	add_volume_setting()
+	print("Has it now: ", ProjectSettings.has_setting("osu_sounds/volume_db"))
 
 func _disable_plugin() -> void:
 	if ProjectSettings.has_setting("osu_sounds/volume_db"):
 		ProjectSettings.set_setting("osu_sounds/volume_db", null)
 		ProjectSettings.save()
 
+	print("Present: ", ProjectSettings.has_setting("osu_sounds/volume_db"))
+
 func add_volume_setting() -> void:
 	if not ProjectSettings.has_setting("osu_sounds/volume_db"):
-		ProjectSettings.set_setting("osu_sounds/volume_db", volume_db)
-		ProjectSettings.set_initial_value("osu_sounds/volume_db", volume_db)
+		ProjectSettings.set_setting("osu_sounds/volume_db", initial_volume_db)
+		ProjectSettings.set_initial_value("osu_sounds/volume_db", initial_volume_db)
 
-		# Make sure to add the property info BEFORE calling set_as_basic
-		var info: Dictionary = {
+		var info = {
 			"name": "osu_sounds/volume_db",
 			"type": TYPE_FLOAT,
 			"hint": PROPERTY_HINT_RANGE,
-			"hint_string": "-80, 0, 0.1"
+			"hint_string": "-80, 0, 1"
 		}
+
 		ProjectSettings.add_property_info(info)
 		ProjectSettings.set_as_basic("osu_sounds/volume_db", true)
 		ProjectSettings.save()
@@ -168,26 +173,16 @@ func _process(delta: float) -> void:
 		if not sound_played:
 			sound_played = play_editor_sounds(editor_id, info)
 
-
 func periodic_editor_scan(delta: float) -> void:
 	# Check for new shader editors periodically
 	scan_timer += delta
 	if scan_timer >= scan_interval:
 		scan_timer = 0.0
 
-		check_volume_settings()
-
 		if shader_editor_container:
 			check_container_for_shader_editors(shader_editor_container)
 		elif not primary_shader_wrapper or not shader_editor_container:
 			find_shader_editor_wrapper()
-
-func check_volume_settings() -> void:
-	# Check volume changes
-	if ProjectSettings.has_setting("osu_sounds/volume_db"):
-		var current_volume: float = ProjectSettings.get_setting("osu_sounds/volume_db")
-		volume_db = current_volume
-		typing_sound_player.volume_db = volume_db
 
 func register_script_editor() -> void:
 	var current_editor = EditorInterface.get_script_editor().get_current_editor()
@@ -251,6 +246,12 @@ func play_editor_sounds(editor_id: String, info: SoundEditorInfo) -> bool:
 	if Input.is_action_just_pressed("ui_redo") and has_editor_focused:
 		action_type = ActionType.REDO
 
+	if Input.is_action_just_pressed("ui_copy") and has_editor_focused:
+		action_type = ActionType.COPY
+
+	if Input.is_action_just_pressed("ui_paste") and has_editor_focused:
+		action_type = ActionType.PASTE
+
 	# Always update tracking variables
 	info.char_count = current_char_count
 	info.caret_column = current_caret_column
@@ -274,6 +275,14 @@ func handle_action(action_type: ActionType, code_edit: CodeEdit, current_selecti
 			return true
 		ActionType.REDO:
 			redo_sound_player.play()
+			return true
+		ActionType.COPY:
+			copy_sound_player.pitch_scale = 1.5
+			copy_sound_player.play()
+			return true
+		ActionType.PASTE:
+			paste_sound_player.pitch_scale = 1.5
+			paste_sound_player.play()
 			return true
 		ActionType.TYPING:
 			play_random_typing_sound()
