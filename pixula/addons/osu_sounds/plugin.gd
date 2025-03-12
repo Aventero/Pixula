@@ -11,7 +11,7 @@ var deselecting_sound_player: AudioStreamPlayer = null
 var caret_sound_player: AudioStreamPlayer = null
 var undo_sound_player: AudioStreamPlayer = null
 var redo_sound_player: AudioStreamPlayer = null
-
+var save_sound_player: AudioStreamPlayer = null
 
 # sounds
 var typing_sounds: Array[Resource]
@@ -20,17 +20,17 @@ var typing_sounds: Array[Resource]
 var volume_db = -30.0
 
 # typing & deleting
-var last_char_counts = {}  # Track character counts for editors
-var last_selection_state = {}  # Track selection state for each editor
+var last_char_counts = {}
+var last_selection_state = {}
 var last_script_char_count: int = 0
 
 # Editor scanning
 var script_editor: ScriptEditor = null
-var shader_editors = {}  # Track shader editors as a dictionary
-var primary_shader_wrapper = null  # The WindowWrapper that hosts shader editors
-var shader_editor_container = null  # The TabContainer that hosts shader editors
+var shader_editors = {}
+var primary_shader_wrapper = null
+var shader_editor_container = null
 var scan_timer: float = 0.0
-var scan_interval: float = 1.0  # Check for new editors every second
+var scan_interval: float = 1.0
 
 # select
 var selected_text: String = "none"
@@ -43,6 +43,9 @@ var has_unselected: bool = false
 # caret
 var last_caret_column: int = 0
 var last_caret_line: int = 0
+
+# editor
+var has_editor_focused: bool = false
 
 # enum
 enum ActionType {
@@ -59,7 +62,6 @@ enum ActionType {
 func _enter_tree() -> void:
 	initialize()
 	load_sounds()
-	add_volume_setting()
 
 	# Load script editor
 	script_editor = EditorInterface.get_script_editor()
@@ -69,6 +71,11 @@ func _enter_tree() -> void:
 
 	# Find shader container after UI is fully loaded
 	get_tree().create_timer(1.0).timeout.connect(find_shader_editor_wrapper)
+
+func _shortcut_input(event: InputEvent) -> void:
+	if event is InputEventKey:
+		if event.keycode == KEY_S and event.ctrl_pressed and not event.echo and not event.is_released() and has_editor_focused:
+			save_sound_player.play()
 
 func _exit_tree() -> void:
 	if typing_sound_player:
@@ -89,81 +96,44 @@ func _exit_tree() -> void:
 		undo_sound_player.queue_free()
 	if redo_sound_player:
 		redo_sound_player.queue_free()
+	if save_sound_player:
+		save_sound_player.queue_free()
 
 	set_process(false)
 
+func create_sound_player(volume_multiplier: float = 1.0) -> AudioStreamPlayer:
+	var player: AudioStreamPlayer = AudioStreamPlayer.new()
+	player.volume_db = volume_db * volume_multiplier
+	add_child(player)
+	return player
+
 func initialize() -> void:
-
-	# Typing
-	typing_sound_player = AudioStreamPlayer.new()
-	typing_sound_player.volume_db = volume_db
-	add_child(typing_sound_player)
-
-	# Selection
-	selecting_sound_player = AudioStreamPlayer.new()
-	selecting_sound_player.volume_db = volume_db * 1.2
-	add_child(selecting_sound_player)
-
-	# Selection word
-	selecting_word_sound_player = AudioStreamPlayer.new()
-	selecting_word_sound_player.volume_db = volume_db
-	add_child(selecting_word_sound_player)
-
-	# De-selection
-	deselecting_sound_player = AudioStreamPlayer.new()
-	deselecting_sound_player.volume_db = volume_db * 1.3
-	add_child(deselecting_sound_player)
-
-	# Selection all
-	selecting_all_sound_player = AudioStreamPlayer.new()
-	selecting_all_sound_player.volume_db = volume_db
-	add_child(selecting_all_sound_player)
-
-	# Caret
-	caret_sound_player = AudioStreamPlayer.new()
-	caret_sound_player.volume_db = volume_db * 1.5
-	add_child(caret_sound_player)
-
-	# Redo
-	redo_sound_player = AudioStreamPlayer.new()
-	redo_sound_player.volume_db = volume_db
-	add_child(redo_sound_player)
-
-	# Undo
-	undo_sound_player = AudioStreamPlayer.new()
-	undo_sound_player.volume_db = volume_db
-	add_child(undo_sound_player)
-
-	# Deletion
-	deleting_sound_player = AudioStreamPlayer.new()
-	deleting_sound_player.volume_db = volume_db
-	add_child(deleting_sound_player)
+	typing_sound_player = create_sound_player()
+	selecting_sound_player = create_sound_player(1.2)
+	selecting_word_sound_player = create_sound_player()
+	deselecting_sound_player = create_sound_player(1.3)
+	selecting_all_sound_player = create_sound_player()
+	caret_sound_player = create_sound_player(1.5)
+	redo_sound_player = create_sound_player()
+	undo_sound_player = create_sound_player()
+	save_sound_player = create_sound_player(1.5)
+	deleting_sound_player = create_sound_player()
 
 func load_sounds() -> void:
-
-	# typing sounds
 	typing_sounds.append(load("res://addons/osu_sounds/keyboard_sounds/key-press-1.mp3"))
 	typing_sounds.append(load("res://addons/osu_sounds/keyboard_sounds/key-press-2.mp3"))
 	typing_sounds.append(load("res://addons/osu_sounds/keyboard_sounds/key-press-3.mp3"))
 	typing_sounds.append(load("res://addons/osu_sounds/keyboard_sounds/key-press-4.mp3"))
 	typing_sound_player.stream = typing_sounds[0]
 
-	# selection sounds
 	selecting_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/select-char.wav")
 	selecting_all_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/select-word.wav")
 	selecting_word_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/select-all.wav")
-
-	# de selection sounds
 	deselecting_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/deselect.wav")
-
-	# undo & redo
-	undo_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-confirm.mp3")
-	redo_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-invalid.wav")
-
-	# caret movement sounds
+	undo_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-invalid.wav")
+	redo_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-confirm.mp3")
 	caret_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-movement.mp3")
-
-	# deletion sounds
+	save_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/badge-dink.wav")
 	deleting_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-delete.mp3")
 
 func play_random_typing_sound() -> void:
@@ -171,19 +141,28 @@ func play_random_typing_sound() -> void:
 	typing_sound_player.stream = typing_sounds[random_index]
 	typing_sound_player.play()
 
+func _enable_plugin() -> void:
+	add_volume_setting()
+
+func _disable_plugin() -> void:
+	if ProjectSettings.has_setting("osu_sounds/volume_db"):
+		ProjectSettings.set_setting("osu_sounds/volume_db", null)
+		ProjectSettings.save()
+
 func add_volume_setting() -> void:
 	if not ProjectSettings.has_setting("osu_sounds/volume_db"):
-		# Add the volume setting for the plugin
 		ProjectSettings.set_setting("osu_sounds/volume_db", volume_db)
 		ProjectSettings.set_initial_value("osu_sounds/volume_db", volume_db)
-		ProjectSettings.set_as_basic("osu_sounds/volume_db", true)
+
+		# Make sure to add the property info BEFORE calling set_as_basic
 		var info: Dictionary = {
 			"name": "osu_sounds/volume_db",
 			"type": TYPE_FLOAT,
 			"hint": PROPERTY_HINT_RANGE,
-			"hint_string": "-80, 6, 0.1" # Min, Max, Steps
+			"hint_string": "-80, 0, 0.1"
 		}
 		ProjectSettings.add_property_info(info)
+		ProjectSettings.set_as_basic("osu_sounds/volume_db", true)
 		ProjectSettings.save()
 	else:
 		# Load existing volume from settings.
@@ -224,6 +203,7 @@ func play_script_editor_sounds() -> bool:
 	if current_editor:
 		var code_edit: CodeEdit = current_editor.get_base_editor()
 		if code_edit:
+			has_editor_focused = code_edit.has_focus()
 			var current_char_count = code_edit.text.length()
 			var current_caret_column = code_edit.get_caret_column()
 			var current_caret_line = code_edit.get_caret_line()
@@ -252,10 +232,10 @@ func play_script_editor_sounds() -> bool:
 
 			var single_select: bool = abs(last_selection_length - current_selection_length) == 1
 
-			if Input.is_action_just_pressed("ui_undo"):
+			if Input.is_action_just_pressed("ui_undo") and has_editor_focused:
 				action_type = ActionType.UNDO
 
-			if Input.is_action_just_pressed("ui_redo"):
+			if Input.is_action_just_pressed("ui_redo") and has_editor_focused:
 				action_type = ActionType.REDO
 
 			# Always update tracking variables
@@ -306,7 +286,6 @@ func play_script_editor_sounds() -> bool:
 				last_selection_length = current_selection_length
 			else:
 				last_selection_length = 0
-
 	return false
 
 func play_selection_sound(code_edit: CodeEdit, selection_length: int, new_selection: String) -> bool:
@@ -329,8 +308,6 @@ func play_selection_sound(code_edit: CodeEdit, selection_length: int, new_select
 		# Add slight randomization for variety
 		selecting_sound_player.pitch_scale = pitch_scale * randf_range(0.975, 1.025)
 		selecting_sound_player.play()
-
-		#print("length_factor: ", length_factor, " velocity_factor: ", velocity_factor, " Pitch: ", selecting_sound_player.pitch_scale)
 
 		# Update tracking variables
 		last_selection_time = current_time

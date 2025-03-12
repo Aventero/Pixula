@@ -68,10 +68,6 @@ CHECK_MATERIAL={
 ]
 }
 
-[osu_sounds]
-
-volume_db=-35.0
-
 [physics]
 
 2d/run_on_separate_thread=true
