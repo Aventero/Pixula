@@ -17,34 +17,14 @@ var save_sound_player: AudioStreamPlayer = null
 var typing_sounds: Array[Resource]
 
 # general settings
-var volume_db = -35.0
-
-# typing & deleting
-var last_char_counts = {}
-var last_selection_state = {}
-var last_script_char_count: int = 0
+var volume_db = -30.0
 
 # Editor scanning
-var script_editor: ScriptEditor = null
-var shader_editors = {}
 var primary_shader_wrapper = null
 var shader_editor_container = null
 var scan_timer: float = 0.0
 var scan_interval: float = 1.0
 
-# select
-var selected_text: String = "none"
-var last_selection_time: float = 0.0
-var last_selection_length: int = 0
-var selection_velocity: float = 0.0
-var last_selection_mode: CodeEdit.SelectionMode = CodeEdit.SELECTION_MODE_NONE
-var has_unselected: bool = false
-
-# caret
-var last_caret_column: int = 0
-var last_caret_line: int = 0
-
-# editor
 var has_editor_focused: bool = false
 
 # enum
@@ -59,12 +39,13 @@ enum ActionType {
 	REDO,
 }
 
+# Then in your main script
+var editors: Dictionary[String, SoundEditorInfo] = {}
+
+
 func _enter_tree() -> void:
 	initialize()
 	load_sounds()
-
-	# Load script editor
-	script_editor = EditorInterface.get_script_editor()
 
 	# Set up process for checking typing
 	set_process(true)
@@ -136,6 +117,10 @@ func load_sounds() -> void:
 	save_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/badge-dink.wav")
 	deleting_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-delete.mp3")
 
+func add_new_editor(code_edit: CodeEdit, editor_id: String) -> void:
+	if not editors.has(editor_id):
+		editors[editor_id] = SoundEditorInfo.new(code_edit)
+
 func play_random_typing_sound() -> void:
 	var random_index = randi() % typing_sounds.size()
 	typing_sound_player.stream = typing_sounds[random_index]
@@ -170,106 +155,119 @@ func add_volume_setting() -> void:
 		typing_sound_player.volume_db = volume_db
 
 func _process(delta: float) -> void:
-	periodic_shader_editor_scan(delta)
+	periodic_editor_scan(delta)
+	register_script_editor()
 
-	# Try script editor first, only check shader editors if no sound was played
-	var sound_played = play_script_editor_sounds()
-	if not sound_played:
-		play_shader_editor_sounds()
+	var sound_played: bool = false
+	has_editor_focused = false
+	for editor_id: String in editors.keys():
+		var info: SoundEditorInfo = editors[editor_id]
+		if not is_instance_valid(info.code_edit):
+			editors.erase(editor_id)
+			continue
+		if not sound_played:
+			sound_played = play_editor_sounds(editor_id, info)
 
-func periodic_shader_editor_scan(delta: float) -> void:
+
+func periodic_editor_scan(delta: float) -> void:
 	# Check for new shader editors periodically
 	scan_timer += delta
 	if scan_timer >= scan_interval:
 		scan_timer = 0.0
 
-		# Check volume changes
-		if ProjectSettings.has_setting("osu_sounds/volume_db"):
-			var current_volume: float = ProjectSettings.get_setting("osu_sounds/volume_db")
-			volume_db = current_volume
-			typing_sound_player.volume_db = volume_db
+		check_volume_settings()
 
-		# If already found the wrapper, just check its tab container
-		if is_instance_valid(shader_editor_container):
+		if shader_editor_container:
 			check_container_for_shader_editors(shader_editor_container)
-		# If no wrapper found yet or it became invalid, keep looking for it
-		elif not is_instance_valid(primary_shader_wrapper) or not is_instance_valid(shader_editor_container):
+		elif not primary_shader_wrapper or not shader_editor_container:
 			find_shader_editor_wrapper()
 
-func play_editor_sounds(code_edit: CodeEdit) -> bool:
-	if code_edit:
-		has_editor_focused = code_edit.has_focus()
-		var current_char_count = code_edit.text.length()
-		var current_caret_column = code_edit.get_caret_column()
-		var current_caret_line = code_edit.get_caret_line()
-		var caret_changed = (current_caret_column != last_caret_column || current_caret_line != last_caret_line)
+func check_volume_settings() -> void:
+	# Check volume changes
+	if ProjectSettings.has_setting("osu_sounds/volume_db"):
+		var current_volume: float = ProjectSettings.get_setting("osu_sounds/volume_db")
+		volume_db = current_volume
+		typing_sound_player.volume_db = volume_db
 
-		# Determine what changed and in what order
-		var action_type = ActionType.NONE
-
-		# Check for text changes first
-		if current_char_count > last_script_char_count:
-			action_type = ActionType.TYPING
-		elif current_char_count < last_script_char_count:
-			action_type = ActionType.DELETING
-
-		# Check for selection status
-		var has_selection_now = code_edit.has_selection()
-		var new_selection = code_edit.get_selected_text()
-		var current_selection_length = new_selection.length()
-
-		if has_selection_now && current_selection_length != last_selection_length:
-			action_type = ActionType.SELECTING
-		elif !has_selection_now && last_selection_length > 0:
-			action_type = ActionType.DESELECTING
-		elif action_type == ActionType.NONE && caret_changed:
-			action_type = ActionType.CARET_MOVING
-
-		var single_select: bool = abs(last_selection_length - current_selection_length) == 1
-
-		if Input.is_action_just_pressed("ui_undo") and has_editor_focused:
-			action_type = ActionType.UNDO
-
-		if Input.is_action_just_pressed("ui_redo") and has_editor_focused:
-			action_type = ActionType.REDO
-
-		# Always update tracking variables
-		last_script_char_count = current_char_count
-		last_caret_column = current_caret_column
-		last_caret_line = current_caret_line
-
-		# Handle sound based on action type
-		var sound_played: bool = handle_action(action_type, code_edit, current_selection_length, new_selection)
-
-		if has_selection_now:
-			has_unselected = false
-			last_selection_length = current_selection_length
-		else:
-			last_selection_length = 0
-
-		return sound_played
-	return false
-
-func play_script_editor_sounds() -> bool:
-	var current_editor = script_editor.get_current_editor()
+func register_script_editor() -> void:
+	var current_editor = EditorInterface.get_script_editor().get_current_editor()
 	if current_editor:
-		var code_edit: CodeEdit = current_editor.get_base_editor()
-		return play_editor_sounds(code_edit)
-	return false
+		var code_edit = current_editor.get_base_editor()
+		if code_edit:
+			# Use a consistent ID for the script editor
+			var editor_id = "script_editor"
+
+			if not editors.has(editor_id):
+				add_new_editor(code_edit, editor_id)
+			else:
+				editors[editor_id].code_edit = code_edit # update edit
 
 func play_shader_editor_sounds() -> bool:
 	var sound_played = false
-	for editor_id in shader_editors:
-		var editor_info = shader_editors[editor_id]
-		var code_edit: CodeEdit = editor_info["editor"]
-		if is_instance_valid(code_edit):
-			sound_played = play_editor_sounds(code_edit)
-			if sound_played:
-				break
+	for editor_id in editors:
+		var editor_info: SoundEditorInfo = editors[editor_id]
+		sound_played = play_editor_sounds(editor_id, editor_info)
+		if sound_played:
+			break
 
 	return sound_played
 
-func handle_action(action_type: ActionType, code_edit: CodeEdit, current_selection_length: int, new_selection: String) -> bool:
+func play_editor_sounds(editor_id: String, info: SoundEditorInfo) -> bool:
+	var code_edit: CodeEdit = info.code_edit
+	if not has_editor_focused:
+		has_editor_focused = code_edit.has_focus()
+
+	var current_char_count = code_edit.text.length()
+	var current_caret_column = code_edit.get_caret_column()
+	var current_caret_line = code_edit.get_caret_line()
+	var caret_changed = (current_caret_column != info.caret_column|| current_caret_line != info.caret_line)
+
+	# Determine what changed and in what order
+	var action_type = ActionType.NONE
+
+	# Check for text changes first
+	if current_char_count > info.char_count:
+		action_type = ActionType.TYPING
+	elif current_char_count < info.char_count:
+		action_type = ActionType.DELETING
+
+	# Check for selection status
+	var has_selection_now = code_edit.has_selection()
+	var new_selection = code_edit.get_selected_text()
+	var current_selection_length = new_selection.length()
+
+	if has_selection_now && current_selection_length != info.selection_length:
+		action_type = ActionType.SELECTING
+	elif !has_selection_now && info.selection_length > 0:
+		action_type = ActionType.DESELECTING
+	elif action_type == ActionType.NONE && caret_changed:
+		action_type = ActionType.CARET_MOVING
+
+	var single_select: bool = abs(info.selection_length - current_selection_length) == 1
+
+	if Input.is_action_just_pressed("ui_undo") and has_editor_focused:
+		action_type = ActionType.UNDO
+
+	if Input.is_action_just_pressed("ui_redo") and has_editor_focused:
+		action_type = ActionType.REDO
+
+	# Always update tracking variables
+	info.char_count = current_char_count
+	info.caret_column = current_caret_column
+	info.caret_line = current_caret_line
+
+	# Handle sound based on action type
+	var sound_played: bool = handle_action(action_type, code_edit, current_selection_length, new_selection, info)
+
+	if has_selection_now:
+		info.has_unselected = false
+		info.selection_length = current_selection_length
+	else:
+		info.selection_length = 0
+
+	return sound_played
+
+func handle_action(action_type: ActionType, code_edit: CodeEdit, current_selection_length: int, new_selection: String, info: SoundEditorInfo) -> bool:
 	match action_type:
 		ActionType.UNDO:
 			undo_sound_player.play()
@@ -284,11 +282,10 @@ func handle_action(action_type: ActionType, code_edit: CodeEdit, current_selecti
 			deleting_sound_player.play()
 			return true
 		ActionType.SELECTING:
-			handle_selection(code_edit, current_selection_length, new_selection)
-			return true
+			return handle_selection(code_edit, current_selection_length, new_selection, info)
 		ActionType.DESELECTING:
-			has_unselected = true
-			last_selection_length = 0
+			info.has_unselected = true
+			info.selection_length = 0
 			deselecting_sound_player.play()
 			return true
 		ActionType.CARET_MOVING:
@@ -296,28 +293,30 @@ func handle_action(action_type: ActionType, code_edit: CodeEdit, current_selecti
 			return true
 	return false
 
-func handle_selection(code_edit: CodeEdit, current_selection_length: int, new_selection: String) -> void:
-	var single_select: bool = abs(last_selection_length - current_selection_length) == 1
+func handle_selection(code_edit: CodeEdit, current_selection_length: int, new_selection: String, info: SoundEditorInfo) -> bool:
+	var single_select: bool = abs(info.selection_length - current_selection_length) == 1
 	var current_selection_mode = code_edit.get_selection_mode()
 
 	match current_selection_mode:
 		CodeEdit.SelectionMode.SELECTION_MODE_WORD:
 			selecting_word_sound_player.play()
+			return true
 		CodeEdit.SelectionMode.SELECTION_MODE_SHIFT, CodeEdit.SelectionMode.SELECTION_MODE_LINE:
 			if single_select:
-				play_selection_sound(code_edit, current_selection_length, new_selection)
+				return play_selection_sound(code_edit, current_selection_length, new_selection, info)
 			else:
 				selecting_all_sound_player.play()
+				return true
 		_:
-			play_selection_sound(code_edit, current_selection_length, new_selection)
-	last_selection_length = current_selection_length
+			return play_selection_sound(code_edit, current_selection_length, new_selection, info)
+	return false
 
-func play_selection_sound(code_edit: CodeEdit, selection_length: int, new_selection: String) -> bool:
+func play_selection_sound(code_edit: CodeEdit, selection_length: int, new_selection: String, info: SoundEditorInfo) -> bool:
 	var current_time = Time.get_ticks_msec() / 1000.0
-	var time_delta = max(0.001, current_time - last_selection_time)  # Avoid division by zero
+	var time_delta = max(0.001, current_time - info.last_selection_time)  # Avoid division by zero
 
 	# Calculate selection velocity (chars per second) dasd
-	selection_velocity = abs(selection_length - last_selection_length) / time_delta
+	var selection_velocity = abs(selection_length - info.selection_length) / time_delta
 
 	# Base cooldown and pitch calculations
 	var selection_cooldown: float = 0.025
@@ -328,22 +327,19 @@ func play_selection_sound(code_edit: CodeEdit, selection_length: int, new_select
 	var velocity_factor = min(selection_velocity / 500.0, 0.25)
 	var pitch_scale = base_pitch + length_factor + velocity_factor
 
-	if current_time - last_selection_time >= selection_cooldown:
+	if current_time - info.last_selection_time >= selection_cooldown:
 		# Add slight randomization for variety
 		selecting_sound_player.pitch_scale = pitch_scale * randf_range(0.975, 1.025)
 		selecting_sound_player.play()
 
 		# Update tracking variables
-		last_selection_time = current_time
-		last_selection_length = selection_length
-		selected_text = new_selection
+		info.last_selection_time = current_time
+		info.selection_length = selection_length
 		return true
 	else:
 		# Still update the selected text but don't play sound
-		selected_text = new_selection
-		last_selection_length = selection_length
+		info.selection_length = selection_length
 	return false
-
 
 func find_shader_editor_wrapper() -> void:
 	var base_control = EditorInterface.get_base_control()
@@ -360,7 +356,6 @@ func find_shader_editor_wrapper() -> void:
 			if check_container_for_shader_editors(container):
 				primary_shader_wrapper = wrapper
 				shader_editor_container = container
-				print("DEBUG: Identified potential shader container: " + container.name)
 				return
 
 # Check a specific container for shader editors
@@ -368,38 +363,27 @@ func check_container_for_shader_editors(container: TabContainer) -> bool:
 	if not is_instance_valid(container):
 		return false
 
-	var previous_editors = shader_editors.duplicate()
+	var previous_editors = editors.duplicate()
 	var found_any = false
 
 	for i in range(container.get_tab_count()):
 		var tab_control = container.get_tab_control(i)
-
 		if not tab_control or "TextShaderEditor" not in tab_control.name: continue
-
 		found_any = true
 
 		# Find the CodeEdit component(s) in this tab
 		var code_edits = []
-
 		find_nodes_by_class(tab_control, "CodeEdit", code_edits)
 
-		for idx in range(code_edits.size()):
-			var code_edit = code_edits[idx]
-			var editor_id = tab_control.name + "_" + str(idx)
+		for ids in range(code_edits.size()):
+			var code_edit = code_edits[ids]
+			var editor_id = tab_control.name + "_" + str(ids)
 
 			# Check if this is a new editor
 			if not previous_editors.has(editor_id):
-				print("DEBUG: Found new shader editor: " + editor_id)
+				add_new_editor(code_edit, editor_id)
 			else:
-				# Keep the previous character count
-				var previous_count = last_char_counts.get(editor_id, 0)
-				last_char_counts[editor_id] = previous_count
-
-			shader_editors[editor_id] = {
-				"editor": code_edit,
-				"parent_tab": container,
-				"tab_index": i
-			}
+				editors[editor_id].code_edit = code_edit
 
 	return found_any
 
