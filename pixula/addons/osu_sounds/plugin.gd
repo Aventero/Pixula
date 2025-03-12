@@ -17,7 +17,7 @@ var save_sound_player: AudioStreamPlayer = null
 var typing_sounds: Array[Resource]
 
 # general settings
-var volume_db = -30.0
+var volume_db = -35.0
 
 # typing & deleting
 var last_char_counts = {}
@@ -172,10 +172,8 @@ func add_volume_setting() -> void:
 func _process(delta: float) -> void:
 	periodic_shader_editor_scan(delta)
 
-	var sound_played: bool = false
-	if script_editor:
-		sound_played = play_script_editor_sounds()
-
+	# Try script editor first, only check shader editors if no sound was played
+	var sound_played = play_script_editor_sounds()
 	if not sound_played:
 		play_shader_editor_sounds()
 
@@ -198,95 +196,121 @@ func periodic_shader_editor_scan(delta: float) -> void:
 		elif not is_instance_valid(primary_shader_wrapper) or not is_instance_valid(shader_editor_container):
 			find_shader_editor_wrapper()
 
+func play_editor_sounds(code_edit: CodeEdit) -> bool:
+	if code_edit:
+		has_editor_focused = code_edit.has_focus()
+		var current_char_count = code_edit.text.length()
+		var current_caret_column = code_edit.get_caret_column()
+		var current_caret_line = code_edit.get_caret_line()
+		var caret_changed = (current_caret_column != last_caret_column || current_caret_line != last_caret_line)
+
+		# Determine what changed and in what order
+		var action_type = ActionType.NONE
+
+		# Check for text changes first
+		if current_char_count > last_script_char_count:
+			action_type = ActionType.TYPING
+		elif current_char_count < last_script_char_count:
+			action_type = ActionType.DELETING
+
+		# Check for selection status
+		var has_selection_now = code_edit.has_selection()
+		var new_selection = code_edit.get_selected_text()
+		var current_selection_length = new_selection.length()
+
+		if has_selection_now && current_selection_length != last_selection_length:
+			action_type = ActionType.SELECTING
+		elif !has_selection_now && last_selection_length > 0:
+			action_type = ActionType.DESELECTING
+		elif action_type == ActionType.NONE && caret_changed:
+			action_type = ActionType.CARET_MOVING
+
+		var single_select: bool = abs(last_selection_length - current_selection_length) == 1
+
+		if Input.is_action_just_pressed("ui_undo") and has_editor_focused:
+			action_type = ActionType.UNDO
+
+		if Input.is_action_just_pressed("ui_redo") and has_editor_focused:
+			action_type = ActionType.REDO
+
+		# Always update tracking variables
+		last_script_char_count = current_char_count
+		last_caret_column = current_caret_column
+		last_caret_line = current_caret_line
+
+		# Handle sound based on action type
+		var sound_played: bool = handle_action(action_type, code_edit, current_selection_length, new_selection)
+
+		if has_selection_now:
+			has_unselected = false
+			last_selection_length = current_selection_length
+		else:
+			last_selection_length = 0
+
+		return sound_played
+	return false
+
 func play_script_editor_sounds() -> bool:
 	var current_editor = script_editor.get_current_editor()
 	if current_editor:
 		var code_edit: CodeEdit = current_editor.get_base_editor()
-		if code_edit:
-			has_editor_focused = code_edit.has_focus()
-			var current_char_count = code_edit.text.length()
-			var current_caret_column = code_edit.get_caret_column()
-			var current_caret_line = code_edit.get_caret_line()
-			var caret_changed = (current_caret_column != last_caret_column || current_caret_line != last_caret_line)
-
-			# Determine what changed and in what order
-			var action_type = ActionType.NONE
-
-			# Check for text changes first
-			if current_char_count > last_script_char_count:
-				action_type = ActionType.TYPING
-			elif current_char_count < last_script_char_count:
-				action_type = ActionType.DELETING
-
-			# Check for selection status
-			var has_selection_now = code_edit.has_selection()
-			var new_selection = code_edit.get_selected_text()
-			var current_selection_length = new_selection.length()
-
-			if has_selection_now && current_selection_length != last_selection_length:
-				action_type = ActionType.SELECTING
-			elif !has_selection_now && last_selection_length > 0:
-				action_type = ActionType.DESELECTING
-			elif action_type == ActionType.NONE && caret_changed:
-				action_type = ActionType.CARET_MOVING
-
-			var single_select: bool = abs(last_selection_length - current_selection_length) == 1
-
-			if Input.is_action_just_pressed("ui_undo") and has_editor_focused:
-				action_type = ActionType.UNDO
-
-			if Input.is_action_just_pressed("ui_redo") and has_editor_focused:
-				action_type = ActionType.REDO
-
-			# Always update tracking variables
-			last_script_char_count = current_char_count
-			last_caret_column = current_caret_column
-			last_caret_line = current_caret_line
-
-			# Handle sound based on action type
-			match action_type:
-				ActionType.UNDO:
-					undo_sound_player.play()
-					return true
-				ActionType.REDO:
-					redo_sound_player.play()
-					return true
-				ActionType.TYPING:
-					play_random_typing_sound()
-					return true
-				ActionType.DELETING:
-					deleting_sound_player.play()
-					return true
-				ActionType.SELECTING:
-					var current_selection_mode = code_edit.get_selection_mode()
-					match current_selection_mode:
-						CodeEdit.SelectionMode.SELECTION_MODE_WORD:
-							selecting_word_sound_player.play()
-						CodeEdit.SelectionMode.SELECTION_MODE_SHIFT, CodeEdit.SelectionMode.SELECTION_MODE_LINE:
-							if single_select:
-								play_selection_sound(code_edit, current_selection_length, new_selection)
-							else:
-								selecting_all_sound_player.play()
-						_:
-							play_selection_sound(code_edit, current_selection_length, new_selection)
-					last_selection_length = current_selection_length
-					return true
-				ActionType.DESELECTING:
-					has_unselected = true
-					last_selection_length = 0
-					deselecting_sound_player.play()
-					return true
-				ActionType.CARET_MOVING:
-					caret_sound_player.play()
-					return true
-
-			# Update selection status
-			if has_selection_now:
-				has_unselected = false
-				last_selection_length = current_selection_length
-			else:
-				last_selection_length = 0
+		return play_editor_sounds(code_edit)
 	return false
+
+func play_shader_editor_sounds() -> bool:
+	var sound_played = false
+	for editor_id in shader_editors:
+		var editor_info = shader_editors[editor_id]
+		var code_edit: CodeEdit = editor_info["editor"]
+		if is_instance_valid(code_edit):
+			sound_played = play_editor_sounds(code_edit)
+			if sound_played:
+				break
+
+	return sound_played
+
+func handle_action(action_type: ActionType, code_edit: CodeEdit, current_selection_length: int, new_selection: String) -> bool:
+	match action_type:
+		ActionType.UNDO:
+			undo_sound_player.play()
+			return true
+		ActionType.REDO:
+			redo_sound_player.play()
+			return true
+		ActionType.TYPING:
+			play_random_typing_sound()
+			return true
+		ActionType.DELETING:
+			deleting_sound_player.play()
+			return true
+		ActionType.SELECTING:
+			handle_selection(code_edit, current_selection_length, new_selection)
+			return true
+		ActionType.DESELECTING:
+			has_unselected = true
+			last_selection_length = 0
+			deselecting_sound_player.play()
+			return true
+		ActionType.CARET_MOVING:
+			caret_sound_player.play()
+			return true
+	return false
+
+func handle_selection(code_edit: CodeEdit, current_selection_length: int, new_selection: String) -> void:
+	var single_select: bool = abs(last_selection_length - current_selection_length) == 1
+	var current_selection_mode = code_edit.get_selection_mode()
+
+	match current_selection_mode:
+		CodeEdit.SelectionMode.SELECTION_MODE_WORD:
+			selecting_word_sound_player.play()
+		CodeEdit.SelectionMode.SELECTION_MODE_SHIFT, CodeEdit.SelectionMode.SELECTION_MODE_LINE:
+			if single_select:
+				play_selection_sound(code_edit, current_selection_length, new_selection)
+			else:
+				selecting_all_sound_player.play()
+		_:
+			play_selection_sound(code_edit, current_selection_length, new_selection)
+	last_selection_length = current_selection_length
 
 func play_selection_sound(code_edit: CodeEdit, selection_length: int, new_selection: String) -> bool:
 	var current_time = Time.get_ticks_msec() / 1000.0
@@ -297,7 +321,7 @@ func play_selection_sound(code_edit: CodeEdit, selection_length: int, new_select
 
 	# Base cooldown and pitch calculations
 	var selection_cooldown: float = 0.025
-	var base_pitch = 0.9
+	var base_pitch = 0.8
 
 	# Adjust pitch based on both selection length and velocity
 	var length_factor = min(selection_length / 500.0, 0.25)
@@ -320,25 +344,6 @@ func play_selection_sound(code_edit: CodeEdit, selection_length: int, new_select
 		last_selection_length = selection_length
 	return false
 
-func play_shader_editor_sounds() -> bool:
-	var sound_played = false
-	for editor_id in shader_editors:
-		var editor_info = shader_editors[editor_id]
-		var code_edit = editor_info["editor"]
-		if is_instance_valid(code_edit):
-			var current_char_count = code_edit.get_text().length()
-			var previous_count = last_char_counts.get(editor_id, 0)
-
-			# Typing?
-			if current_char_count > previous_count:
-				typing_sound_player.play()
-				sound_played = true
-			last_char_counts[editor_id] = current_char_count
-
-			if sound_played:
-				break
-
-	return sound_played
 
 func find_shader_editor_wrapper() -> void:
 	var base_control = EditorInterface.get_base_control()
