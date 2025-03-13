@@ -17,4 +17,3 @@ func _init(p_code_edit: CodeEdit) -> void:
 	selection_length = 0
 	has_unselected = false
 	last_selection_time = 0.0
-# asdadadadasasaaaaasds

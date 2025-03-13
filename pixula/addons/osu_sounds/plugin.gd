@@ -15,7 +15,7 @@ var save_sound_player: AudioStreamPlayer = null
 var copy_sound_player: AudioStreamPlayer = null
 var paste_sound_player: AudioStreamPlayer = null
 
-var sound_players_multiplier: Dictionary[AudioStreamPlayer, float]
+var sound_player_datas: Array[SoundPlayerData]
 
 # sounds
 var typing_sounds: Array[Resource]
@@ -67,23 +67,24 @@ func _shortcut_input(event: InputEvent) -> void:
 			save_sound_player.play()
 
 func _exit_tree() -> void:
-	for player in sound_players_multiplier.keys():
-		player.queue_free()
-	sound_players_multiplier.clear()
+	for data: SoundPlayerData in sound_player_datas:
+		data.player.queue_free()
 	set_process(false)
 
 func create_sound_player(volume_multiplier: float = 1.0) -> AudioStreamPlayer:
-	var player: AudioStreamPlayer = AudioStreamPlayer.new()
-	player.volume_db = volume_db * volume_multiplier
-	add_child(player)
-	sound_players_multiplier[player] = volume_multiplier
-	return player
+	var player_data: SoundPlayerData = SoundPlayerData.new(volume_db, volume_multiplier)
+	player_data.volume_multiplier = volume_multiplier
+	player_data.player.volume_db = volume_db * player_data.volume_multiplier
+	add_child(player_data.player)
+	sound_player_datas.append(player_data)
+	return player_data.player
 
 func _on_settings_changed() -> void:
 	if ProjectSettings.has_setting("osu_sounds/volume_db"):
 		volume_db = ProjectSettings.get_setting("osu_sounds/volume_db")
-		for player in sound_players_multiplier.keys():
-			player.volume_db = volume_db * sound_players_multiplier[player]
+		for player_data: SoundPlayerData in sound_player_datas:
+			player_data.player.volume_db = volume_db * player_data.volume_multiplier
+
 
 func initialize() -> void:
 	typing_sound_player = create_sound_player()
@@ -96,8 +97,8 @@ func initialize() -> void:
 	undo_sound_player = create_sound_player()
 	save_sound_player = create_sound_player(1.5)
 	deleting_sound_player = create_sound_player()
-	copy_sound_player = create_sound_player(1.5)
-	paste_sound_player = create_sound_player(1.5)
+	copy_sound_player = create_sound_player()
+	paste_sound_player = create_sound_player(1.3)
 
 func load_sounds() -> void:
 	typing_sounds.append(load("res://addons/osu_sounds/keyboard_sounds/key-press-1.mp3"))
@@ -113,11 +114,10 @@ func load_sounds() -> void:
 	undo_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-invalid.wav")
 	redo_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-confirm.mp3")
 	caret_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-movement.mp3")
-	save_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/badge-dink.wav")
-	copy_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/date-impact.wav")
+	save_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/date-impact.wav")
+	copy_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/check-on.wav")
 	paste_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/badge-dink-max.wav")
 	deleting_sound_player.stream = load("res://addons/osu_sounds/keyboard_sounds/key-delete.mp3")
-
 
 func add_new_editor(code_edit: CodeEdit, editor_id: String) -> void:
 	if not editors.has(editor_id):
@@ -130,14 +130,11 @@ func play_random_typing_sound() -> void:
 
 func _enable_plugin() -> void:
 	add_volume_setting()
-	print("Has it now: ", ProjectSettings.has_setting("osu_sounds/volume_db"))
 
 func _disable_plugin() -> void:
 	if ProjectSettings.has_setting("osu_sounds/volume_db"):
 		ProjectSettings.set_setting("osu_sounds/volume_db", null)
 		ProjectSettings.save()
-
-	print("Present: ", ProjectSettings.has_setting("osu_sounds/volume_db"))
 
 func add_volume_setting() -> void:
 	if not ProjectSettings.has_setting("osu_sounds/volume_db"):
@@ -195,7 +192,7 @@ func register_script_editor() -> void:
 			if not editors.has(editor_id):
 				add_new_editor(code_edit, editor_id)
 			else:
-				editors[editor_id].code_edit = code_edit # update edit
+				editors[editor_id].code_edit = code_edit
 
 func play_shader_editor_sounds() -> bool:
 	var sound_played = false
@@ -277,7 +274,6 @@ func handle_action(action_type: ActionType, code_edit: CodeEdit, current_selecti
 			redo_sound_player.play()
 			return true
 		ActionType.COPY:
-			copy_sound_player.pitch_scale = 1.5
 			copy_sound_player.play()
 			return true
 		ActionType.PASTE:
