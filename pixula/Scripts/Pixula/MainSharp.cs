@@ -251,7 +251,7 @@ public partial class MainSharp : Node2D
 		GetWindow().Title = Engine.GetFramesPerSecond().ToString();
 	}
 
-    private void SimulateActive()
+	private void SimulateActive()
 	{
 		processedPositions.Clear();
 		Array.Copy(CurrentPixels, NextPixels, CurrentPixels.Length);

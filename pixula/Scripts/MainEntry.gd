@@ -13,6 +13,7 @@ signal material_changed(material_type : MaterialType, cursor_size : int)
 @onready var speed_slider: HSlider = $Overlay/MainPanelContainer/MarginContainer/VBoxContainer/Speed/SpeedSlider
 @onready var timer = $Timer
 
+
 # Simulation
 @export var spawn_radius = 5
 @export var pixel_size = 8
