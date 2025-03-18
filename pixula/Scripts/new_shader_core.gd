@@ -42,7 +42,7 @@ func create_image() -> Image:
 	var initial_count = 0
 	for x in world_viewport.size.x:
 		for y in world_viewport.size.y:
-			if randf_range(0, 1) <= 0.2:
+			if randf_range(0, 1) <= 0.9:
 				initial_count += 1
 				image.set_pixel(x, y, Color(1.0, 0.0, 0.0, 1.0))
 			else:
