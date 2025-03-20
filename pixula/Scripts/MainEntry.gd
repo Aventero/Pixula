@@ -105,6 +105,7 @@ func _process(delta: float) -> void:
 
 # UI Setup
 func setup_ui() -> void:
+	
 	# Setup Spawn Radius
 	spawn_radius_label.text = str(spawn_radius)
 	spawn_radius_slider.value = spawn_radius
@@ -186,7 +187,6 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_released("SPAWN_WATER") or event.is_action_released("SPAWN_SAND"):
 		is_drawing = false
 
-
 func check_mouse_input() -> void:
 	var current_mouse_pos: Vector2i = get_mouse_tile_pos()
 	simulator.MousePosition = current_mouse_pos
@@ -209,7 +209,6 @@ func check_mouse_input() -> void:
 			simulator.SpawnInRadius(point.x, point.y, spawn_radius, material)
 
 		previous_mouse_pos = current_mouse_pos
-
 
 func get_line_points(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
 	# Array to hold points in line
@@ -250,7 +249,6 @@ func get_line_points(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
 			current_y += step_y
 
 	return line_points
-
 
 func spawn_material_at_mouse(material_type: MaterialType) -> void:
 	var mouse_pos: Vector2i = get_mouse_tile_pos()

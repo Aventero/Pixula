@@ -8,6 +8,7 @@
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_vsi1d"]
 shader = ExtResource("1_3k7wv")
 shader_parameter/iteration_count = 0
+shader_parameter/is_spawning = false
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_p36e1"]
 shader = ExtResource("1_xco8e")
@@ -25,10 +26,12 @@ gradient = SubResource("Gradient_3k7wv")
 width = 48
 height = 27
 
-[node name="PixelShader" type="Node2D" node_paths=PackedStringArray("texture_rect")]
+[node name="PixelShader" type="Node2D" node_paths=PackedStringArray("world_rect", "world_viewport")]
 texture_filter = 3
 script = ExtResource("1_p36e1")
-texture_rect = NodePath("CanvasLayer/SubViewportContainer/WorldViewport2/TextureRect")
+world_rect = NodePath("CanvasLayer/SubViewportContainer/WorldViewport/WorldRect")
+spawn_radius = 5
+world_viewport = NodePath("CanvasLayer/SubViewportContainer/WorldViewport")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -43,17 +46,17 @@ grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 stretch = true
-stretch_shrink = 2
+stretch_shrink = 8
 
-[node name="WorldViewport2" type="SubViewport" parent="CanvasLayer/SubViewportContainer"]
+[node name="WorldViewport" type="SubViewport" parent="CanvasLayer/SubViewportContainer"]
 disable_3d = true
 handle_input_locally = false
 canvas_item_default_texture_filter = 3
-size = Vector2i(960, 540)
+size = Vector2i(240, 135)
 render_target_clear_mode = 1
-render_target_update_mode = 0
+render_target_update_mode = 4
 
-[node name="TextureRect" type="TextureRect" parent="CanvasLayer/SubViewportContainer/WorldViewport2" node_paths=PackedStringArray("world_viewport")]
+[node name="WorldRect" type="TextureRect" parent="CanvasLayer/SubViewportContainer/WorldViewport" node_paths=PackedStringArray("world_viewport", "sand_spawner")]
 texture_filter = 1
 material = SubResource("ShaderMaterial_vsi1d")
 anchors_preset = 15
@@ -65,6 +68,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("2_vsi1d")
 world_viewport = NodePath("..")
+sand_spawner = NodePath("../../../..")
 
 [node name="TextureRect" type="TextureRect" parent="CanvasLayer"]
 visible = false
@@ -83,4 +87,17 @@ offset_right = 222.0
 offset_bottom = 100.0
 text = "Count Pixels"
 
-[connection signal="pressed" from="CanvasLayer/Count_Pixels" to="CanvasLayer/SubViewportContainer/WorldViewport2/TextureRect" method="_on_count_pixels_pressed"]
+[node name="Next Frame" type="Button" parent="CanvasLayer"]
+offset_left = 308.0
+offset_top = 70.0
+offset_right = 458.0
+offset_bottom = 103.0
+text = "Next Pixel"
+
+[node name="FPS_Label" type="Label" parent="CanvasLayer"]
+offset_right = 40.0
+offset_bottom = 29.0
+text = "123"
+
+[connection signal="pressed" from="CanvasLayer/Count_Pixels" to="CanvasLayer/SubViewportContainer/WorldViewport/WorldRect" method="_on_count_pixels_pressed"]
+[connection signal="pressed" from="CanvasLayer/Next Frame" to="CanvasLayer/SubViewportContainer/WorldViewport/WorldRect" method="_on_next_frame_pressed"]

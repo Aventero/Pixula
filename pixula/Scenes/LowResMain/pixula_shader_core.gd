@@ -2,8 +2,12 @@ class_name SandSpawner
 extends Node
 
 # Reference to your TextureRect controller
-@export var texture_rect: TextureRect
-@export var spawn_radius: int = 5
+@export var world_rect: TextureRect
+@export var spawn_radius: int = 10
+@export var world_viewport : SubViewport
+
+var spawn_texture: ImageTexture
+var spawn_image: Image
 
 # Material types
 enum MaterialType {
@@ -16,10 +20,21 @@ var is_drawing: bool = false
 var previous_mouse_pos: Vector2i
 
 func _ready() -> void:
-	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)  
+	# DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED) 
+	setup_spawn_texture()
+
+
+func setup_spawn_texture() -> void:
+	# Setup spawn texture
+	spawn_image = Image.create(world_viewport.size.x, world_viewport.size.y, false, Image.FORMAT_RGBAF)
+	spawn_texture = ImageTexture.create_from_image(spawn_image)
+	spawn_image.fill(Color(100, 100, 100, 100))
+	print(spawn_image.get_pixel(0,0))
+	print(spawn_image.get_pixel(1,1))
+	spawn_texture.update(spawn_image)
 
 func _process(_delta: float) -> void:
-	DisplayServer.window_set_title("My Game - FPS: " + str(Engine.get_frames_per_second()))
+	$CanvasLayer/FPS_Label.text = str(Engine.get_frames_per_second())
 	check_mouse_input()
 
 func _input(event: InputEvent) -> void:
@@ -36,27 +51,16 @@ func check_mouse_input() -> void:
 		for point in points:
 			spawn_in_radius(point.x, point.y, spawn_radius, MaterialType.SAND)
 		previous_mouse_pos = current_mouse_pos
+		
 
-# Spawn sand in a circular radius around the given point
 func spawn_in_radius(center_x: int, center_y: int, radius: int, material_type: int) -> void:
-	# Determine which texture to modify (always modify the one that will be read next)
-	var target_texture = texture_rect.texture_a if texture_rect.current_read == 1 else texture_rect.texture_b
-	var image = target_texture.get_image()
-	
-	# Calculate bounds of the circle
-	for x in range(max(0, center_x - radius), min(image.get_width(), center_x + radius + 1)):
-		for y in range(max(0, center_y - radius), min(image.get_height(), center_y + radius + 1)):
-			# Check if the point is within the circular radius
+	# Draw to spawn buffer instead of directly to the simulation texture
+	for x in range(max(0, center_x - radius), min(spawn_image.get_width(), center_x + radius + 1)):
+		for y in range(max(0, center_y - radius), min(spawn_image.get_height(), center_y + radius + 1)):
 			var dx = x - center_x
 			var dy = y - center_y
-			var distance_squared = dx * dx + dy * dy
-			
-			if distance_squared <= radius * radius:
-				# Set the pixel to sand (red color)
-				image.set_pixel(x, y, Color(1.0, 0.0, 0.0, 1.0))
-	
-	# Update the texture without creating a new one
-	target_texture.update(image)
+			if dx * dx + dy * dy <= radius * radius:
+				spawn_image.set_pixel(x, y, Color(material_type, 0.0, 0.0, 1.0))
 
 # Get all points in a line between two points
 func get_line_points(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
@@ -99,11 +103,18 @@ func get_line_points(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
 
 	return line_points
 
+func get_spawn_texture() -> ImageTexture:
+	spawn_texture.update(spawn_image)
+	return spawn_texture
+
+func clear_spawn_buffer() -> void:
+	spawn_image.fill(Color(100, 100, 100, 100))
+
 # Convert mouse position to grid coordinates
 func get_mouse_tile_pos() -> Vector2i:
 	var mouse_pos = get_viewport().get_mouse_position()
 	var viewport_size = get_viewport().get_visible_rect().size
-	var texture_size = texture_rect.texture.get_size()
+	var texture_size = world_rect.texture.get_size()
 	
 	# Calculate scale factors
 	var scale_x = viewport_size.x / texture_size.x
