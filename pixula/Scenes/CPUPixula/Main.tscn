@@ -1,6 +1,6 @@
 [gd_scene load_steps=41 format=3 uid="uid://cxcvn0k2w0x3u"]
 
-[ext_resource type="Script" uid="uid://b0x1m6lhkcbb4" path="res://Scripts/MainEntry.gd" id="1_fjtcw"]
+[ext_resource type="Script" uid="uid://b0x1m6lhkcbb4" path="res://Scripts/Pixula/MainEntry.gd" id="1_fjtcw"]
 [ext_resource type="Script" uid="uid://d2xhkm1orqb4f" path="res://Scripts/Pixula/MainSharp.cs" id="1_u0yqt"]
 [ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://UI/Sprites/Standard_Icons/Pixula_Icon.png" id="2_yt66i"]
 [ext_resource type="Shader" uid="uid://3f2aevp2sl7c" path="res://Shaders/Wobble.gdshader" id="3_8a7hv"]
@@ -8,7 +8,7 @@
 [ext_resource type="Texture2D" uid="uid://dili5fe4u1uet" path="res://UI/Sprites/Material_Icons/Air_Icon.png" id="4_we8p7"]
 [ext_resource type="Texture2D" uid="uid://cydsabxv8780s" path="res://UI/Sprites/Material_Icons/Sand_Icon.png" id="5_tremm"]
 [ext_resource type="Texture2D" uid="uid://bon0k40pry2rx" path="res://UI/Sprites/Material_Icons/Water_Icon.png" id="6_hco3j"]
-[ext_resource type="Script" uid="uid://c28qfg421io6y" path="res://Scripts/material_button.gd" id="6_sdk4a"]
+[ext_resource type="Script" uid="uid://c28qfg421io6y" path="res://Scripts/Pixula/UI/material_button.gd" id="6_sdk4a"]
 [ext_resource type="Texture2D" uid="uid://dyqwfh5jvgas1" path="res://UI/Sprites/Material_Icons/Rock_Icon.png" id="7_pb25d"]
 [ext_resource type="Texture2D" uid="uid://vso6awjwcax" path="res://UI/Sprites/Material_Icons/Wall_Icon.png" id="8_aswaw"]
 [ext_resource type="Texture2D" uid="uid://kwnkwo23r5fc" path="res://UI/Sprites/Material_Icons/Lava_Icon.png" id="8_fq0cl"]
@@ -31,7 +31,7 @@
 [ext_resource type="Texture2D" uid="uid://dc77y73ieqks7" path="res://UI/Sprites/Material_Icons/Plant_Icon.png" id="21_4n42c"]
 [ext_resource type="Texture2D" uid="uid://vrkufrvqqkrv" path="res://UI/Sprites/Material_Icons/Oil_Icon.png" id="24_4yxf6"]
 [ext_resource type="Texture2D" uid="uid://ds74b0riuc1as" path="res://UI/Sprites/Standard_Icons/Cursor.png" id="25_4n42c"]
-[ext_resource type="Script" uid="uid://875d85aubtb4" path="res://Scenes/cursor.gd" id="26_c5snn"]
+[ext_resource type="Script" uid="uid://875d85aubtb4" path="res://Scripts/Pixula/UI/cursor.gd" id="26_c5snn"]
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_rwn16"]
 shader = ExtResource("3_8a7hv")

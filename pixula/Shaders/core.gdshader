@@ -6,7 +6,8 @@ uniform sampler2D spawn_in_texture;
 uniform int iteration_count;
 uniform bool is_spawning;
 
-// Material definitions as floats
+const int SPAWN_FILLER = -99;
+
 const int AIR = 0;
 const int SAND = 1;
 const int WATER = 2;
@@ -40,26 +41,48 @@ int get_material(ivec2 pos) {
         return SAND;
     if (material_color.r <= 0.001 && abs(material_color.b - 1.0) < 0.001)
         return WATER;
+
     return AIR;
 }
+
+int get_spawn_material(ivec2 pos) {
+    // Check if spawning is active and position is within bounds
+    if (!is_spawning)
+		return SPAWN_FILLER;
+
+    ivec2 texture_size = textureSize(spawn_in_texture, 0);
+    if (pos.x < 0 || pos.y < 0 || pos.x >= texture_size.x || pos.y >= texture_size.y) {
+        return SPAWN_FILLER;
+    }
+
+    vec3 material_color = texelFetch(spawn_in_texture, pos, 0).rgb;
+    if (material_color.r > 0.5 && material_color.b < 0.1)  // Added blue check
+        return SAND;
+    if (material_color.b > 0.5 && material_color.r < 0.1)  // Added red check
+        return WATER;
+	if (material_color.r >= 99.0)
+		return SPAWN_FILLER;
+    return AIR;
+}
+
 
 // 01
 // 23
 
 // 21
-// 03 
+// 03
 void process_solid_block(ivec2 block_pos, inout int block_materials[4], inout int block_states[4]) {
     float rand = rand_value_for_block(block_pos);
 	int TL = block_states[0];
 	int TR = block_states[1];
 	int BL = block_states[2];
 	int BR = block_states[3];
-	
+
 	int TL_MAT = block_materials[0];
 	int TR_MAT = block_materials[1];
 	int BL_MAT = block_materials[2];
 	int BR_MAT = block_materials[3];
-	
+
     // FALLING
     // SX
     // XX
@@ -79,7 +102,7 @@ void process_solid_block(ivec2 block_pos, inout int block_materials[4], inout in
 		block_materials[3] = TR_MAT;
         return;
     }
-	
+
     // SS
     // XX
     if (TL == SOLID && TR == SOLID &&
@@ -152,17 +175,17 @@ void process_liquid_block(ivec2 block_pos, inout int block_materials[4], inout i
 	int TR = block_states[1];
 	int BL = block_states[2];
 	int BR = block_states[3];
-	
+
 	int TL_MAT = block_materials[0];
 	int TR_MAT = block_materials[1];
 	int BL_MAT = block_materials[2];
 	int BR_MAT = block_materials[3];
-	
-	
+
+
     // FALLING
     // LX
     // XX
-    if (TL == LIQUID && 
+    if (TL == LIQUID &&
         BL >  LIQUID) {
         block_materials[0] = BL_MAT;
         block_materials[2] = TL_MAT;
@@ -177,8 +200,8 @@ void process_liquid_block(ivec2 block_pos, inout int block_materials[4], inout i
         block_materials[3] = TR_MAT;
         return;
     }
-    
-    // LL 
+
+    // LL
     // XX
     if (TL == LIQUID && TR == LIQUID &&
         BL >  LIQUID && BR >  LIQUID) {
@@ -188,7 +211,7 @@ void process_liquid_block(ivec2 block_pos, inout int block_materials[4], inout i
         block_materials[3] = TR_MAT;
         return;
     }
-	
+
     // LL  LS
     // XL  XS
     if (TL == LIQUID && TR < GAS &&
@@ -197,7 +220,7 @@ void process_liquid_block(ivec2 block_pos, inout int block_materials[4], inout i
         block_materials[2] = TL_MAT;
         return;
     }
-	
+
     // LL  SL
     // LX  SX
     if (TL < GAS && TR == LIQUID &&
@@ -206,7 +229,7 @@ void process_liquid_block(ivec2 block_pos, inout int block_materials[4], inout i
         block_materials[3] = TR_MAT;
         return;
     }
-	
+
     // XL
     // LX
     if (TL >  LIQUID && TR == LIQUID &&
@@ -244,12 +267,12 @@ void process_liquid_block(ivec2 block_pos, inout int block_materials[4], inout i
 
     // For determining direction based on y-coordinate:
     bool is_even_height = (block_pos.y % 2 == 0);
-    
+
     // LIQUID FLOWING LEFT (y is even)
-    // LX 
-    // SS  
+    // LX
+    // SS
     if (TL == LIQUID && TR >  LIQUID &&
-        BL <  GAS    && BR <  GAS && 
+        BL <  GAS    && BR <  GAS &&
         is_even_height && rand <= 0.95) {
         block_materials[0] = TR_MAT;
         block_materials[1] = TL_MAT;
@@ -257,40 +280,15 @@ void process_liquid_block(ivec2 block_pos, inout int block_materials[4], inout i
     }
 
     // LIQUID FLOWING RIGHT (y is odd)
-    // XL 
-    // SS  
+    // XL
+    // SS
     if (TL >  LIQUID && TR == LIQUID &&
-        BL <  GAS    && BR <  GAS && 
+        BL <  GAS    && BR <  GAS &&
         !is_even_height && rand <= 0.95) {
         block_materials[0] = TR_MAT;
         block_materials[1] = TL_MAT;
         return;
     }
-	
-	
-    //// LIQUID FLOWING LEFT (y is even)
-    //// LX 
-    //// LL  
-    //if (TL == LIQUID && TR >  LIQUID &&
-        //BL == LIQUID && BR == LIQUID && 
-        //is_even_height && rand <= 0.95) {
-        //block_materials[0] = TR_MAT;
-        //block_materials[1] = TL_MAT;
-        //return;
-    //}
-//
-    //// LIQUID FLOWING RIGHT (y is odd)
-    //// XL 
-    //// LL  
-    //if (TL >  LIQUID && TR == LIQUID &&
-        //BL == LIQUID && BR == LIQUID && 
-        //!is_even_height && rand <= 0.95) {
-        //block_materials[0] = TR_MAT;
-        //block_materials[1] = TL_MAT;
-        //return;
-    //}
-	
-
 }
 
 void process_block(ivec2 block_pos, inout int block_materials[4], inout int block_states[4]) {
@@ -334,22 +332,7 @@ vec3 get_material_color(int material) {
     return vec3(0.0, 1.0, 0.0);  // Green for debugging
 }
 
-int get_spawn_material(ivec2 pos) {
-    // Check if spawning is active and position is within bounds
-    if (!is_spawning) return AIR;
 
-    ivec2 texture_size = textureSize(spawn_in_texture, 0);
-    if (pos.x < 0 || pos.y < 0 || pos.x >= texture_size.x || pos.y >= texture_size.y) {
-        return AIR;
-    }
-
-    vec3 material_color = texelFetch(spawn_in_texture, pos, 0).rgb;
-    if (material_color.r > 0.5 && material_color.b < 0.1)  // Added blue check
-        return SAND;
-    if (material_color.b > 0.5 && material_color.r < 0.1)  // Added red check
-        return WATER;
-    return AIR;
-}
 
 int get_material_state(int material_type) {
 	switch (material_type) {
@@ -393,17 +376,15 @@ void fragment() {
         int spawn_material = get_spawn_material(pos);
 
 		// Spawn in air in rest of block
-		if (spawn_material != AIR) {
-		    if (block_materials[index] == AIR) {
-		        block_materials[index] = spawn_material;
-		        block_states[index] = get_material_state(spawn_material);
-		    }
+		if (spawn_material != SPAWN_FILLER) {
+	        block_materials[index] = spawn_material;
+	        block_states[index] = get_material_state(spawn_material);
 		}
     }
-	
+
     process_block(block_pos, block_materials, block_states);
 
-    int index = get_own_index_in_block(pos, block_pos); 
+    int index = get_own_index_in_block(pos, block_pos);
     int material_type_in_block = block_materials[index]; // Find my material in the block
     vec3 color = get_material_color(material_type_in_block);
 

@@ -54,4 +54,4 @@ func set_material_as_cursor(selected_material: MainEntry.MaterialType, cursor_sc
 		var viewport_rect = get_viewport().get_visible_rect()
 
 		self.texture = ImageTexture.create_from_image(image)
-		self.offset = Vector2(main_entry.pixel_size / 2.0 ,main_entry.pixel_size / 2.0)
+		self.offset = Vector2(main_entry.pixel_size / 2.0, main_entry.pixel_size / 2.0)

@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://UI/Sprites/Standard_Icons/Pixula_Icon.png" id="2_e437c"]
 [ext_resource type="Theme" uid="uid://x4ngw312h2qp" path="res://UI/TheTheme.tres" id="3_ghrq1"]
 [ext_resource type="Texture2D" uid="uid://dili5fe4u1uet" path="res://UI/Sprites/Material_Icons/Air_Icon.png" id="4_3arbj"]
-[ext_resource type="Script" uid="uid://c28qfg421io6y" path="res://Scripts/material_button.gd" id="5_0ats1"]
+[ext_resource type="Script" uid="uid://c28qfg421io6y" path="res://Scripts/Pixula/UI/material_button.gd" id="5_0ats1"]
 [ext_resource type="Texture2D" uid="uid://cydsabxv8780s" path="res://UI/Sprites/Material_Icons/Sand_Icon.png" id="6_sxq1l"]
 [ext_resource type="Texture2D" uid="uid://kwnkwo23r5fc" path="res://UI/Sprites/Material_Icons/Lava_Icon.png" id="7_n1ytn"]
 [ext_resource type="Texture2D" uid="uid://bon0k40pry2rx" path="res://UI/Sprites/Material_Icons/Water_Icon.png" id="8_qejw6"]

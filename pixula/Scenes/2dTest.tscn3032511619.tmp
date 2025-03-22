@@ -1,0 +1,41 @@
+[gd_scene load_steps=4 format=3 uid="uid://cmb2dtitbl3kw"]
+
+[ext_resource type="Texture2D" uid="uid://dj1dgkklcky1s" path="res://UI/Sprites/icon.svg" id="1_rov2w"]
+
+[sub_resource type="GDScript" id="GDScript_gham5"]
+script/source = "extends RigidBody2D
+
+@onready var initial_position = position
+@onready var screen_notifier: VisibleOnScreenNotifier2D = $VisibleOnScreenNotifier2D
+
+
+
+func _on_visible_on_screen_enabler_2d_screen_entered() -> void:
+	print(\"enter?\", screen_notifier.is_on_screen())
+
+func _on_visible_on_screen_enabler_2d_screen_exited() -> void:
+	position = initial_position
+	
+"
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_rov2w"]
+
+[node name="2dTest" type="Node2D"]
+
+[node name="RigidBody2D" type="RigidBody2D" parent="."]
+script = SubResource("GDScript_gham5")
+
+[node name="VisibleOnScreenNotifier2D" type="VisibleOnScreenNotifier2D" parent="RigidBody2D"]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RigidBody2D"]
+shape = SubResource("CircleShape2D_rov2w")
+
+[node name="Sprite2D" type="Sprite2D" parent="RigidBody2D"]
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("1_rov2w")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(6.035, 6.035)
+
+[connection signal="screen_entered" from="RigidBody2D/VisibleOnScreenNotifier2D" to="RigidBody2D" method="_on_visible_on_screen_enabler_2d_screen_entered"]
+[connection signal="screen_exited" from="RigidBody2D/VisibleOnScreenNotifier2D" to="RigidBody2D" method="_on_visible_on_screen_enabler_2d_screen_exited"]

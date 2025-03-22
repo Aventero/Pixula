@@ -1,0 +1,38 @@
+[gd_scene load_steps=3 format=3 uid="uid://cmb2dtitbl3kw"]
+
+[ext_resource type="Texture2D" uid="uid://dj1dgkklcky1s" path="res://UI/Sprites/icon.svg" id="1_rov2w"]
+
+[sub_resource type="GDScript" id="GDScript_rov2w"]
+script/source = "extends Node2D
+
+var move_speed: int = 10000
+@onready var initial_position = position
+
+func _process(delta: float) -> void:
+	if Input.is_action_pressed(\"MOVE_RIGHT\"):
+		position += Vector2(1, 0) * delta * move_speed
+	if Input.is_action_pressed(\"MOVE_LEFT\"):
+		position += Vector2(-1, 0) * delta * move_speed
+
+
+func _on_exit_screen() -> void:
+	# Respawn me
+	position = initial_position
+	
+"
+
+[node name="2dTest" type="Node2D"]
+
+[node name="RigidBody2D" type="Node2D" parent="."]
+script = SubResource("GDScript_rov2w")
+
+[node name="OnScreenNotifier" type="VisibleOnScreenEnabler2D" parent="RigidBody2D"]
+
+[node name="Sprite2D" type="Sprite2D" parent="RigidBody2D"]
+scale = Vector2(0.1, 0.1)
+texture = ExtResource("1_rov2w")
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(6.035, 6.035)
+
+[connection signal="screen_exited" from="RigidBody2D/OnScreenNotifier" to="RigidBody2D" method="_on_exit_screen"]

@@ -141,7 +141,6 @@ func on_pixel_size_changed(value: float) -> void:
 	grid_height = height / pixel_size
 	material_changed.emit(selected_material, spawn_radius)
 
-
 func on_drag_ended(value_changed: bool) -> void:
 	if value_changed:
 		simulator.ChangeSize(pixel_size, width, height, grid_width, grid_height)
@@ -256,7 +255,7 @@ func spawn_material_at_mouse(material_type: MaterialType) -> void:
 
 func get_mouse_tile_pos() -> Vector2i:
 	var mouse_pos = get_viewport().get_mouse_position()
-	var viewport_rect = get_viewport().get_visible_rect()
+	#var viewport_rect = get_viewport().get_visible_rect()
 
 	# Calculate grid position using viewport rect size
 	var grid_x : int = int(mouse_pos.x / pixel_size)
