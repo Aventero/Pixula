@@ -1,3 +1,5 @@
+class_name PixulaShaderCore
+
 extends TextureRect
 var current_read: int = 0
 
@@ -11,6 +13,10 @@ var current_read: int = 0
 @export var sim_rect_b: TextureRect
 var sim_texture_a: ImageTexture
 var sim_texture_b: ImageTexture
+
+var writing_viewport: SubViewport = simulation_viewport_b if current_read == 0 else simulation_viewport_a
+var reading_rect: TextureRect = sim_rect_a if current_read == 0 else sim_rect_b
+var writing_rect: TextureRect = sim_rect_b if current_read == 0 else sim_rect_a
 
 var clock: float = 0
 var frame_rate: float = 300.0
@@ -55,6 +61,7 @@ func initialize() -> void:
 	
 	self.texture = sim_texture_a
 	current_read = 0
+	swap_buffers()
 	
 func create_empty_image() -> Image:
 	var image = Image.create(simulation_viewport_a.size.x, simulation_viewport_a.size.y, false, Image.FORMAT_RGBH)
@@ -81,19 +88,19 @@ func create_and_fill_image() -> Image:
 	print(initial_count)
 	return image
 
+func swap_buffers() -> void:
+	writing_viewport = simulation_viewport_b if current_read == 0 else simulation_viewport_a
+	reading_rect = sim_rect_a if current_read == 0 else sim_rect_b
+	writing_rect = sim_rect_b if current_read == 0 else sim_rect_a
+
 func update_simulation() -> void:
-	var writing_viewport: SubViewport = simulation_viewport_b if current_read == 0 else simulation_viewport_a
-	var reading_rect: TextureRect = sim_rect_a if current_read == 0 else sim_rect_b
-	var writing_rect: TextureRect = sim_rect_b if current_read == 0 else sim_rect_a
-	
 	reading_rect.material.set_shader_parameter("state_texture", writing_viewport.get_texture())
 	reading_rect.material.set_shader_parameter("iteration_count", frame_count)
-	
-	spawn_sand(writing_rect)
+	swap_buffers()
 	
 	# Render!
 	writing_viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-	await get_tree().process_frame
+	await RenderingServer.frame_post_draw
 	
 	# visualize
 	visual_rect.texture = writing_viewport.get_texture()
@@ -101,18 +108,14 @@ func update_simulation() -> void:
 	current_read = 1 - current_read
 	frame_count += 1
 	
-func swap_textures(result_image: Image) -> void:
-	if current_read == 0:
-		sim_texture_b.update(result_image)
-	else:
-		sim_texture_a.update(result_image)
-		
-	
-func spawn_sand(writing_rect: TextureRect) -> void:
-	# Get and set the spawn texture
-	if sand_spawner.is_drawing:
-		writing_rect.material.set_shader_parameter("spawn_in_texture", sand_spawner.get_spawn_texture())
-		writing_rect.material.set_shader_parameter("is_spawning", true)
-	else:
-		writing_rect.material.set_shader_parameter("is_spawning", false)
-	sand_spawner.clear_spawn_buffer()
+func spawn_sand(mouse_pos: Vector2i, spawn_radius: int, material_type: SandSpawner.MaterialType) -> void:
+	reading_rect.material.set_shader_parameter("mouse_pos", mouse_pos)
+	reading_rect.material.set_shader_parameter("spawn_radius", spawn_radius)
+	reading_rect.material.set_shader_parameter("spawn_material", material_type)
+	writing_rect.material.set_shader_parameter("mouse_pos", mouse_pos)
+	writing_rect.material.set_shader_parameter("spawn_radius", spawn_radius)
+	writing_rect.material.set_shader_parameter("spawn_material", material_type)
+
+func enable_spawning(is_spawning: bool) -> void:
+	reading_rect.material.set_shader_parameter("is_spawning", is_spawning)
+	writing_rect.material.set_shader_parameter("is_spawning", is_spawning)
