@@ -1,9 +1,11 @@
-[gd_scene load_steps=40 format=3 uid="uid://deitx1xawyjvd"]
+[gd_scene load_steps=43 format=3 uid="uid://deitx1xawyjvd"]
 
 [ext_resource type="Script" uid="uid://ck7tyjd8y4k8" path="res://Scenes/GPUPixula/pixula_shader_core.gd" id="1_p36e1"]
 [ext_resource type="Shader" uid="uid://du48tuhl5af1k" path="res://Shaders/grid.gdshader" id="1_xco8e"]
 [ext_resource type="Shader" uid="uid://o84ya2kmw4n5" path="res://Shaders/core.gdshader" id="2_8rfut"]
 [ext_resource type="Script" uid="uid://ck7e5dta5c2a3" path="res://Scripts/core_save.gd" id="3_dy024"]
+[ext_resource type="Script" uid="uid://bb05xct6pmpqs" path="res://Scripts/Pixula/GPU/framebuffer_swapper.gd" id="3_j1oxa"]
+[ext_resource type="Shader" uid="uid://ccp32skt3cv6i" path="res://Shaders/test.gdshader" id="4_pt3eu"]
 [ext_resource type="Shader" uid="uid://3f2aevp2sl7c" path="res://Shaders/Wobble.gdshader" id="5_82qfq"]
 [ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://UI/Sprites/Standard_Icons/Pixula_Icon.png" id="6_gvs1s"]
 [ext_resource type="Theme" uid="uid://x4ngw312h2qp" path="res://UI/TheTheme.tres" id="7_0k1vu"]
@@ -31,7 +33,7 @@
 [ext_resource type="Texture2D" uid="uid://drqlem5e5wi0d" path="res://UI/Sprites/Standard_Icons/CellSize.png" id="29_qxvou"]
 [ext_resource type="Texture2D" uid="uid://kmiq44bkvvy2" path="res://UI/Sprites/Standard_Icons/Clock_Icon.png" id="30_mowue"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_dy024"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_j1oxa"]
 shader = ExtResource("2_8rfut")
 shader_parameter/iteration_count = 0
 shader_parameter/is_spawning = false
@@ -39,13 +41,16 @@ shader_parameter/spawn_radius = 0
 shader_parameter/spawn_material = 0
 shader_parameter/mouse_pos = Vector2i(0, 0)
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_8rfut"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_pt3eu"]
 shader = ExtResource("2_8rfut")
 shader_parameter/iteration_count = 0
 shader_parameter/is_spawning = false
 shader_parameter/spawn_radius = 0
 shader_parameter/spawn_material = 0
 shader_parameter/mouse_pos = Vector2i(0, 0)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_xgjbb"]
+shader = ExtResource("4_pt3eu")
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_p36e1"]
 shader = ExtResource("1_xco8e")
@@ -80,15 +85,17 @@ corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
 
-[node name="PixelShader" type="Node2D" node_paths=PackedStringArray("visual_rect", "world_viewport")]
+[node name="PixelShader" type="Node2D" node_paths=PackedStringArray("visual_rect", "swapper_a", "swapper_b")]
 texture_filter = 3
 script = ExtResource("1_p36e1")
 visual_rect = NodePath("CanvasLayer/VisualRect")
-world_viewport = NodePath("CanvasLayer/SubViewportContainer/SimulationViewportA")
+swapper_a = NodePath("CanvasLayer/SubViewportContainer/SimulationViewportA/FrameBufferA")
+swapper_b = NodePath("CanvasLayer/SubViewportContainer/SimulationViewportB/FrameBufferB")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
 [node name="SubViewportContainer" type="SubViewportContainer" parent="CanvasLayer"]
+visibility_layer = 2
 texture_filter = 1
 custom_minimum_size = Vector2(100, 100)
 anchors_preset = 15
@@ -99,19 +106,20 @@ grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 stretch = true
-stretch_shrink = 4
 
 [node name="SimulationViewportA" type="SubViewport" parent="CanvasLayer/SubViewportContainer"]
 disable_3d = true
 handle_input_locally = false
 canvas_item_default_texture_filter = 3
-size = Vector2i(480, 270)
+canvas_cull_mask = 4293918722
+size = Vector2i(1920, 1080)
 render_target_clear_mode = 1
 render_target_update_mode = 4
 
-[node name="SimulationRect" type="TextureRect" parent="CanvasLayer/SubViewportContainer/SimulationViewportA"]
+[node name="FrameBufferA" type="TextureRect" parent="CanvasLayer/SubViewportContainer/SimulationViewportA" node_paths=PackedStringArray("sand_spawner", "other_buffer", "render_output_rect")]
+visibility_layer = 2
 texture_filter = 1
-material = SubResource("ShaderMaterial_dy024")
+material = SubResource("ShaderMaterial_j1oxa")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -119,19 +127,25 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-metadata/_edit_lock_ = true
+script = ExtResource("3_j1oxa")
+sand_spawner = NodePath("../../../..")
+other_buffer = NodePath("../../SimulationViewportB/FrameBufferB")
+is_writing_buffer = true
+render_output_rect = NodePath("../../../VisualRect")
 
 [node name="SimulationViewportB" type="SubViewport" parent="CanvasLayer/SubViewportContainer"]
 disable_3d = true
 handle_input_locally = false
 canvas_item_default_texture_filter = 3
-size = Vector2i(480, 270)
+canvas_cull_mask = 4293918722
+size = Vector2i(1920, 1080)
 render_target_clear_mode = 1
 render_target_update_mode = 4
 
-[node name="SimulationRect" type="TextureRect" parent="CanvasLayer/SubViewportContainer/SimulationViewportB"]
+[node name="FrameBufferB" type="TextureRect" parent="CanvasLayer/SubViewportContainer/SimulationViewportB" node_paths=PackedStringArray("sand_spawner", "other_buffer", "render_output_rect")]
+visibility_layer = 2
 texture_filter = 1
-material = SubResource("ShaderMaterial_8rfut")
+material = SubResource("ShaderMaterial_pt3eu")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -139,23 +153,20 @@ grow_horizontal = 2
 grow_vertical = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-metadata/_edit_lock_ = true
+script = ExtResource("3_j1oxa")
+sand_spawner = NodePath("../../../..")
+other_buffer = NodePath("../../SimulationViewportA/FrameBufferA")
+render_output_rect = NodePath("../../../VisualRect")
 
-[node name="VisualRect" type="TextureRect" parent="CanvasLayer" node_paths=PackedStringArray("sand_spawner", "simulation_viewport_a", "simulation_viewport_b", "visual_rect", "sim_rect_a", "sim_rect_b")]
+[node name="VisualRect" type="TextureRect" parent="CanvasLayer"]
 texture_filter = 5
+material = SubResource("ShaderMaterial_xgjbb")
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("3_dy024")
-frame_count = 0
-sand_spawner = NodePath("../..")
-simulation_viewport_a = NodePath("../SubViewportContainer/SimulationViewportA")
-simulation_viewport_b = NodePath("../SubViewportContainer/SimulationViewportB")
-visual_rect = NodePath(".")
-sim_rect_a = NodePath("../SubViewportContainer/SimulationViewportA/SimulationRect")
-sim_rect_b = NodePath("../SubViewportContainer/SimulationViewportB/SimulationRect")
 
 [node name="GridRect" type="TextureRect" parent="CanvasLayer"]
 process_mode = 4

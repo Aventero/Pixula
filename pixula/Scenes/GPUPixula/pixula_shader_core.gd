@@ -24,7 +24,8 @@ var accumulator: float = 0.0
 
 # Reference to your TextureRect controller
 @export var visual_rect: PixulaShaderCore
-@export var world_viewport : SubViewport
+@export var swapper_a: FramebufferSwapper
+@export var swapper_b: FramebufferSwapper
 
 # Material types
 enum MaterialType {
@@ -62,6 +63,9 @@ var is_drawing: bool = false
 var previous_mouse_pos: Vector2i
 
 func _ready() -> void:
+	var main_viewport = get_viewport()
+	main_viewport.canvas_cull_mask = 0b1111111111111111111111111111101 # dont render layer 2
+	
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	setup_mouse_filter($Overlay/MainPanelContainer)
 	setup_ui()
@@ -73,11 +77,13 @@ func _process(_delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("SPAWN_WATER") or event.is_action_released("SPAWN_SAND"):
 		is_drawing = false
-		visual_rect.enable_spawning(false)
+		swapper_a.enable_spawning(false)
+		swapper_b.enable_spawning(false)
 
 func check_mouse_input() -> void:
 	if _is_pressing_ui:
-		visual_rect.enable_spawning(false)
+		swapper_a.enable_spawning(false)
+		swapper_b.enable_spawning(false)
 		is_drawing = false
 		return
 		
@@ -88,9 +94,11 @@ func check_mouse_input() -> void:
 	if is_drawing:
 		var mat: MaterialType = MaterialType.AIR if Input.is_action_pressed("SPAWN_WATER") else selected_material
 		var points: Array[Vector2i] = get_line_points(previous_mouse_pos, current_mouse_pos)
-		visual_rect.enable_spawning(true)
+		swapper_a.enable_spawning(true)
+		swapper_b.enable_spawning(true)
 		for point in points:
-			visual_rect.spawn_sand(point, spawn_radius, mat)
+			swapper_a.spawn_sand(point, spawn_radius, mat)
+			swapper_b.spawn_sand(point, spawn_radius, mat)
 		
 		previous_mouse_pos = current_mouse_pos
 
@@ -139,7 +147,7 @@ func get_line_points(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
 func get_mouse_tile_pos() -> Vector2i:
 	var mouse_pos = get_viewport().get_mouse_position()
 	var viewport_size = get_viewport().get_visible_rect().size
-	var texture_size = visual_rect.texture.get_size()
+	var texture_size = swapper_a.texture.get_size()
 	
 	# Calculate scale factors
 	var scale_x = viewport_size.x / texture_size.x
