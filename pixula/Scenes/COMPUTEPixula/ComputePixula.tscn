@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://djcoiilj6jweo"]
+
+[ext_resource type="Script" uid="uid://c8vyocb8lppoc" path="res://Scripts/Pixula/GPU/pixula_comp.gd" id="1_yo03a"]
+
+[node name="ComputePixula" type="Node2D"]
+script = ExtResource("1_yo03a")

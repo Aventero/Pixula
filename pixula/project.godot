@@ -11,7 +11,7 @@ config_version=5
 [application]
 
 config/name="Pixula"
-run/main_scene="uid://deitx1xawyjvd"
+run/main_scene="uid://djcoiilj6jweo"
 config/features=PackedStringArray("4.4", "C#", "Forward Plus")
 config/icon="res://UI/Sprites/icon.svg"
 
@@ -30,7 +30,7 @@ project/assembly_name="Pixula"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/fancy_editor_sounds/plugin.cfg", "res://addons/script-ide/plugin.cfg")
+enabled=PackedStringArray("res://addons/script-ide/plugin.cfg")
 
 [global_group]
 

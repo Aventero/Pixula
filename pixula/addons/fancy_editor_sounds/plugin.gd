@@ -3,6 +3,7 @@ extends EditorPlugin
 
 #region SOUND
 const KEY_DROP: Resource = preload("res://addons/fancy_editor_sounds/key_drop.tscn")
+const KEY_ZAP: Resource = preload("res://addons/fancy_editor_sounds/key_zap.tscn")
 var sound_player_datas: Dictionary[ActionType, SoundPlayerData]
 var typing_sounds: Array[Resource]
 enum ActionType {
@@ -39,25 +40,17 @@ var delete_animations_enabled: bool = true
 #endregion
 
 #region EDITOR SCANNING
-var primary_shader_wrapper = null
-var shader_editor_container = null
-var scan_timer: float = 0.0
-var scan_interval: float = 1.0
 var has_editor_focused: bool = false
 var editors: Dictionary[String, SoundEditorInfo] = {}
 #endregion
 
+var shader_tab_container: TabContainer
+
 func _enter_tree() -> void:
-	initialize()
-	load_sounds()
-	register_sound_settings()
-
-	# Set up process for checking typing
-	set_process(true)
-
-	# Find shader container after UI is fully loaded
-	get_tree().create_timer(1.0).timeout.connect(find_shader_editor_wrapper)
-	editor_settings.settings_changed.connect(_on_settings_changed)
+	if not Engine.is_editor_hint():
+		return
+	_initialize()
+	get_tree().create_timer(2.0).timeout.connect(find_shader_editor_container)
 
 func _shortcut_input(event: InputEvent) -> void:
 	if event is InputEventKey:
@@ -69,6 +62,40 @@ func _exit_tree() -> void:
 		data.player.queue_free()
 	set_process(false)
 
+func _process(delta: float) -> void:
+	if not Engine.is_editor_hint():
+		return
+
+	register_script_editor()
+
+	var sound_played: bool = false
+	has_editor_focused = false
+	for editor_id: String in editors.keys():
+		var info: SoundEditorInfo = editors[editor_id]
+		if not is_instance_valid(info.code_edit):
+			editors.erase(editor_id)
+			continue
+		if not sound_played:
+			sound_played = play_editor_sounds(editor_id, info)
+
+func _on_settings_changed() -> void:
+	if editor_settings.has_setting(SETTINGS_VOLUME_PATH):
+		volume_db = editor_settings.get_setting(SETTINGS_VOLUME_PATH)
+
+		for player_data: SoundPlayerData in sound_player_datas.values():
+			var setting_enabled_path: String = SOUND_SETTINGS_PATH + player_data.action_name
+			player_data.player.volume_db = volume_db * player_data.volume_multiplier
+			
+			if editor_settings.has_setting(setting_enabled_path):
+				player_data.enabled = editor_settings.get_setting(setting_enabled_path)
+			else:
+				player_data.enabled = true
+			
+			if editor_settings.has_setting(DELETE_ANIMATION_PATH):
+				delete_animations_enabled = editor_settings.get_setting(DELETE_ANIMATION_PATH)
+			else:
+				delete_animations_enabled = true
+
 func create_sound_player(action_type: ActionType, volume_multiplier: float = 1.0) -> AudioStreamPlayer:
 	var player_data: SoundPlayerData = SoundPlayerData.new(volume_db, volume_multiplier, ActionType.keys()[action_type])
 	player_data.volume_multiplier = volume_multiplier
@@ -77,18 +104,14 @@ func create_sound_player(action_type: ActionType, volume_multiplier: float = 1.0
 	sound_player_datas[action_type] = player_data
 	return player_data.player
 
-func _on_settings_changed() -> void:
-	if editor_settings.has_setting(SETTINGS_VOLUME_PATH):
-		volume_db = editor_settings.get_setting(SETTINGS_VOLUME_PATH)
+func _initialize() -> void:
+	register_sound_settings()
 
-		for player_data: SoundPlayerData in sound_player_datas.values():
-			var setting_name: String = SOUND_SETTINGS_PATH + player_data.action_name
-			player_data.player.volume_db = volume_db * player_data.volume_multiplier
-			player_data.enabled = editor_settings.get_setting(setting_name)
-
-		delete_animations_enabled = editor_settings.get_setting(DELETE_ANIMATION_PATH)
-
-func initialize() -> void:
+	# Find shader container after UI is fully loaded
+	#
+	editor_settings.settings_changed.connect(_on_settings_changed)
+	
+	# Init Sounds
 	create_sound_player(ActionType.TYPING, 1.1)
 	create_sound_player(ActionType.SELECTING, 1.2)
 	create_sound_player(ActionType.SELECTING_WORD)
@@ -101,6 +124,10 @@ func initialize() -> void:
 	create_sound_player(ActionType.DELETING)
 	create_sound_player(ActionType.COPY)
 	create_sound_player(ActionType.PASTE, 1.3)
+	load_sounds()
+	
+	# Start the plugin basically
+	set_process(true)
 
 func load_sounds() -> void:
 	typing_sounds.append(load("res://addons/fancy_editor_sounds/keyboard_sounds/key-press-1.mp3"))
@@ -181,31 +208,6 @@ func register_sound_settings() -> void:
 	else:
 		delete_animations_enabled = editor_settings.get_setting(DELETE_ANIMATION_PATH)
 
-func _process(delta: float) -> void:
-	periodic_editor_scan(delta)
-	register_script_editor()
-
-	var sound_played: bool = false
-	has_editor_focused = false
-	for editor_id: String in editors.keys():
-		var info: SoundEditorInfo = editors[editor_id]
-		if not is_instance_valid(info.code_edit):
-			editors.erase(editor_id)
-			continue
-		if not sound_played:
-			sound_played = play_editor_sounds(editor_id, info)
-
-func periodic_editor_scan(delta: float) -> void:
-	# Check for new shader editors periodically
-	scan_timer += delta
-	if scan_timer >= scan_interval:
-		scan_timer = 0.0
-
-		if shader_editor_container:
-			check_container_for_shader_editors(shader_editor_container)
-		elif not primary_shader_wrapper or not shader_editor_container:
-			find_shader_editor_wrapper()
-
 func register_script_editor() -> void:
 	var current_editor = EditorInterface.get_script_editor().get_current_editor()
 	if current_editor:
@@ -219,18 +221,11 @@ func register_script_editor() -> void:
 			else:
 				editors[editor_id].code_edit = code_edit
 
-func play_shader_editor_sounds() -> bool:
-	var sound_played = false
-	for editor_id in editors:
-		var editor_info: SoundEditorInfo = editors[editor_id]
-		sound_played = play_editor_sounds(editor_id, editor_info)
-		if sound_played:
-			break
-
-	return sound_played
-
 func play_editor_sounds(editor_id: String, info: SoundEditorInfo) -> bool:
 	var code_edit: CodeEdit = info.code_edit
+	if not code_edit:
+		return false
+	
 	if not has_editor_focused:
 		has_editor_focused = code_edit.has_focus()
 
@@ -330,6 +325,9 @@ func check_deleted_text(info: SoundEditorInfo) -> String:
 	return deleted_text
 
 func play_delete_animation(info: SoundEditorInfo) -> void:
+	if not is_instance_valid(info.code_edit):
+		return
+	
 	var deleted_char = check_deleted_text(info)
 	var falling_key: KeyDrop = KEY_DROP.instantiate()
 	var line_height = info.code_edit.get_line_height()
@@ -337,7 +335,20 @@ func play_delete_animation(info: SoundEditorInfo) -> void:
 	falling_key.position = adjusted_pos
 	falling_key.set_key(deleted_char, info.code_edit.get_theme_font_size("font_size", "CodeEdit"))
 	info.code_edit.add_child(falling_key)
-
+	
+func play_key_zap_animation(info: SoundEditorInfo) -> void:
+	if not is_instance_valid(info.code_edit):
+		return
+	
+	var deleted_chars = check_deleted_text(info)
+	for deleted_char in deleted_chars:
+		var zapping_key: KeyZap = KEY_ZAP.instantiate()
+		var line_height = info.code_edit.get_line_height()
+		var adjusted_pos = info.code_edit.get_caret_draw_pos() + Vector2(4, -line_height/2.0)
+		info.code_edit.add_child(zapping_key)
+		zapping_key.position = adjusted_pos
+		zapping_key.set_key(deleted_char, info.code_edit.get_theme_font_size("font_size", "CodeEdit"))
+	
 func play_sound(action_type: ActionType) -> void:
 	var data = sound_player_datas[action_type]
 	if data.enabled:
@@ -364,7 +375,7 @@ func handle_action(action_type: ActionType, code_edit: CodeEdit, current_selecti
 		ActionType.DELETING:
 			play_sound(action_type)
 			if delete_animations_enabled:
-				play_delete_animation(info)
+				play_key_zap_animation(info)
 			return true
 		ActionType.SELECTING:
 			return handle_selection(code_edit, current_selection_length, new_selection, info)
@@ -427,55 +438,56 @@ func play_selection_sound(code_edit: CodeEdit, selection_length: int, new_select
 		info.selection_length = selection_length
 	return false
 
-func find_shader_editor_wrapper() -> void:
-	var base_control = EditorInterface.get_base_control()
+func find_shader_editor_container() -> void:
+	var base_control: Control = EditorInterface.get_base_control()
+	var shader_file_editor_node: Node = find_node_by_class_name(base_control, "ShaderFileEditor")
+	if shader_file_editor_node:
+		var parent: Node = shader_file_editor_node.get_parent()
+		var shader_create_node: Node = find_node_by_class_name(parent, "ShaderCreateDialog")
+		for child in shader_create_node.get_parent().get_children():
+			if child is TabContainer:
+				shader_tab_container = child
+				
+	if not shader_tab_container:
+		printerr("[Fancy Editor Sounds] Unable not find the shader tab container. (Sounds wont play inside shader editor)")
+		return
+	else:
+		shader_tab_container.tab_changed.connect(_on_shader_tab_changed)
+		initial_shader_editor_lookup(shader_tab_container)
 
-	# If no existing editors found, search through all WindowWrappers
-	var window_wrappers = []
-	find_nodes_by_class(base_control, "WindowWrapper", window_wrappers)
+func _on_shader_tab_changed(tab: int) -> void:
+	add_shader_edit(shader_tab_container, tab)
 
-	for wrapper in window_wrappers:
-		var tab_containers = []
-		find_nodes_by_class(wrapper, "TabContainer", tab_containers)
-		for container in tab_containers:
-			# Check for any hint this might be a shader container
-			if check_container_for_shader_editors(container):
-				primary_shader_wrapper = wrapper
-				shader_editor_container = container
-				return
+func find_node_by_class_name(node: Node, class_string: String) -> Node:
+	if node.get_class() == class_string:
+		return node;
+	for child in node.get_children():
+		var result: Node = find_node_by_class_name(child, class_string)
+		if result:
+			return result
+	return null
 
-# Check a specific container for shader editors
-func check_container_for_shader_editors(container: TabContainer) -> bool:
+func add_shader_edit(container: TabContainer, tab_number: int) -> void:
 	if not is_instance_valid(container):
-		return false
-
+		return
+	
+	var text_shader_editor = container.get_tab_control(tab_number)
+	if not text_shader_editor or "TextShaderEditor" not in text_shader_editor.name: 
+		return
+	
 	var previous_editors = editors.duplicate()
-	var found_any = false
+	
+	# Find the CodeEdit component(s) in this text_shader_editor
+	var code_edit: CodeEdit = find_node_by_class_name(text_shader_editor, "CodeEdit")
+	var editor_id = text_shader_editor.name + "_" + str(code_edit)
+	if not previous_editors.has(editor_id):
+		add_new_editor(code_edit, editor_id)
+	else:
+		editors[editor_id].code_edit = code_edit
+
+func initial_shader_editor_lookup(container: TabContainer) -> void:
+	if not is_instance_valid(container):
+		return
 
 	for i in range(container.get_tab_count()):
-		var tab_control = container.get_tab_control(i)
-		if not tab_control or "TextShaderEditor" not in tab_control.name: continue
-		found_any = true
-
-		# Find the CodeEdit component(s) in this tab
-		var code_edits = []
-		find_nodes_by_class(tab_control, "CodeEdit", code_edits)
-
-		for ids in range(code_edits.size()):
-			var code_edit = code_edits[ids]
-			var editor_id = tab_control.name + "_" + str(ids)
-
-			# Check if this is a new editor
-			if not previous_editors.has(editor_id):
-				add_new_editor(code_edit, editor_id)
-			else:
-				editors[editor_id].code_edit = code_edit
-
-	return found_any
-
-# Helper function to find nodes by class
-func find_nodes_by_class(node: Node, class_string: String, result: Array) -> void:
-	if node.get_class() == class_string:
-		result.push_back(node)
-	for child in node.get_children():
-		find_nodes_by_class(child, class_string, result)
+		add_shader_edit(container, i)
