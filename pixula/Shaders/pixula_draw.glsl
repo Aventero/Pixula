@@ -17,7 +17,12 @@ const int WALL = 4;
 // keep size under 128 bytes
 layout(push_constant, std430) uniform Params {
     ivec2 grid_size;
+    bool is_spawning;
+    int spawn_radius;
+    int spawn_material;
+    ivec2 mouse_pos;
 } params;
+
 
 
 

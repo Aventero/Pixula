@@ -14,7 +14,11 @@ layout(set = 0, binding = 1, std430) buffer OutputBuffer {
 
 // keep size under 128 bytes
 layout(push_constant, std430) uniform Params {
-    ivec2 grid_size;
+    ivec2 grid_size;    // 8
+    int is_spawning;    // 4
+    int spawn_radius;   // 4
+    int spawn_material; // 4
+    ivec2 mouse_pos;    // 8
 } params;
 
 
@@ -91,23 +95,79 @@ bool tryMove(ivec2 source, ivec2 destination) {
 }
 
 
-void sandMechanic(ivec2 source, int material) {
-    if (material == SAND) {
-        ivec2 down = source + ivec2(0, 1);
-        if (tryMove(source, down)) return;
-        
-        ivec2 down_left = source + ivec2(-1, 1);
-        if (tryMove(source, down_left)) return;
-        
-        ivec2 down_right = source + ivec2(1, 1);
-        if (tryMove(source, down_right)) return;
-    }
+bool moveDown(ivec2 source) {
+    return tryMove(source, source + ivec2(0, 1));
 }
+
+bool moveDiagonal(ivec2 source) {
+    ivec2 direction = (source.x + source.y) % 2 == 0 ? ivec2(-1, 1) : ivec2(1, 1);
+    return tryMove(source, source + direction);
+}
+
+bool moveDownLeft(ivec2 source) {
+    return tryMove(source, source + ivec2(-1, 1));
+}
+
+bool moveDownRight(ivec2 source) {
+    return tryMove(source, source + ivec2(1, 1));
+}
+
+bool moveHorizontal(ivec2 source) {
+    int direction = source.y % 2 == 0 ? 1 : -1;
+    return tryMove(source, source + ivec2(direction, 0));
+}
+
+bool sandMechanic(ivec2 source) {
+    return moveDown(source) || moveDiagonal(source);
+}
+
+bool waterMechanic(ivec2 source) {
+    return moveDown(source) || moveDiagonal(source) || moveHorizontal(source);
+}
+
+
+void spawn_in_radius(uint source_index, ivec2 source, ivec2 center, int radius, int spawn_material) {
+	ivec2 pos_min = max(ivec2(0, 0), ivec2(center) - ivec2(radius));
+	ivec2 pos_max = min(params.grid_size, ivec2(center) + ivec2(radius + 1));
+	float distance_to_center = length(vec2(source - center));
+	
+    // Inside circle!
+	if (distance_to_center < float(radius)) {
+        atomicExchange(output_buffer.data[source_index], spawn_material);
+	}
+}
+
+
 
 void main() {
     uint index = gl_GlobalInvocationID.y * params.grid_size.x + gl_GlobalInvocationID.x;
-    ivec2 self_pos = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
+    ivec2 pos = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
     
-    int material = input_buffer.data[index];
-    sandMechanic(self_pos, material);
+    // if (params.is_spawning == 1) {
+    //     spawn_in_radius(index, self_pos, params.mouse_pos, params.spawn_radius, params.spawn_material);
+    // }
+
+
+    // In your main shader function
+    if (pos.x == 0 && pos.y == 0) {
+        // Debug output at a known position - this should always appear
+        atomicExchange(output_buffer.data[index], WALL);
+    }
+
+    if (pos.x == params.mouse_pos.x && pos.y == params.mouse_pos.y) {
+        // This should mark where the mouse actually is
+        atomicExchange(output_buffer.data[index], WATER);
+    }
+
+    // Test to see where mouse coordinates are in the shader's understanding
+    if (pos.x == 10 && pos.y == 10) {
+        // Mark a reference point to understand coordinate system   
+        atomicExchange(output_buffer.data[index], SAND);
+    }
+
+    // int material = input_buffer.data[index];
+    // switch (material) {
+    //     case SAND: sandMechanic(self_pos); return;
+    //     case WATER: waterMechanic(self_pos); return;
+    // }
 }

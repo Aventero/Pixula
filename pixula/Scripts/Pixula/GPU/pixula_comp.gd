@@ -1,7 +1,8 @@
+class_name PixulaCompute
 extends Node2D
 
 # Smallest width is 32 cause 16 work groups
-const WIDTH = 1024 * 2
+const WIDTH = 256
 const HEIGHT = WIDTH / 2
 const CELL_SIZE = WIDTH * HEIGHT
 const WORK_GROUP = 16
@@ -28,20 +29,34 @@ var visualization_uniform_set: RID
 # Texture
 var render_texture: RID
 var render_device_texture: Texture2DRD = Texture2DRD.new()
-var push_constants = PackedInt32Array([WIDTH, HEIGHT, 0, 0])
+var push_constants: PackedByteArray
 
+# Spawning
+var is_spawning: bool = false
+var spawn_radius: int = 0
+var current_spawn_material: MouseHandler.MaterialType = MouseHandler.MaterialType.AIR
+var mouse_pos: Vector2i
+
+func set_spawning(_is_spawning: bool, _spawn_radius: int = 0, _spawn_material: MouseHandler.MaterialType = AIR, _mouse_pos: Vector2i = Vector2i.ZERO) -> void:
+	is_spawning = _is_spawning
+	spawn_radius = _spawn_radius
+	current_spawn_material = _spawn_material
+	mouse_pos = _mouse_pos
+
+func set_push_constants() -> void:
+	push_constants = PackedInt32Array([int(WIDTH), int(HEIGHT), int(is_spawning), int(spawn_radius), int(current_spawn_material), int(mouse_pos.x), int(mouse_pos.y), 0]).to_byte_array()
+	print(push_constants)
 
 func setup_in_out_buffers() -> void:
-	
 	var cells = PackedInt32Array()
 	cells.resize(CELL_SIZE)
 	var count = 0
 	
-	for i in range(cells.size()):
-		cells[i] = randi_range(0, 1)
-		if cells[i] == 1:
-			count += 1
-	print("initial: ", count)
+	#for i in range(cells.size()):
+		#cells[i] = randi_range(0, 2)
+		#if cells[i] == 1:
+			#count += 1
+	#print("initial: ", count)
 	
 	var packed_data_array = cells.to_byte_array()
 	input_buffer = rd.storage_buffer_create(packed_data_array.size(), packed_data_array)
@@ -75,7 +90,7 @@ func setup_output_texture():
 	$CanvasLayer/TextureRect.texture = render_device_texture
 
 func _initial_setup() -> void:
-	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	#DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 
 	# Set rendering device used for this compute shader
 	rd = RenderingServer.get_rendering_device()
@@ -98,18 +113,12 @@ func _initial_setup() -> void:
 	create_simulation_uniform_set()
 	create_visualization_uniform_set()
 	
-
 func _ready() -> void:
 	RenderingServer.call_on_render_thread(_initial_setup)
-	
-
-func _input(event: InputEvent) -> void:
-	if event is InputEventMouse:
-		if event.is_action_pressed("SPAWN_SAND"):
-			print("Simulated count now: ", count_materials(output_buffer, SAND))
 
 func update_simulation() -> void:
 	rd.buffer_copy(input_buffer, output_buffer, 0, 0, buffer_size)
+	set_push_constants()
 	simulate()
 	draw_simulation()
 	swap_buffers()
@@ -118,16 +127,18 @@ func update_simulation() -> void:
 	create_simulation_uniform_set()
 	create_visualization_uniform_set()
 	
-
+var clock = 0
 func _process(_delta: float) -> void:
-	$Overlay/FPS_Label.text = "FPS: " + str(Engine.get_frames_per_second())
-	RenderingServer.call_on_render_thread(update_simulation)
+	clock += _delta
+	if clock > 1.0/30.0:
+		clock = 0
+		RenderingServer.call_on_render_thread(update_simulation)
 	
 func simulate() -> void:
 	var compute_list = rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, simulation_pipeline)
 	rd.compute_list_bind_uniform_set(compute_list, simulation_uniform_set, 0)
-	rd.compute_list_set_push_constant(compute_list, push_constants.to_byte_array(), push_constants.size() * 4)
+	rd.compute_list_set_push_constant(compute_list, push_constants, push_constants.size())
 	rd.compute_list_dispatch(compute_list, WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
 	rd.compute_list_end()
 	
@@ -136,7 +147,8 @@ func draw_simulation() -> void:
 	var compute_list = rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, visualization_pipeline)
 	rd.compute_list_bind_uniform_set(compute_list, visualization_uniform_set, 0)
-	rd.compute_list_set_push_constant(compute_list, push_constants.to_byte_array(), push_constants.size() * 4)
+	set_push_constants()
+	rd.compute_list_set_push_constant(compute_list, push_constants, push_constants.size())
 	rd.compute_list_dispatch(compute_list,  WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
 	rd.compute_list_end()
 	
@@ -144,12 +156,10 @@ func draw_simulation() -> void:
 func count_materials(buffer_rid: RID, material_type: int) -> int:
 	var byte_data = rd.buffer_get_data(buffer_rid)
 	var data = byte_data.to_int32_array()
-	
 	var count = 0
 	for value in data:
 		if value == material_type:
 			count += 1
-	
 	return count
 
 func count_image_materials(image: Image) -> int:
