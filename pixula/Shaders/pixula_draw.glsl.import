@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://txwxxt5cyhgy"
+path="res://.godot/imported/pixula_draw.glsl-7b71e060afc1702cae06f2adda55257e.res"
+
+[deps]
+
+source_file="res://Shaders/pixula_draw.glsl"
+dest_files=["res://.godot/imported/pixula_draw.glsl-7b71e060afc1702cae06f2adda55257e.res"]
+
+[params]
+

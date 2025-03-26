@@ -30,7 +30,7 @@ project/assembly_name="Pixula"
 
 [editor_plugins]
 
-enabled=PackedStringArray("res://addons/script-ide/plugin.cfg")
+enabled=PackedStringArray("res://addons/fancy_editor_sounds/plugin.cfg", "res://addons/script-ide/plugin.cfg")
 
 [global_group]
 

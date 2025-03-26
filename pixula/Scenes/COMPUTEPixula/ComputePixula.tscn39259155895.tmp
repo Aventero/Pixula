@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=3 uid="uid://djcoiilj6jweo"]
+
+[ext_resource type="Script" uid="uid://c8vyocb8lppoc" path="res://Scripts/Pixula/GPU/pixula_comp.gd" id="1_yo03a"]
+
+[sub_resource type="Shader" id="Shader_yo03a"]
+code = "shader_type canvas_item;
+uniform sampler2D material_texture;
+
+void fragment() {
+    vec4 tex_color = texture(material_texture, UV);
+    COLOR = tex_color;
+}
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_shutx"]
+shader = SubResource("Shader_yo03a")
+
+[node name="ComputePixula" type="Node2D"]
+script = ExtResource("1_yo03a")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer"]
+material = SubResource("ShaderMaterial_shutx")
+offset_right = 40.0
+offset_bottom = 40.0
