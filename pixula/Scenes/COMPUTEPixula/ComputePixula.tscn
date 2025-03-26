@@ -9,15 +9,18 @@ script = ExtResource("1_yo03a")
 
 [node name="TextureRect" type="TextureRect" parent="CanvasLayer"]
 texture_filter = 3
-offset_right = 40.0
-offset_bottom = 40.0
-scale = Vector2(0.05, 0.05)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
 [node name="Overlay" type="CanvasLayer" parent="."]
 layer = 2
 follow_viewport_enabled = true
 
 [node name="FPS_Label" type="Label" parent="Overlay"]
+texture_filter = 3
 offset_left = 1577.0
 offset_top = 42.0
 offset_right = 1862.0

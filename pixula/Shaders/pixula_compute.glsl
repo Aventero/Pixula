@@ -12,8 +12,11 @@ layout(set = 0, binding = 1, std430) buffer OutputBuffer {
     int data[];
 } output_buffer;
 
-const uint WIDTH = 4096*4; 
-const uint HEIGHT = 4096*4;
+// keep size under 128 bytes
+layout(push_constant, std430) uniform Params {
+    ivec2 grid_size;
+} params;
+
 
 // Materials
 const int AIR = 0;
@@ -35,7 +38,7 @@ int getMaterialType(int material) {
 }
 
 bool inBounds(ivec2 pos) {
-    return pos.x < WIDTH && pos.y < HEIGHT;
+    return pos.x < params.grid_size.x && pos.y < params.grid_size.y;
 }
 
 bool canSwap(int source_material, int destination_material) {
@@ -56,8 +59,8 @@ bool canSwap(int source_material, int destination_material) {
 bool tryMove(ivec2 source, ivec2 destination) {
     if (!inBounds(source) || !inBounds(destination)) return false;
     
-    uint source_index = source.y * WIDTH + source.x;
-    uint destination_index = destination.y * WIDTH + destination.x;
+    uint source_index = source.y * params.grid_size.x + source.x;
+    uint destination_index = destination.y * params.grid_size.x + destination.x;
     
     // Get materials
     int source_material = input_buffer.data[source_index];
@@ -88,19 +91,23 @@ bool tryMove(ivec2 source, ivec2 destination) {
 }
 
 
+void sandMechanic(ivec2 source, int material) {
+    if (material == SAND) {
+        ivec2 down = source + ivec2(0, 1);
+        if (tryMove(source, down)) return;
+        
+        ivec2 down_left = source + ivec2(-1, 1);
+        if (tryMove(source, down_left)) return;
+        
+        ivec2 down_right = source + ivec2(1, 1);
+        if (tryMove(source, down_right)) return;
+    }
+}
+
 void main() {
-    uint index = gl_GlobalInvocationID.y * WIDTH + gl_GlobalInvocationID.x;
+    uint index = gl_GlobalInvocationID.y * params.grid_size.x + gl_GlobalInvocationID.x;
     ivec2 self_pos = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
     
     int material = input_buffer.data[index];
-    if (material == SAND) {
-        ivec2 down = self_pos + ivec2(0, 1);
-        if (tryMove(self_pos, down)) return;
-        
-        ivec2 down_left = self_pos + ivec2(-1, 1);
-        if (tryMove(self_pos, down_left)) return;
-        
-        ivec2 down_right = self_pos + ivec2(1, 1);
-        if (tryMove(self_pos, down_right)) return;
-    }
+    sandMechanic(self_pos, material);
 }

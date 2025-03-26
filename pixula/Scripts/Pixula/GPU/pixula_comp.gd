@@ -1,7 +1,8 @@
 extends Node2D
 
-const WIDTH = 4096*4
-const HEIGHT = 4096*4
+# Smallest width is 32 cause 16 work groups
+const WIDTH = 1024 * 2
+const HEIGHT = WIDTH / 2
 const CELL_SIZE = WIDTH * HEIGHT
 const WORK_GROUP = 16
 
@@ -14,22 +15,24 @@ const WALL = 4
 var rd: RenderingDevice
 var input_buffer: RID
 var output_buffer: RID
-var uniform_set: RID
 var buffer_size: int
 
 var simulation_shader: RID
 var simulation_pipeline: RID
+var simulation_uniform_set: RID
+
 var visualization_shader: RID
 var visualization_pipeline: RID
 var visualization_uniform_set: RID
 
 # Texture
 var render_texture: RID
-var img_texture: ImageTexture
-var display_texture: Texture2DRD = Texture2DRD.new()
+var render_device_texture: Texture2DRD = Texture2DRD.new()
+var push_constants = PackedInt32Array([WIDTH, HEIGHT, 0, 0])
 
-func setup_buffers() -> void:
-	# Data thats send to the compute shader
+
+func setup_in_out_buffers() -> void:
+	
 	var cells = PackedInt32Array()
 	cells.resize(CELL_SIZE)
 	var count = 0
@@ -45,7 +48,7 @@ func setup_buffers() -> void:
 	output_buffer = rd.storage_buffer_create(packed_data_array.size(), packed_data_array)
 	buffer_size = packed_data_array.size()
 
-func setup_texture():
+func setup_output_texture():
 	# Create format for the texture
 	var tf = RDTextureFormat.new()
 	tf.format = RenderingDevice.DATA_FORMAT_R8G8B8A8_UNORM
@@ -65,25 +68,13 @@ func setup_texture():
 	
 	# Create GPU texture
 	render_texture = rd.texture_create(tf, RDTextureView.new(), [])
-	
-	# Clear with transparent black
 	rd.texture_clear(render_texture, Color(0, 0, 0, 0), 0, 1, 0, 1)
+	render_device_texture.texture_rd_rid = render_texture
 	
-	# Assign the RID to our Texture2DRD
-	display_texture.texture_rd_rid = render_texture
-	
-	# Assign it to your TextureRect
-	$CanvasLayer/TextureRect.texture = display_texture
+	# Set it to the displaying Texture Rect
+	$CanvasLayer/TextureRect.texture = render_device_texture
 
-func update_display():
-	pass
-	# Get texture data asynchronously
-	#rd.texture_get_data_async(render_texture, 0, func(img_data):
-		#var img = Image.create_from_data(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8, img_data)
-		#img_texture.update(img)
-	#)
-
-func _init_compute_code() -> void:
+func _initial_setup() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 
 	# Set rendering device used for this compute shader
@@ -101,50 +92,51 @@ func _init_compute_code() -> void:
 	visualization_shader = rd.shader_create_from_spirv(vis_shader_bytecode)
 	visualization_pipeline = rd.compute_pipeline_create(visualization_shader)
 	
-	setup_buffers()
-	setup_texture()
+	setup_in_out_buffers()
+	setup_output_texture()
 	
 	create_simulation_uniform_set()
 	create_visualization_uniform_set()
 	
 
 func _ready() -> void:
-	RenderingServer.call_on_render_thread(_init_compute_code)
+	RenderingServer.call_on_render_thread(_initial_setup)
 	
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventMouse:
 		if event.is_action_pressed("SPAWN_SAND"):
 			print("Simulated count now: ", count_materials(output_buffer, SAND))
-			print("Image count now: ", count_image_materials(img_texture.get_image()))
-
 
 func update_simulation() -> void:
 	rd.buffer_copy(input_buffer, output_buffer, 0, 0, buffer_size)
 	simulate()
 	draw_simulation()
-	update_display()
 	swap_buffers()
+	
+	# Not exactly necessary to re-create them
 	create_simulation_uniform_set()
 	create_visualization_uniform_set()
 	
 
-var clock: float = 0
-func _process(delta: float) -> void:
-	$Overlay/FPS_Label.text = str(Engine.get_frames_per_second())
+func _process(_delta: float) -> void:
+	$Overlay/FPS_Label.text = "FPS: " + str(Engine.get_frames_per_second())
 	RenderingServer.call_on_render_thread(update_simulation)
 	
 func simulate() -> void:
 	var compute_list = rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, simulation_pipeline)
-	rd.compute_list_bind_uniform_set(compute_list, uniform_set, 0)
-	rd.call("compute_list_dispatch", compute_list, WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
+	rd.compute_list_bind_uniform_set(compute_list, simulation_uniform_set, 0)
+	rd.compute_list_set_push_constant(compute_list, push_constants.to_byte_array(), push_constants.size() * 4)
+	rd.compute_list_dispatch(compute_list, WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
 	rd.compute_list_end()
+	
 
 func draw_simulation() -> void:
 	var compute_list = rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, visualization_pipeline)
 	rd.compute_list_bind_uniform_set(compute_list, visualization_uniform_set, 0)
+	rd.compute_list_set_push_constant(compute_list, push_constants.to_byte_array(), push_constants.size() * 4)
 	rd.compute_list_dispatch(compute_list,  WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
 	rd.compute_list_end()
 	
@@ -174,7 +166,7 @@ func swap_buffers() -> void:
 	input_buffer = output_buffer
 	output_buffer = temp
 
-func create_simulation_uniform_set() -> void:
+func create_simulation_uniform_set() -> void:	
 	var input_uniform: RefCounted = RDUniform.new()
 	input_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
 	input_uniform.binding = 0
@@ -185,11 +177,11 @@ func create_simulation_uniform_set() -> void:
 	output_uniform.binding = 1
 	output_uniform.add_id(output_buffer)
 	
-	if uniform_set:
-		rd.free_rid(uniform_set)
+	if simulation_uniform_set:
+		rd.free_rid(simulation_uniform_set)
 
 	# bind the uniforms to slot 0
-	uniform_set = rd.uniform_set_create([input_uniform, output_uniform], simulation_shader, 0)
+	simulation_uniform_set = rd.uniform_set_create([input_uniform, output_uniform], simulation_shader, 0)
 
 func create_visualization_uniform_set() -> void:
 	var sim_buffer_uniform = RDUniform.new()

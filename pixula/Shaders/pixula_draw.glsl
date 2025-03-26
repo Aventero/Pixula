@@ -14,8 +14,11 @@ const int SAND = 1;
 const int WATER = 2;
 const int WALL = 4;
 
-const uint WIDTH = 4096*4; 
-const uint HEIGHT = 4096*4;
+// keep size under 128 bytes
+layout(push_constant, std430) uniform Params {
+    ivec2 grid_size;
+} params;
+
 
 
 void updateImage(ivec2 self_pos, int material) {
@@ -42,7 +45,7 @@ void updateImage(ivec2 self_pos, int material) {
 
 
 void main() {
-    uint index = gl_GlobalInvocationID.y * WIDTH + gl_GlobalInvocationID.x;
+    uint index = gl_GlobalInvocationID.y * params.grid_size.x + gl_GlobalInvocationID.x;
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
     
     int material = simulation_buffer.data[index];
