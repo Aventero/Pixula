@@ -11,7 +11,7 @@ script = ExtResource("1_yo03a")
 texture_filter = 3
 offset_right = 40.0
 offset_bottom = 40.0
-scale = Vector2(0.05, 0.05)
+scale = Vector2(2, 2)
 
 [node name="Overlay" type="CanvasLayer" parent="."]
 layer = 2

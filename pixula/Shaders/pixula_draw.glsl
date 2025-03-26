@@ -3,7 +3,7 @@
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-layout(set = 0, binding = 0, std430) readonly buffer SimulationBuffer {
+layout(set = 0, binding = 0, std430) restrict buffer SimulationBuffer {
     int data[];
 } simulation_buffer;
 
@@ -14,8 +14,8 @@ const int SAND = 1;
 const int WATER = 2;
 const int WALL = 4;
 
-const uint WIDTH = 2048 / 2; 
-const uint HEIGHT = 1024 / 2;
+const uint WIDTH = 4096*4; 
+const uint HEIGHT = 4096*4;
 
 
 void updateImage(ivec2 self_pos, int material) {

@@ -2,13 +2,9 @@
 
 #version 450
 
-// Basically number of threads on the GPU
-// one warp = 32 threads (NVIDEA)
-// so multiples of 32 is good -> 256 invocations
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-
-layout(set = 0, binding = 0, std430) readonly buffer InputBuffer {
+layout(set = 0, binding = 0, std430) restrict buffer InputBuffer {
     int data[];
 } input_buffer;
 
@@ -16,8 +12,8 @@ layout(set = 0, binding = 1, std430) buffer OutputBuffer {
     int data[];
 } output_buffer;
 
-const uint WIDTH = 2048 / 2; 
-const uint HEIGHT = 1024 / 2;
+const uint WIDTH = 4096*4; 
+const uint HEIGHT = 4096*4;
 
 // Materials
 const int AIR = 0;

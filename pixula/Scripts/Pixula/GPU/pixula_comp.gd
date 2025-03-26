@@ -1,7 +1,7 @@
 extends Node2D
 
-const WIDTH = 2048 / 2
-const HEIGHT = 1024 / 2
+const WIDTH = 4096*4
+const HEIGHT = 4096*4
 const CELL_SIZE = WIDTH * HEIGHT
 const WORK_GROUP = 16
 
@@ -26,6 +26,8 @@ var visualization_uniform_set: RID
 # Texture
 var render_texture: RID
 var img_texture: ImageTexture
+var display_texture: Texture2DRD = Texture2DRD.new()
+
 func setup_buffers() -> void:
 	# Data thats send to the compute shader
 	var cells = PackedInt32Array()
@@ -67,22 +69,25 @@ func setup_texture():
 	# Clear with transparent black
 	rd.texture_clear(render_texture, Color(0, 0, 0, 0), 0, 1, 0, 1)
 	
-	# Create a regular image texture for display
-	var img = Image.create(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8)
-	img_texture = ImageTexture.create_from_image(img)
+	# Assign the RID to our Texture2DRD
+	display_texture.texture_rd_rid = render_texture
+	
+	# Assign it to your TextureRect
+	$CanvasLayer/TextureRect.texture = display_texture
 
 func update_display():
+	pass
 	# Get texture data asynchronously
-	rd.texture_get_data_async(render_texture, 0, func(img_data):
-		var img = Image.create_from_data(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8, img_data)
-		img_texture.update(img)
-	)
+	#rd.texture_get_data_async(render_texture, 0, func(img_data):
+		#var img = Image.create_from_data(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8, img_data)
+		#img_texture.update(img)
+	#)
 
-func _ready() -> void:
+func _init_compute_code() -> void:
 	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 
 	# Set rendering device used for this compute shader
-	rd = RenderingServer.create_local_rendering_device()
+	rd = RenderingServer.get_rendering_device()
 	
 	# Simulation Shader
 	var sim_shader_file: Resource = load("res://Shaders/pixula_compute.glsl")
@@ -102,7 +107,9 @@ func _ready() -> void:
 	create_simulation_uniform_set()
 	create_visualization_uniform_set()
 	
-	$CanvasLayer/TextureRect.texture = img_texture
+
+func _ready() -> void:
+	RenderingServer.call_on_render_thread(_init_compute_code)
 	
 
 func _input(event: InputEvent) -> void:
@@ -110,14 +117,13 @@ func _input(event: InputEvent) -> void:
 		if event.is_action_pressed("SPAWN_SAND"):
 			print("Simulated count now: ", count_materials(output_buffer, SAND))
 			print("Image count now: ", count_image_materials(img_texture.get_image()))
-			#simulate()
-			#update_display()
-			#swap_buffers()
-			#create_uniform_set()
+
 
 func update_simulation() -> void:
+	rd.buffer_copy(input_buffer, output_buffer, 0, 0, buffer_size)
 	simulate()
 	draw_simulation()
+	update_display()
 	swap_buffers()
 	create_simulation_uniform_set()
 	create_visualization_uniform_set()
@@ -126,32 +132,22 @@ func update_simulation() -> void:
 var clock: float = 0
 func _process(delta: float) -> void:
 	$Overlay/FPS_Label.text = str(Engine.get_frames_per_second())
-	update_simulation()
+	RenderingServer.call_on_render_thread(update_simulation)
 	
 func simulate() -> void:
-	rd.buffer_copy(input_buffer, output_buffer, 0, 0, buffer_size)
-	
 	var compute_list = rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, simulation_pipeline)
 	rd.compute_list_bind_uniform_set(compute_list, uniform_set, 0)
-	rd.compute_list_dispatch(compute_list, WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
+	rd.call("compute_list_dispatch", compute_list, WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
 	rd.compute_list_end()
-	
-	rd.submit()
-	rd.sync()
 
 func draw_simulation() -> void:
-	# Step 2: Run visualization
 	var compute_list = rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, visualization_pipeline)
 	rd.compute_list_bind_uniform_set(compute_list, visualization_uniform_set, 0)
 	rd.compute_list_dispatch(compute_list,  WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
 	rd.compute_list_end()
 	
-	rd.submit()
-	rd.sync()
-	
-	update_display()
 
 func count_materials(buffer_rid: RID, material_type: int) -> int:
 	var byte_data = rd.buffer_get_data(buffer_rid)
@@ -188,7 +184,7 @@ func create_simulation_uniform_set() -> void:
 	output_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
 	output_uniform.binding = 1
 	output_uniform.add_id(output_buffer)
-
+	
 	if uniform_set:
 		rd.free_rid(uniform_set)
 
