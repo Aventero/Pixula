@@ -2,17 +2,17 @@ class_name PixulaCompute
 extends Node2D
 
 # Smallest width is 32 cause 16 work groups
-const WIDTH = 256
+const WIDTH = 512 * 2
 const HEIGHT = WIDTH / 2
 const CELL_SIZE = WIDTH * HEIGHT
 const WORK_GROUP = 16
+const MAX_MOUSE_POSITIONS = 100
 
 const AIR = 0
 const SAND = 1
 const WATER = 2
 const WALL = 4
 
-# Logic
 var rd: RenderingDevice
 var input_buffer: RID
 var output_buffer: RID
@@ -32,31 +32,65 @@ var render_device_texture: Texture2DRD = Texture2DRD.new()
 var push_constants: PackedByteArray
 
 # Spawning
+var mouse_buffer: RID
 var is_spawning: bool = false
 var spawn_radius: int = 0
 var current_spawn_material: MouseHandler.MaterialType = MouseHandler.MaterialType.AIR
 var mouse_pos: Vector2i
+var active_mouse_positions = 0
 
-func set_spawning(_is_spawning: bool, _spawn_radius: int = 0, _spawn_material: MouseHandler.MaterialType = AIR, _mouse_pos: Vector2i = Vector2i.ZERO) -> void:
+
+func disable_spawning() -> void:
+	is_spawning = false
+	spawn_radius = 0
+	current_spawn_material = 0
+	update_mouse_positions(Array([]))
+
+func set_spawning(_is_spawning: bool, radius, material_to_spawn: MouseHandler.MaterialType, mouse_positions: Array) -> void:
 	is_spawning = _is_spawning
-	spawn_radius = _spawn_radius
-	current_spawn_material = _spawn_material
-	mouse_pos = _mouse_pos
+	spawn_radius = radius
+	current_spawn_material = int(material_to_spawn)
+	update_mouse_positions(mouse_positions)
 
+func update_mouse_positions(positions: Array) -> void:
+	var count = min(positions.size(), MAX_MOUSE_POSITIONS)
+	var mouse_data = PackedInt32Array()
+	mouse_data.resize(1 + MAX_MOUSE_POSITIONS * 2)
+	mouse_data.fill(0)
+	
+	mouse_data[0] = count
+	
+	# each of the current mouse position
+	for i in range(count):
+		mouse_data[1 + i] = int(positions[i].x)
+		mouse_data[1 + MAX_MOUSE_POSITIONS + i] = int(positions[i].y) # start of second arrray
+		
+	# upload it!
+	var mouse_data_bytes = mouse_data.to_byte_array()
+	rd.buffer_update(mouse_buffer, 0, mouse_data_bytes.size(), mouse_data_bytes)
+		
 func set_push_constants() -> void:
-	push_constants = PackedInt32Array([int(WIDTH), int(HEIGHT), int(is_spawning), int(spawn_radius), int(current_spawn_material), int(mouse_pos.x), int(mouse_pos.y), 0]).to_byte_array()
-	print(push_constants)
+	push_constants = PackedByteArray()
+	push_constants.resize(32)
+	push_constants.encode_s32(0, WIDTH)
+	push_constants.encode_s32(4, HEIGHT)
+	push_constants.encode_s32(8, int(is_spawning))
+	push_constants.encode_s32(12, spawn_radius)
+	push_constants.encode_s32(16, int(current_spawn_material))
+	push_constants.encode_s32(20, mouse_pos.x)
+	push_constants.encode_s32(24, mouse_pos.y)
+	
+func setup_mouse_buffer() -> void:
+	# current_mouse_position_size = 4 byte
+	# mouse_positions themselves = 100 * 8 bytes
+	var buffer_size = (4 + MAX_MOUSE_POSITIONS * 8)
+	var initial_data = PackedByteArray()
+	initial_data.resize(buffer_size)
+	mouse_buffer = rd.storage_buffer_create(buffer_size, initial_data)
 
 func setup_in_out_buffers() -> void:
 	var cells = PackedInt32Array()
 	cells.resize(CELL_SIZE)
-	var count = 0
-	
-	#for i in range(cells.size()):
-		#cells[i] = randi_range(0, 2)
-		#if cells[i] == 1:
-			#count += 1
-	#print("initial: ", count)
 	
 	var packed_data_array = cells.to_byte_array()
 	input_buffer = rd.storage_buffer_create(packed_data_array.size(), packed_data_array)
@@ -108,6 +142,7 @@ func _initial_setup() -> void:
 	visualization_pipeline = rd.compute_pipeline_create(visualization_shader)
 	
 	setup_in_out_buffers()
+	setup_mouse_buffer()
 	setup_output_texture()
 	
 	create_simulation_uniform_set()
@@ -129,10 +164,10 @@ func update_simulation() -> void:
 	
 var clock = 0
 func _process(_delta: float) -> void:
-	clock += _delta
-	if clock > 1.0/30.0:
-		clock = 0
-		RenderingServer.call_on_render_thread(update_simulation)
+	#clock += _delta
+	#if clock > 1.0/144.0:
+		#clock = 0
+	RenderingServer.call_on_render_thread(update_simulation)
 	
 func simulate() -> void:
 	var compute_list = rd.compute_list_begin()
@@ -187,11 +222,16 @@ func create_simulation_uniform_set() -> void:
 	output_uniform.binding = 1
 	output_uniform.add_id(output_buffer)
 	
+	var mouse_uniform: RefCounted = RDUniform.new()
+	mouse_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	mouse_uniform.binding = 2
+	mouse_uniform.add_id(mouse_buffer)
+	
 	if simulation_uniform_set:
 		rd.free_rid(simulation_uniform_set)
 
 	# bind the uniforms to slot 0
-	simulation_uniform_set = rd.uniform_set_create([input_uniform, output_uniform], simulation_shader, 0)
+	simulation_uniform_set = rd.uniform_set_create([input_uniform, output_uniform, mouse_uniform], simulation_shader, 0)
 
 func create_visualization_uniform_set() -> void:
 	var sim_buffer_uniform = RDUniform.new()

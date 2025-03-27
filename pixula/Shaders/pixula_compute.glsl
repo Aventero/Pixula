@@ -12,15 +12,26 @@ layout(set = 0, binding = 1, std430) buffer OutputBuffer {
     int data[];
 } output_buffer;
 
+layout(set = 0, binding = 2, std430) restrict buffer MousePosBuffer {
+    int count;
+    int x[100];
+    int y[100];
+} mouse_buffer;
+
+
 // keep size under 128 bytes
 layout(push_constant, std430) uniform Params {
-    ivec2 grid_size;    // 8
-    int is_spawning;    // 4
-    int spawn_radius;   // 4
-    int spawn_material; // 4
-    ivec2 mouse_pos;    // 8
-} params;
+    int width;
+    int height;
+    int is_spawning;
+    int spawn_radius;   
+    int spawn_material; 
+    int mouse_x;
+    int mouse_y;
+} p;
 
+// Mouse
+const int MAX_MOUSE_POSITION = 100;
 
 // Materials
 const int AIR = 0;
@@ -42,7 +53,7 @@ int getMaterialType(int material) {
 }
 
 bool inBounds(ivec2 pos) {
-    return pos.x < params.grid_size.x && pos.y < params.grid_size.y;
+    return pos.x < p.width && pos.y < p.height;
 }
 
 bool canSwap(int source_material, int destination_material) {
@@ -59,12 +70,11 @@ bool canSwap(int source_material, int destination_material) {
     return false;
 }
 
-
 bool tryMove(ivec2 source, ivec2 destination) {
     if (!inBounds(source) || !inBounds(destination)) return false;
     
-    uint source_index = source.y * params.grid_size.x + source.x;
-    uint destination_index = destination.y * params.grid_size.x + destination.x;
+    uint source_index = source.y * p.width + source.x;
+    uint destination_index = destination.y * p.width + destination.x;
     
     // Get materials
     int source_material = input_buffer.data[source_index];
@@ -85,7 +95,6 @@ bool tryMove(ivec2 source, ivec2 destination) {
     if (target_original == destination_material) {
         // Target swapped, set source to target material
         atomicExchange(output_buffer.data[source_index], destination_material);
-
         return true;
     } else {
         // Failed to swap, restore source to original material
@@ -93,7 +102,6 @@ bool tryMove(ivec2 source, ivec2 destination) {
         return false;
     }
 }
-
 
 bool moveDown(ivec2 source) {
     return tryMove(source, source + ivec2(0, 1));
@@ -125,49 +133,27 @@ bool waterMechanic(ivec2 source) {
     return moveDown(source) || moveDiagonal(source) || moveHorizontal(source);
 }
 
-
 void spawn_in_radius(uint source_index, ivec2 source, ivec2 center, int radius, int spawn_material) {
-	ivec2 pos_min = max(ivec2(0, 0), ivec2(center) - ivec2(radius));
-	ivec2 pos_max = min(params.grid_size, ivec2(center) + ivec2(radius + 1));
-	float distance_to_center = length(vec2(source - center));
-	
-    // Inside circle!
+    float distance_to_center = length(vec2(source - center));
 	if (distance_to_center < float(radius)) {
         atomicExchange(output_buffer.data[source_index], spawn_material);
 	}
 }
 
-
-
 void main() {
-    uint index = gl_GlobalInvocationID.y * params.grid_size.x + gl_GlobalInvocationID.x;
+    uint index = gl_GlobalInvocationID.y * p.width + gl_GlobalInvocationID.x;
     ivec2 pos = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
-    
-    // if (params.is_spawning == 1) {
-    //     spawn_in_radius(index, self_pos, params.mouse_pos, params.spawn_radius, params.spawn_material);
-    // }
 
+    int count = min(mouse_buffer.count, 100);
 
-    // In your main shader function
-    if (pos.x == 0 && pos.y == 0) {
-        // Debug output at a known position - this should always appear
-        atomicExchange(output_buffer.data[index], WALL);
+    for (int i = 0; i < count; i++) {
+        ivec2 mouse_pos = ivec2(mouse_buffer.x[i], mouse_buffer.y[i]);
+        spawn_in_radius(index, pos, mouse_pos, p.spawn_radius, p.spawn_material);
     }
 
-    if (pos.x == params.mouse_pos.x && pos.y == params.mouse_pos.y) {
-        // This should mark where the mouse actually is
-        atomicExchange(output_buffer.data[index], WATER);
+    int material = input_buffer.data[index];
+    switch (material) {
+        case SAND: sandMechanic(pos); return;
+        case WATER: waterMechanic(pos); return;
     }
-
-    // Test to see where mouse coordinates are in the shader's understanding
-    if (pos.x == 10 && pos.y == 10) {
-        // Mark a reference point to understand coordinate system   
-        atomicExchange(output_buffer.data[index], SAND);
-    }
-
-    // int material = input_buffer.data[index];
-    // switch (material) {
-    //     case SAND: sandMechanic(self_pos); return;
-    //     case WATER: waterMechanic(self_pos); return;
-    // }
 }

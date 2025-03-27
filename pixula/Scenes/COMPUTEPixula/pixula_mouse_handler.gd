@@ -53,7 +53,6 @@ var is_drawing: bool = false
 var previous_mouse_pos: Vector2i
 
 func _ready() -> void:
-	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	setup_mouse_filter($"../Overlay/MainPanelContainer")
 	setup_ui()
 
@@ -63,23 +62,26 @@ func _process(_delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("SPAWN_WATER") or event.is_action_released("SPAWN_SAND"):
-		pixula_compute.set_spawning(false)
+		pixula_compute.disable_spawning()
 		is_drawing = false
 
 func check_mouse_input() -> void:
+	var current_mouse_pos: Vector2i = get_mouse_tile_pos()
+	
 	if _is_pressing_ui:
 		is_drawing = false
 		return
 		
-	var current_mouse_pos: Vector2i = get_mouse_tile_pos()
-	if Input.is_action_pressed("SPAWN_WATER") or Input.is_action_pressed("SPAWN_SAND"):
+	if Input.is_action_just_pressed("SPAWN_WATER") or Input.is_action_just_pressed("SPAWN_SAND"):
 		is_drawing = true
 		previous_mouse_pos = current_mouse_pos
+		
 	if is_drawing:
 		var mat: MaterialType = MaterialType.AIR if Input.is_action_pressed("SPAWN_WATER") else selected_material
 		var points: Array[Vector2i] = get_line_points(previous_mouse_pos, current_mouse_pos)
-		for point in points:
-			pixula_compute.set_spawning(true, spawn_radius, selected_material, point)
+		pixula_compute.set_spawning(true, spawn_radius, mat, points)
+		
+		if points.size() > 0: print("Spawns this frame: ", points.size())
 		previous_mouse_pos = current_mouse_pos
 
 # Get all points in a line between two points

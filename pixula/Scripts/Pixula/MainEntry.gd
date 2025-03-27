@@ -206,7 +206,8 @@ func check_mouse_input() -> void:
 
 		for point in points:
 			simulator.SpawnInRadius(point.x, point.y, spawn_radius, material)
-
+		
+		if points.size() > 0: print(points.size())
 		previous_mouse_pos = current_mouse_pos
 
 func get_line_points(start: Vector2i, end: Vector2i) -> Array[Vector2i]:
