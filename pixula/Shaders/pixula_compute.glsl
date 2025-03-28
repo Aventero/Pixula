@@ -4,6 +4,9 @@
 
 #define MAX_MOUSE_POSITIONS 200
 
+#include "compute_helper.gdshaderinc"
+// float random(ivec2 pos, int frame) -> 0 - 1
+
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 struct Pixel {
@@ -25,17 +28,6 @@ layout(set = 0, binding = 2, std430) restrict buffer MousePosBuffer {
     int x[MAX_MOUSE_POSITIONS];
     int y[MAX_MOUSE_POSITIONS];
 } mouse_buffer;
-
-float hash1D(uint n) {
-    n = (n << 13U) ^ n;
-    n = n * (n * n * 15731U + 789221U) + 1376312589U;
-    return float(n & 0x7fffffffU) / float(0x7fffffff);
-}
-
-float random(ivec2 pos, int frame) {
-    uint combined = uint((pos.x + frame) * 1973 + (pos.y + frame) * 9277);
-    return hash1D(combined);
-}
 
 // keep size under 128 bytes
 layout(push_constant, std430) uniform Params {
@@ -67,7 +59,7 @@ int getMaterialType(int material) {
 }
 
 bool inBounds(ivec2 pos) {
-    return pos.x < p.width && pos.y < p.height && pos.x > 0 && pos.y > 0;
+    return pos.x < p.width && pos.y < p.height && pos.x >= 0 && pos.y >= 0;
 }
 
 bool canSwap(int source_material, int destination_material) {
@@ -117,14 +109,14 @@ bool tryMove(ivec2 source, ivec2 destination) {
     }
 }
 
-bool moveDown(ivec2 source) {
+bool moveDown(ivec2 source, Pixel pixel) {
     return tryMove(source, source + ivec2(0, 1));
 }
 
-bool moveDiagonal(ivec2 source) {
+bool moveDiagonal(ivec2 source, Pixel pixel) {
 
     ivec2 direction;
-    if ((source.x + source.y) % 2 == 0)
+    if (random(source, pixel.frame) > 0.5)
         direction = ivec2(-1, 1);
     else
         direction = ivec2(1, 1);
@@ -132,25 +124,25 @@ bool moveDiagonal(ivec2 source) {
     return tryMove(source, source + direction);
 }
 
-bool moveDownLeft(ivec2 source) {
+bool moveDownLeft(ivec2 source, Pixel pixel) {
     return tryMove(source, source + ivec2(-1, 1));
 }
 
-bool moveDownRight(ivec2 source) {
+bool moveDownRight(ivec2 source, Pixel pixel) {
     return tryMove(source, source + ivec2(1, 1));
 }
 
-bool moveHorizontal(ivec2 source) {
+bool moveHorizontal(ivec2 source, Pixel pixel) {
     int direction = source.y % 2 == 0 ? 1 : -1;
     return tryMove(source, source + ivec2(direction, 0));
 }
 
-bool sandMechanic(ivec2 source) {
-    return moveDown(source) || moveDiagonal(source);
+bool sandMechanic(ivec2 source, Pixel pixel) {
+    return moveDown(source, pixel) || moveDiagonal(source, pixel);
 }
 
-bool waterMechanic(ivec2 source) {
-    return moveDown(source) || moveDiagonal(source) || moveHorizontal(source);
+bool waterMechanic(ivec2 source, Pixel pixel) {
+    return moveDown(source, pixel) || moveDiagonal(source, pixel) || moveHorizontal(source, pixel);
 }
 
 void spawn_in_radius(uint source_index, ivec2 source, ivec2 center, int radius, int spawn_material) {
@@ -165,15 +157,17 @@ void main() {
     ivec2 pos = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
 
     int count = min(mouse_buffer.count, MAX_MOUSE_POSITIONS);
-
     for (int i = 0; i < count; i++) {
         ivec2 mouse_pos = ivec2(mouse_buffer.x[i], mouse_buffer.y[i]);
         spawn_in_radius(index, pos, mouse_pos, p.spawn_radius, p.spawn_material);
     }
 
-    int pixel = input_buffer.pixels[index].material;
-    switch (pixel) {
-        case SAND: sandMechanic(pos); return;
-        case WATER: waterMechanic(pos); return;
+    int material = input_buffer.pixels[index].material;
+    Pixel pixel = input_buffer.pixels[index];
+    switch (material) {
+        case SAND: sandMechanic(pos, pixel); break;
+        case WATER: waterMechanic(pos, pixel); break;
     }
+
+    output_buffer.pixels[index].frame++;
 }

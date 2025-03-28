@@ -2,7 +2,7 @@ class_name PixulaCompute
 extends Node2D
 
 # Smallest width is 32 cause 16 work groups
-const WIDTH = 512 * 2
+const WIDTH = 512
 const HEIGHT = WIDTH / 2
 const PIXELS = WIDTH * HEIGHT
 const WORK_GROUP = 16
@@ -30,12 +30,15 @@ var visualization_uniform_set: RID
 var render_texture: RID
 var render_device_texture: Texture2DRD = Texture2DRD.new()
 var push_constants: PackedByteArray
+var palette_sampler: RID
+var palette_texture: RID
+@export var palette: Texture2D
 
 # Spawning
 var mouse_buffer: RID
 var is_spawning: bool = false
 var spawn_radius: int = 0
-var current_spawn_material: MouseHandler.MaterialType = MouseHandler.MaterialType.AIR
+var current_spawn_material: int = MouseHandler.MaterialType.AIR
 var mouse_pos: Vector2i
 var active_mouse_positions = 0
 
@@ -80,10 +83,10 @@ func set_push_constants() -> void:
 func setup_mouse_buffer() -> void:
 	# current_mouse_position_size = 4 byte
 	# mouse_positions themselves = POSITIONS * 8 bytes
-	var buffer_size = (4 + MAX_MOUSE_POSITIONS * 4 * 2)
+	var mouse_buffer_size = (4 + MAX_MOUSE_POSITIONS * 4 * 2)
 	var initial_data = PackedByteArray()
-	initial_data.resize(buffer_size)
-	mouse_buffer = rd.storage_buffer_create(buffer_size, initial_data)
+	initial_data.resize(mouse_buffer_size)
+	mouse_buffer = rd.storage_buffer_create(mouse_buffer_size, initial_data)
 
 func setup_in_out_buffers() -> void:
 	var buffer_data = PackedInt32Array()
@@ -98,21 +101,19 @@ func setup_in_out_buffers() -> void:
 	output_buffer = rd.storage_buffer_create(byte_buffer.size(), byte_buffer)
 	buffer_size = byte_buffer.size()
 
-func setup_output_texture():
+
+func setup_output_texture() -> void:
 	# Create format for the texture
 	var tf = RDTextureFormat.new()
 	tf.format = RenderingDevice.DATA_FORMAT_R8G8B8A8_UNORM
 	tf.texture_type = RenderingDevice.TEXTURE_TYPE_2D
 	tf.width = WIDTH
 	tf.height = HEIGHT
-	tf.depth = 1
-	tf.array_layers = 1
 	tf.mipmaps = 1
 	tf.usage_bits = (
 		RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT |
 		RenderingDevice.TEXTURE_USAGE_STORAGE_BIT |
 		RenderingDevice.TEXTURE_USAGE_CAN_UPDATE_BIT |
-		RenderingDevice.TEXTURE_USAGE_CAN_COPY_FROM_BIT |
 		RenderingDevice.TEXTURE_USAGE_CAN_COPY_TO_BIT
 	)
 	
@@ -123,6 +124,26 @@ func setup_output_texture():
 	
 	# Set it to the displaying Texture Rect
 	$CanvasLayer/TextureRect.texture = render_device_texture
+
+func setup_palette() -> void:
+	
+	var sampler = RDSamplerState.new()
+	sampler.min_filter = RenderingDevice.SAMPLER_FILTER_NEAREST
+	sampler.mag_filter = RenderingDevice.SAMPLER_FILTER_NEAREST
+	sampler.mip_filter = RenderingDevice.SAMPLER_FILTER_NEAREST
+	palette_sampler = rd.sampler_create(sampler)
+	
+	var format = RDTextureFormat.new()
+	format.format = RenderingDevice.DATA_FORMAT_R8G8B8A8_UNORM
+	format.texture_type = RenderingDevice.TEXTURE_TYPE_2D
+	format.width = palette.get_image().get_width()
+	format.height = palette.get_image().get_height()
+	format.usage_bits = (RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT | RenderingDevice.TEXTURE_USAGE_STORAGE_BIT)
+	palette_texture = rd.texture_create(
+		format,
+		RDTextureView.new(),
+		[palette.get_image().get_data()]
+	)
 
 func _initial_setup() -> void:
 	#DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
@@ -144,6 +165,7 @@ func _initial_setup() -> void:
 	
 	setup_in_out_buffers()
 	setup_mouse_buffer()
+	setup_palette()
 	setup_output_texture()
 	
 	create_simulation_uniform_set()
@@ -245,7 +267,13 @@ func create_visualization_uniform_set() -> void:
 	texture_uniform.binding = 1
 	texture_uniform.add_id(render_texture)
 	
+	var palette_uniform = RDUniform.new()
+	palette_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_SAMPLER_WITH_TEXTURE
+	palette_uniform.binding = 2
+	palette_uniform.add_id(palette_sampler) # First sampler
+	palette_uniform.add_id(palette_texture) # Then texture
+	
 	if visualization_uniform_set:
 		rd.free_rid(visualization_uniform_set)
 	
-	visualization_uniform_set = rd.uniform_set_create([sim_buffer_uniform, texture_uniform], visualization_shader, 0)
+	visualization_uniform_set = rd.uniform_set_create([sim_buffer_uniform, texture_uniform, palette_uniform], visualization_shader, 0)

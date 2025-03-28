@@ -1,6 +1,9 @@
 #[compute]
 #version 450
 
+#include "compute_helper.gdshaderinc"
+
+
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 struct Pixel {
@@ -14,6 +17,8 @@ layout(set = 0, binding = 0, std430) restrict buffer SimulationBuffer {
 } simulation_buffer;
 
 layout(rgba8, set = 0, binding = 1) uniform writeonly image2D output_image;
+
+layout(set = 0, binding = 2) uniform sampler2D color_palette;
 
 const int AIR = 0;
 const int SAND = 1;
@@ -51,10 +56,22 @@ void updateImage(ivec2 self_pos, int material, int color_index) {
         default:
             color = vec4(1.0, 0.0, 1.0, 1.0);
     }
-    
     imageStore(output_image, self_pos, color);
 }
 
+int material_color_index_lookup(int material) {
+    switch (material) {
+        case SAND: return 1;
+    }
+
+    return 0;
+}
+
+void setup_pixel(int pixel_index, int color_index) {
+    if (color_index == -1) {
+        material_color_index_lookup(simulation_buffer.data[pixel_index].material);
+    }
+}
 
 void main() {
     uint index = gl_GlobalInvocationID.y * params.grid_size.x + gl_GlobalInvocationID.x;
