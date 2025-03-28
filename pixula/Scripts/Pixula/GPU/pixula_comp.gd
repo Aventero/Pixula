@@ -6,7 +6,7 @@ const WIDTH = 512 * 2
 const HEIGHT = WIDTH / 2
 const CELL_SIZE = WIDTH * HEIGHT
 const WORK_GROUP = 16
-const MAX_MOUSE_POSITIONS = 100
+const MAX_MOUSE_POSITIONS = 200
 
 const AIR = 0
 const SAND = 1
@@ -77,25 +77,23 @@ func set_push_constants() -> void:
 	push_constants.encode_s32(8, int(is_spawning))
 	push_constants.encode_s32(12, spawn_radius)
 	push_constants.encode_s32(16, int(current_spawn_material))
-	push_constants.encode_s32(20, mouse_pos.x)
-	push_constants.encode_s32(24, mouse_pos.y)
 	
 func setup_mouse_buffer() -> void:
 	# current_mouse_position_size = 4 byte
-	# mouse_positions themselves = 100 * 8 bytes
-	var buffer_size = (4 + MAX_MOUSE_POSITIONS * 8)
+	# mouse_positions themselves = POSITIONS * 8 bytes
+	var buffer_size = (4 + MAX_MOUSE_POSITIONS * 4 * 2)
 	var initial_data = PackedByteArray()
 	initial_data.resize(buffer_size)
 	mouse_buffer = rd.storage_buffer_create(buffer_size, initial_data)
 
 func setup_in_out_buffers() -> void:
-	var cells = PackedInt32Array()
-	cells.resize(CELL_SIZE)
+	var buffer_data = PackedByteArray()
+	buffer_data.resize(CELL_SIZE * 8)
+	buffer_data.fill(0)
 	
-	var packed_data_array = cells.to_byte_array()
-	input_buffer = rd.storage_buffer_create(packed_data_array.size(), packed_data_array)
-	output_buffer = rd.storage_buffer_create(packed_data_array.size(), packed_data_array)
-	buffer_size = packed_data_array.size()
+	input_buffer = rd.storage_buffer_create(buffer_data.size(), buffer_data)
+	output_buffer = rd.storage_buffer_create(buffer_data.size(), buffer_data)
+	buffer_size = buffer_data.size()
 
 func setup_output_texture():
 	# Create format for the texture

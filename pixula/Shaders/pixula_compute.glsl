@@ -2,22 +2,39 @@
 
 #version 450
 
+#define MAX_MOUSE_POSITIONS 200
+
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
+struct Pixel {
+    int material;
+    int frame;
+};
+
 layout(set = 0, binding = 0, std430) restrict buffer InputBuffer {
-    int data[];
+    Pixel pixels[];
 } input_buffer;
 
 layout(set = 0, binding = 1, std430) buffer OutputBuffer {
-    int data[];
+    Pixel pixels[];
 } output_buffer;
 
 layout(set = 0, binding = 2, std430) restrict buffer MousePosBuffer {
     int count;
-    int x[100];
-    int y[100];
+    int x[MAX_MOUSE_POSITIONS];
+    int y[MAX_MOUSE_POSITIONS];
 } mouse_buffer;
 
+float hash1D(uint n) {
+    n = (n << 13U) ^ n;
+    n = n * (n * n * 15731U + 789221U) + 1376312589U;
+    return float(n & 0x7fffffffU) / float(0x7fffffff);
+}
+
+float random(ivec2 position) {
+    uint combined = uint((position.x) * 1973 + (position.y) * 9277);
+    return hash1D(combined);
+}
 
 // keep size under 128 bytes
 layout(push_constant, std430) uniform Params {
@@ -26,12 +43,8 @@ layout(push_constant, std430) uniform Params {
     int is_spawning;
     int spawn_radius;   
     int spawn_material; 
-    int mouse_x;
-    int mouse_y;
 } p;
 
-// Mouse
-const int MAX_MOUSE_POSITION = 100;
 
 // Materials
 const int AIR = 0;
@@ -77,28 +90,28 @@ bool tryMove(ivec2 source, ivec2 destination) {
     uint destination_index = destination.y * p.width + destination.x;
     
     // Get materials
-    int source_material = input_buffer.data[source_index];
-    int destination_material = input_buffer.data[destination_index];
+    int source_material = input_buffer.pixels[source_index].material;
+    int destination_material = input_buffer.pixels[destination_index].material;
     
     // Skip if cannot swap
     if (source_material == destination_material || !canSwap(source_material, destination_material)) return false;
     
     // Step 1: mark source UNSWAPPABLE
-    int source_original = atomicCompSwap(output_buffer.data[source_index], source_material, UNSWAPPABLE);
+    int source_original = atomicCompSwap(output_buffer.pixels[source_index].material, source_material, UNSWAPPABLE);
     
     // someone else modified source already abort!
     if (source_original != source_material) return false;
     
     // Step 2: Try to swap with target
-    int target_original = atomicCompSwap(output_buffer.data[destination_index], destination_material, source_material);
+    int target_original = atomicCompSwap(output_buffer.pixels[destination_index].material, destination_material, source_material);
     
     if (target_original == destination_material) {
-        // Target swapped, set source to target material
-        atomicExchange(output_buffer.data[source_index], destination_material);
+        // Target swapped, set source to target pixels
+        atomicExchange(output_buffer.pixels[source_index].material, destination_material);
         return true;
     } else {
-        // Failed to swap, restore source to original material
-        atomicExchange(output_buffer.data[source_index], source_material);
+        // Failed to swap, restore source to original pixels
+        atomicExchange(output_buffer.pixels[source_index].material, source_material);
         return false;
     }
 }
@@ -108,7 +121,13 @@ bool moveDown(ivec2 source) {
 }
 
 bool moveDiagonal(ivec2 source) {
-    ivec2 direction = (source.x + source.y) % 2 == 0 ? ivec2(-1, 1) : ivec2(1, 1);
+
+    ivec2 direction;
+    if ((source.x + source.y) % 2 == 0)
+        direction = ivec2(-1, 1);
+    else
+        direction = ivec2(1, 1);
+
     return tryMove(source, source + direction);
 }
 
@@ -136,7 +155,7 @@ bool waterMechanic(ivec2 source) {
 void spawn_in_radius(uint source_index, ivec2 source, ivec2 center, int radius, int spawn_material) {
     float distance_to_center = length(vec2(source - center));
 	if (distance_to_center < float(radius)) {
-        atomicExchange(output_buffer.data[source_index], spawn_material);
+        atomicExchange(output_buffer.pixels[source_index].material, spawn_material);
 	}
 }
 
@@ -144,15 +163,15 @@ void main() {
     uint index = gl_GlobalInvocationID.y * p.width + gl_GlobalInvocationID.x;
     ivec2 pos = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
 
-    int count = min(mouse_buffer.count, 100);
+    int count = min(mouse_buffer.count, MAX_MOUSE_POSITIONS);
 
     for (int i = 0; i < count; i++) {
         ivec2 mouse_pos = ivec2(mouse_buffer.x[i], mouse_buffer.y[i]);
         spawn_in_radius(index, pos, mouse_pos, p.spawn_radius, p.spawn_material);
     }
 
-    int material = input_buffer.data[index];
-    switch (material) {
+    int pixel = input_buffer.pixels[index].material;
+    switch (pixel) {
         case SAND: sandMechanic(pos); return;
         case WATER: waterMechanic(pos); return;
     }

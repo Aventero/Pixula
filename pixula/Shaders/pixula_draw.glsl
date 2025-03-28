@@ -3,8 +3,13 @@
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
+struct Pixel {
+    int material;
+    int frame;
+};
+
 layout(set = 0, binding = 0, std430) restrict buffer SimulationBuffer {
-    int data[];
+    Pixel data[];
 } simulation_buffer;
 
 layout(rgba8, set = 0, binding = 1) uniform writeonly image2D output_image;
@@ -22,9 +27,6 @@ layout(push_constant, std430) uniform Params {
     int spawn_material;
     ivec2 mouse_pos;
 } params;
-
-
-
 
 void updateImage(ivec2 self_pos, int material) {
     vec4 color;
@@ -53,6 +55,6 @@ void main() {
     uint index = gl_GlobalInvocationID.y * params.grid_size.x + gl_GlobalInvocationID.x;
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
     
-    int material = simulation_buffer.data[index];
-    updateImage(pos, material);
+    int source_material = simulation_buffer.data[index].material;
+    updateImage(pos, source_material);
 }

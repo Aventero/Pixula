@@ -81,7 +81,7 @@ func check_mouse_input() -> void:
 		var points: Array[Vector2i] = get_line_points(previous_mouse_pos, current_mouse_pos)
 		pixula_compute.set_spawning(true, spawn_radius, mat, points)
 		
-		if points.size() > 0: print("Spawns this frame: ", points.size())
+		if points.size() > 100: print("Spawns this frame: ", points.size())
 		previous_mouse_pos = current_mouse_pos
 
 # Get all points in a line between two points
