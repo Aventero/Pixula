@@ -4,7 +4,7 @@ extends Node2D
 # Smallest width is 32 cause 16 work groups
 const WIDTH = 512 * 2
 const HEIGHT = WIDTH / 2
-const CELL_SIZE = WIDTH * HEIGHT
+const PIXELS = WIDTH * HEIGHT
 const WORK_GROUP = 16
 const MAX_MOUSE_POSITIONS = 200
 
@@ -57,7 +57,6 @@ func update_mouse_positions(positions: Array) -> void:
 	var mouse_data = PackedInt32Array()
 	mouse_data.resize(1 + MAX_MOUSE_POSITIONS * 2)
 	mouse_data.fill(0)
-	
 	mouse_data[0] = count
 	
 	# each of the current mouse position
@@ -87,13 +86,17 @@ func setup_mouse_buffer() -> void:
 	mouse_buffer = rd.storage_buffer_create(buffer_size, initial_data)
 
 func setup_in_out_buffers() -> void:
-	var buffer_data = PackedByteArray()
-	buffer_data.resize(CELL_SIZE * 8)
-	buffer_data.fill(0)
+	var buffer_data = PackedInt32Array()
+	buffer_data.resize(PIXELS * 3)
+	for i in range(0, buffer_data.size(), 3):
+		buffer_data[i] = 0
+		buffer_data[i + 1] = 0
+		buffer_data[i + 2] = -1
 	
-	input_buffer = rd.storage_buffer_create(buffer_data.size(), buffer_data)
-	output_buffer = rd.storage_buffer_create(buffer_data.size(), buffer_data)
-	buffer_size = buffer_data.size()
+	var byte_buffer = buffer_data.to_byte_array()
+	input_buffer = rd.storage_buffer_create(byte_buffer.size(), byte_buffer)
+	output_buffer = rd.storage_buffer_create(byte_buffer.size(), byte_buffer)
+	buffer_size = byte_buffer.size()
 
 func setup_output_texture():
 	# Create format for the texture

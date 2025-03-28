@@ -6,6 +6,7 @@ layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 struct Pixel {
     int material;
     int frame;
+    int color_index;
 };
 
 layout(set = 0, binding = 0, std430) restrict buffer SimulationBuffer {
@@ -28,20 +29,24 @@ layout(push_constant, std430) uniform Params {
     ivec2 mouse_pos;
 } params;
 
-void updateImage(ivec2 self_pos, int material) {
+void updateImage(ivec2 self_pos, int material, int color_index) {
     vec4 color;
     switch(material) {
         case AIR:
             color = vec4(0.0, 0.0, 0.0, 0.0); 
             break;
         case SAND:
+            if (color_index == -1) {
+                color = vec4(1.0, 1.0, 1.0, 1.0);
+                break;
+            }
             color = vec4(0.76, 0.7, 0.5, 1.0);
             break;
         case WATER:
             color = vec4(0.3, 0.5, 0.8, 0.8); 
             break;
         case WALL:
-            color = vec4(0.5, 0.5, 0.5, 1.0);
+            color = vec4(1.0, 0.5, 0.5, 1.0);
             break;
         default:
             color = vec4(1.0, 0.0, 1.0, 1.0);
@@ -56,5 +61,6 @@ void main() {
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
     
     int source_material = simulation_buffer.data[index].material;
-    updateImage(pos, source_material);
+    int color_index = simulation_buffer.data[index].color_index;
+    updateImage(pos, source_material, color_index);
 }

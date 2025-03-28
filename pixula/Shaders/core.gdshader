@@ -333,7 +333,7 @@ void spawn_in_radius(ivec2 pos, ivec2 block_pos, ivec2 center, int radius, int m
 	ivec2 pos_min = max(ivec2(0, 0), ivec2(center) - ivec2(radius));
 	ivec2 pos_max = min(texture_size, ivec2(center) + ivec2(radius + 1));
 	int distance_to_center = int(length(vec2(pos - center)));
-	
+
 	// is the fragment in this circle?
 	// yes -> place the material_type in the block
     int index = get_own_index_in_block(pos, block_pos);

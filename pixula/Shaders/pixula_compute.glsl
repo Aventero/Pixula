@@ -9,6 +9,7 @@ layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 struct Pixel {
     int material;
     int frame;
+    int color_index;
 };
 
 layout(set = 0, binding = 0, std430) restrict buffer InputBuffer {
@@ -31,8 +32,8 @@ float hash1D(uint n) {
     return float(n & 0x7fffffffU) / float(0x7fffffff);
 }
 
-float random(ivec2 position) {
-    uint combined = uint((position.x) * 1973 + (position.y) * 9277);
+float random(ivec2 pos, int frame) {
+    uint combined = uint((pos.x + frame) * 1973 + (pos.y + frame) * 9277);
     return hash1D(combined);
 }
 
@@ -66,7 +67,7 @@ int getMaterialType(int material) {
 }
 
 bool inBounds(ivec2 pos) {
-    return pos.x < p.width && pos.y < p.height;
+    return pos.x < p.width && pos.y < p.height && pos.x > 0 && pos.y > 0;
 }
 
 bool canSwap(int source_material, int destination_material) {
