@@ -56,9 +56,14 @@ func _ready() -> void:
 	setup_mouse_filter($"../Overlay/MainPanelContainer")
 	setup_ui()
 
-func _process(_delta: float) -> void:
+var clock: float = 0
+func _process(delta: float) -> void:
 	$"../Overlay/MainPanelContainer/MarginContainer/VBoxContainer/FPS_Label".text = str(Engine.get_frames_per_second())
 	check_mouse_input()
+	clock += delta
+	if clock > 1/144.0:
+		clock = 0
+		pixula_compute.process_simulation()
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("SPAWN_WATER") or event.is_action_released("SPAWN_SAND"):
@@ -80,8 +85,6 @@ func check_mouse_input() -> void:
 		var mat: MaterialType = MaterialType.AIR if Input.is_action_pressed("SPAWN_WATER") else selected_material
 		var points: Array[Vector2i] = get_line_points(previous_mouse_pos, current_mouse_pos)
 		pixula_compute.set_spawning(true, spawn_radius, mat, points)
-		
-		if points.size() > 100: print("Spawns this frame: ", points.size())
 		previous_mouse_pos = current_mouse_pos
 
 # Get all points in a line between two points

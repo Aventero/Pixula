@@ -14,3 +14,8 @@ int random_range(ivec2 pos, int frame, int min_val, int max_val) {
     int range = max_val - min_val + 1;
     return min_val + int(rnd * range);
 }
+
+
+bool chance(ivec2 pos, int frame, float probability) {
+    return random(pos, frame) <= probability;
+}

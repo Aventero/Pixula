@@ -41,7 +41,7 @@ var spawn_radius: int = 0
 var current_spawn_material: int = MouseHandler.MaterialType.AIR
 var mouse_pos: Vector2i
 var active_mouse_positions = 0
-
+var pending_mouse_positions: Array[Vector2i]
 
 func disable_spawning() -> void:
 	is_spawning = false
@@ -53,7 +53,7 @@ func set_spawning(_is_spawning: bool, radius, material_to_spawn: MouseHandler.Ma
 	is_spawning = _is_spawning
 	spawn_radius = radius
 	current_spawn_material = int(material_to_spawn)
-	update_mouse_positions(mouse_positions)
+	pending_mouse_positions.append_array(mouse_positions)
 
 func update_mouse_positions(positions: Array) -> void:
 	var count = min(positions.size(), MAX_MOUSE_POSITIONS)
@@ -70,6 +70,9 @@ func update_mouse_positions(positions: Array) -> void:
 	# upload it!
 	var mouse_data_bytes = mouse_data.to_byte_array()
 	rd.buffer_update(mouse_buffer, 0, mouse_data_bytes.size(), mouse_data_bytes)
+	
+	# clear
+	pending_mouse_positions.clear()
 		
 func set_push_constants() -> void:
 	push_constants = PackedByteArray()
@@ -178,9 +181,13 @@ func _initial_setup() -> void:
 func _ready() -> void:
 	RenderingServer.call_on_render_thread(_initial_setup)
 
+func process_simulation() -> void:
+	RenderingServer.call_on_render_thread(update_simulation)
+
 func update_simulation() -> void:
 	rd.buffer_copy(input_buffer, output_buffer, 0, 0, buffer_size)
 	set_push_constants()
+	update_mouse_positions(pending_mouse_positions)
 	simulate()
 	draw_simulation()
 	swap_buffers()
@@ -188,13 +195,6 @@ func update_simulation() -> void:
 	# Not exactly necessary to re-create them
 	create_simulation_uniform_set()
 	create_visualization_uniform_set()
-	
-var clock = 0
-func _process(_delta: float) -> void:
-	#clock += _delta
-	#if clock > 1.0/144.0:
-		#clock = 0
-	RenderingServer.call_on_render_thread(update_simulation)
 	
 func simulate() -> void:
 	var compute_list = rd.compute_list_begin()
@@ -204,7 +204,6 @@ func simulate() -> void:
 	rd.compute_list_dispatch(compute_list, WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
 	rd.compute_list_end()
 	
-
 func draw_simulation() -> void:
 	var compute_list = rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, visualization_pipeline)
@@ -213,25 +212,6 @@ func draw_simulation() -> void:
 	rd.compute_list_set_push_constant(compute_list, push_constants, push_constants.size())
 	rd.compute_list_dispatch(compute_list,  WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
 	rd.compute_list_end()
-	
-
-func count_materials(buffer_rid: RID, material_type: int) -> int:
-	var byte_data = rd.buffer_get_data(buffer_rid)
-	var data = byte_data.to_int32_array()
-	var count = 0
-	for value in data:
-		if value == material_type:
-			count += 1
-	return count
-
-func count_image_materials(image: Image) -> int:
-	var count = 0
-	for y in range(image.get_height()):
-		for x in range(image.get_width()):
-			var pixel_color = image.get_pixel(x, y)
-			if pixel_color.r >= 0.2:
-				count += 1
-	return count
 	
 func swap_buffers() -> void:
 	var temp = input_buffer
@@ -262,7 +242,7 @@ func create_simulation_uniform_set() -> void:
 
 func create_visualization_uniform_set() -> void:
 	var sim_buffer_uniform = RDUniform.new()
-	sim_buffer_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	sim_buffer_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER	
 	sim_buffer_uniform.binding = 0
 	sim_buffer_uniform.add_id(output_buffer)
 	

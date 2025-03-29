@@ -59,21 +59,21 @@ int getMaterialType(int material) {
     return UNSWAPPABLE;
 }
 
+uint getIndexFromPosition(ivec2 position) {
+    return position.y * p.width + position.x;
+}
+
 bool inBounds(ivec2 pos) {
     return pos.x < p.width && pos.y < p.height && pos.x >= 0 && pos.y >= 0;
 }
 
 bool canSwap(int source_material, int destination_material) {
-
     if (source_material == AIR || destination_material == AIR) return true;
-    
     int source_type = getMaterialType(source_material);
     int destination_type = getMaterialType(destination_material);
-    
     if (source_type == UNSWAPPABLE || destination_type == UNSWAPPABLE) return false;
     if (source_type == SOLID && destination_type == LIQUID) return true;
     if (source_type == LIQUID && destination_type == GAS) return true;
-    
     return false;
 }
 
@@ -98,8 +98,8 @@ void setPixelData(uint index, int material, int frame, int color_index) {
 bool tryMove(ivec2 source, ivec2 destination) {
     if (!inBounds(source) || !inBounds(destination)) return false;
     
-    uint source_index = source.y * p.width + source.x;
-    uint destination_index = destination.y * p.width + destination.x;
+    uint source_index = getIndexFromPosition(source);
+    uint destination_index = getIndexFromPosition(destination);
     
     Pixel source_pixel = input_buffer.pixels[source_index];
     Pixel destination_pixel = input_buffer.pixels[destination_index];
@@ -138,7 +138,7 @@ bool moveDown(ivec2 source, Pixel pixel) {
 bool moveDiagonal(ivec2 source, Pixel pixel) {
 
     ivec2 direction;
-    if (random_range(source, pixel.frame, 0, 1) == 0)
+    if (chance(source, pixel.frame, 0.5))
         direction = ivec2(-1, 1);
     else
         direction = ivec2(1, 1);
@@ -177,9 +177,11 @@ void spawn_in_radius(uint source_index, ivec2 source, ivec2 center, int radius, 
 	}
 }
 
+
+
 void main() {
-    uint index = gl_GlobalInvocationID.y * p.width + gl_GlobalInvocationID.x;
     ivec2 pos = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
+    uint index = getIndexFromPosition(pos);
 
     int count = min(mouse_buffer.count, MAX_MOUSE_POSITIONS);
     for (int i = 0; i < count; i++) {
@@ -191,7 +193,7 @@ void main() {
     int material = input_buffer.pixels[index].material;
 
     // Somtimes do nothing.
-    if (random(pos, pixel.frame) > 0.99) return;
+    if (chance(pos, pixel.frame, 0.005)) return;
 
     switch (material) {
         case SAND: sandMechanic(pos, pixel); break;
