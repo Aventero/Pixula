@@ -79,6 +79,7 @@ func set_push_constants() -> void:
 	push_constants.encode_s32(8, int(is_spawning))
 	push_constants.encode_s32(12, spawn_radius)
 	push_constants.encode_s32(16, int(current_spawn_material))
+	push_constants.encode_s32(20, randi_range(0, 100))
 	
 func setup_mouse_buffer() -> void:
 	# current_mouse_position_size = 4 byte
@@ -100,7 +101,6 @@ func setup_in_out_buffers() -> void:
 	input_buffer = rd.storage_buffer_create(byte_buffer.size(), byte_buffer)
 	output_buffer = rd.storage_buffer_create(byte_buffer.size(), byte_buffer)
 	buffer_size = byte_buffer.size()
-
 
 func setup_output_texture() -> void:
 	# Create format for the texture
@@ -138,7 +138,11 @@ func setup_palette() -> void:
 	format.texture_type = RenderingDevice.TEXTURE_TYPE_2D
 	format.width = palette.get_image().get_width()
 	format.height = palette.get_image().get_height()
-	format.usage_bits = (RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT | RenderingDevice.TEXTURE_USAGE_STORAGE_BIT)
+	format.mipmaps = 1
+	format.usage_bits = (RenderingDevice.TEXTURE_USAGE_SAMPLING_BIT |
+		RenderingDevice.TEXTURE_USAGE_STORAGE_BIT |
+		RenderingDevice.TEXTURE_USAGE_CAN_UPDATE_BIT |
+		RenderingDevice.TEXTURE_USAGE_CAN_COPY_TO_BIT)
 	palette_texture = rd.texture_create(
 		format,
 		RDTextureView.new(),

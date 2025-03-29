@@ -81,7 +81,3 @@ MOVE_LEFT={
 [physics]
 
 2d/run_on_separate_thread=true
-
-[rendering]
-
-viewport/hdr_2d=true

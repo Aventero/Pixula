@@ -8,3 +8,9 @@ float random(ivec2 pos, int frame) {
     uint combined = uint((pos.x + frame) * 1973 + (pos.y + frame) * 9277);
     return hash1D(combined);
 }
+
+int random_range(ivec2 pos, int frame, int min_val, int max_val) {
+    float rnd = random(pos, frame);
+    int range = max_val - min_val + 1;
+    return min_val + int(rnd * range);
+}

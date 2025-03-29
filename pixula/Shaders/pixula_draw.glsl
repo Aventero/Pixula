@@ -12,7 +12,7 @@ struct Pixel {
     int color_index;
 };
 
-layout(set = 0, binding = 0, std430) restrict buffer SimulationBuffer {
+layout(set = 0, binding = 0, std430) buffer SimulationBuffer {
     Pixel data[];
 } simulation_buffer;
 
@@ -34,50 +34,41 @@ layout(push_constant, std430) uniform Params {
     ivec2 mouse_pos;
 } params;
 
-void updateImage(ivec2 self_pos, int material, int color_index) {
-    vec4 color;
-    switch(material) {
-        case AIR:
-            color = vec4(0.0, 0.0, 0.0, 0.0); 
-            break;
-        case SAND:
-            if (color_index == -1) {
-                color = vec4(1.0, 1.0, 1.0, 1.0);
-                break;
-            }
-            color = vec4(0.76, 0.7, 0.5, 1.0);
-            break;
-        case WATER:
-            color = vec4(0.3, 0.5, 0.8, 0.8); 
-            break;
-        case WALL:
-            color = vec4(1.0, 0.5, 0.5, 1.0);
-            break;
-        default:
-            color = vec4(1.0, 0.0, 1.0, 1.0);
-    }
-    imageStore(output_image, self_pos, color);
-}
 
-int material_color_index_lookup(int material) {
+int get_initial_color_index(int material, ivec2 pos, int frame) {
+    int color_index = 44;
     switch (material) {
-        case SAND: return 1;
+        case SAND: color_index = 21; break;
+        case WATER: color_index = 0; break;
+        case AIR: color_index = 37; break;
     }
 
-    return 0;
+    return random_range(pos, frame, color_index, color_index + 1);
 }
 
-void setup_pixel(int pixel_index, int color_index) {
-    if (color_index == -1) {
-        material_color_index_lookup(simulation_buffer.data[pixel_index].material);
-    }
+void updateImage(ivec2 pos, int color_index) {
+    vec4 color = texelFetch(color_palette, ivec2(color_index, 0), 0);
+    imageStore(output_image, pos, color);
+}
+
+int setup_pixel(ivec2 pos, uint pixel_index, int material, int frame) {
+    int random_color_index = get_initial_color_index(material, pos, frame);
+    simulation_buffer.data[pixel_index].color_index = random_color_index;
+    return random_color_index;
 }
 
 void main() {
-    uint index = gl_GlobalInvocationID.y * params.grid_size.x + gl_GlobalInvocationID.x;
+    uint pixel_index = gl_GlobalInvocationID.y * params.grid_size.x + gl_GlobalInvocationID.x;
     ivec2 pos = ivec2(gl_GlobalInvocationID.xy);
+
+    int material = simulation_buffer.data[pixel_index].material;
+    int frame = simulation_buffer.data[pixel_index].frame;
+    int color_index = simulation_buffer.data[pixel_index].color_index;
+
+    if (color_index == -1) {
+        color_index = setup_pixel(pos, pixel_index, material, frame);
+    } 
     
-    int source_material = simulation_buffer.data[index].material;
-    int color_index = simulation_buffer.data[index].color_index;
-    updateImage(pos, source_material, color_index);
+    updateImage(pos, color_index);
+    simulation_buffer.data[pixel_index].frame++;
 }
