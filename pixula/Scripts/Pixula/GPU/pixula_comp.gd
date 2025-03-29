@@ -153,7 +153,6 @@ func setup_palette() -> void:
 	)
 
 func _initial_setup() -> void:
-	#DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 
 	# Set rendering device used for this compute shader
 	rd = RenderingServer.get_rendering_device()

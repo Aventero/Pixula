@@ -15,7 +15,11 @@ int random_range(ivec2 pos, int frame, int min_val, int max_val) {
     return min_val + int(rnd * range);
 }
 
-
 bool chance(ivec2 pos, int frame, float probability) {
     return random(pos, frame) <= probability;
 }
+
+const int AIR = 0;
+const int SAND = 1;
+const int WATER = 2;
+const int WALL = 4;

@@ -39,13 +39,6 @@ layout(push_constant, std430) uniform Params {
     int random_spawning_value;
 } p;
 
-
-// Materials
-const int AIR = 0;
-const int SAND = 1;
-const int WATER = 2;
-const int WALL = 4;
-
 const int SOLID = 100;
 const int LIQUID = 101;
 const int GAS = 102;

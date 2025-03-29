@@ -53,6 +53,7 @@ var is_drawing: bool = false
 var previous_mouse_pos: Vector2i
 
 func _ready() -> void:
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	setup_mouse_filter($"../Overlay/MainPanelContainer")
 	setup_ui()
 
