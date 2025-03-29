@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://b0x1m6lhkcbb4" path="res://Scripts/Pixula/MainEntry.gd" id="1_fjtcw"]
 [ext_resource type="Script" uid="uid://d2xhkm1orqb4f" path="res://Scripts/Pixula/MainSharp.cs" id="1_u0yqt"]
 [ext_resource type="Texture2D" uid="uid://b8u2amtqs01hm" path="res://UI/Sprites/Standard_Icons/Pixula_Icon.png" id="2_yt66i"]
-[ext_resource type="Shader" uid="uid://3f2aevp2sl7c" path="res://Shaders/Wobble.gdshader" id="3_8a7hv"]
+[ext_resource type="Shader" path="res://Shaders/Wobble.gdshader" id="3_8a7hv"]
 [ext_resource type="Theme" uid="uid://x4ngw312h2qp" path="res://UI/TheTheme.tres" id="3_r6eas"]
 [ext_resource type="Texture2D" uid="uid://dili5fe4u1uet" path="res://UI/Sprites/Material_Icons/Air_Icon.png" id="4_we8p7"]
 [ext_resource type="Texture2D" uid="uid://cydsabxv8780s" path="res://UI/Sprites/Material_Icons/Sand_Icon.png" id="5_tremm"]

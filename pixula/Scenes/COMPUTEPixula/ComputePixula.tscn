@@ -1,4 +1,4 @@
-[gd_scene load_steps=34 format=3 uid="uid://djcoiilj6jweo"]
+[gd_scene load_steps=35 format=3 uid="uid://djcoiilj6jweo"]
 
 [ext_resource type="Script" uid="uid://c8vyocb8lppoc" path="res://Scripts/Pixula/GPU/pixula_comp.gd" id="1_yo03a"]
 [ext_resource type="Texture2D" uid="uid://cna2fmjfhqaqh" path="res://UI/Sprites/colorAtlas.png" id="2_6xvq3"]
@@ -46,6 +46,16 @@ corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
+
+[sub_resource type="Environment" id="Environment_6xvq3"]
+background_mode = 3
+background_canvas_max_layer = 1
+glow_enabled = true
+glow_levels/7 = 0.14
+glow_normalized = true
+glow_blend_mode = 1
+adjustment_brightness = 0.94
+adjustment_saturation = 1.07
 
 [node name="ComputePixula" type="Node2D"]
 script = ExtResource("1_yo03a")
@@ -549,6 +559,9 @@ rounded = true
 layout_mode = 2
 text = "123"
 horizontal_alignment = 2
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_6xvq3")
 
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer/AirButton" to="MouseHandler" method="_on_material_button_pressed"]
 [connection signal="material_pressed" from="Overlay/MainPanelContainer/MarginContainer/VBoxContainer/ScrollContainer/MarginContainer/HBoxContainer/VBoxContainer/SandButton" to="MouseHandler" method="_on_material_button_pressed"]

@@ -108,7 +108,7 @@ func setup_in_out_buffers() -> void:
 func setup_output_texture() -> void:
 	# Create format for the texture
 	var tf = RDTextureFormat.new()
-	tf.format = RenderingDevice.DATA_FORMAT_R8G8B8A8_UNORM
+	tf.format = RenderingDevice.DATA_FORMAT_R16G16B16A16_SFLOAT
 	tf.texture_type = RenderingDevice.TEXTURE_TYPE_2D
 	tf.width = WIDTH
 	tf.height = HEIGHT

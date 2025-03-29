@@ -5,7 +5,6 @@
 #define MAX_MOUSE_POSITIONS 200
 
 #include "compute_helper.gdshaderinc"
-// float random(ivec2 pos, int frame) -> 0 - 1
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
@@ -169,8 +168,6 @@ void spawn_in_radius(uint source_index, ivec2 source, ivec2 center, int radius, 
         atomicExchange(output_buffer.pixels[source_index].color_index, -1);
 	}
 }
-
-
 
 void main() {
     ivec2 pos = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);

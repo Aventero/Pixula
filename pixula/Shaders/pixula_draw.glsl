@@ -15,7 +15,7 @@ layout(set = 0, binding = 0, std430) buffer SimulationBuffer {
     Pixel data[];
 } simulation_buffer;
 
-layout(rgba8, set = 0, binding = 1) uniform writeonly image2D output_image;
+layout(rgba16f, set = 0, binding = 1) uniform writeonly image2D output_image;
 
 layout(set = 0, binding = 2) uniform sampler2D color_palette;
 
@@ -75,9 +75,18 @@ ivec2 unconvert_color_index(int color_index) {
     return ivec2(color_index % PALETTE_WIDTH, int(color_index / PALETTE_WIDTH));
 }
 
+vec4 srgbToLinear(vec4 srgbColor) {
+    vec3 linearRGB;
+    linearRGB.r = srgbColor.r <= 0.04045 ? srgbColor.r / 12.92 : pow((srgbColor.r + 0.055) / 1.055, 2.4);
+    linearRGB.g = srgbColor.g <= 0.04045 ? srgbColor.g / 12.92 : pow((srgbColor.g + 0.055) / 1.055, 2.4);
+    linearRGB.b = srgbColor.b <= 0.04045 ? srgbColor.b / 12.92 : pow((srgbColor.b + 0.055) / 1.055, 2.4);
+    return vec4(linearRGB, srgbColor.a);
+}
+
 void updateImage(ivec2 pos, ivec2 color_index) {
     vec4 color = texelFetch(color_palette, color_index, 0);
-    imageStore(output_image, pos, color);
+    vec4 linear_color = srgbToLinear(color);
+    imageStore(output_image, pos, linear_color);
 }
 
 int setup_pixel(ivec2 pos, uint pixel_index, int material, int frame) {
