@@ -54,6 +54,7 @@ glow_enabled = true
 glow_levels/7 = 0.14
 glow_normalized = true
 glow_blend_mode = 1
+glow_hdr_threshold = 0.3
 adjustment_brightness = 0.94
 adjustment_saturation = 1.07
 
@@ -75,7 +76,7 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="Overlay" type="CanvasLayer" parent="."]
-layer = 2
+layer = 3
 follow_viewport_enabled = true
 
 [node name="MainPanelContainer" type="PanelContainer" parent="Overlay"]

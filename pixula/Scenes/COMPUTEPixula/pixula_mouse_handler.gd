@@ -53,18 +53,19 @@ var is_drawing: bool = false
 var previous_mouse_pos: Vector2i
 
 func _ready() -> void:
-	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
+	#DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 	setup_mouse_filter($"../Overlay/MainPanelContainer")
 	setup_ui()
 
 var clock: float = 0
 func _process(delta: float) -> void:
+	get_window().title = str(Engine.get_frames_per_second())
 	$"../Overlay/MainPanelContainer/MarginContainer/VBoxContainer/FPS_Label".text = str(Engine.get_frames_per_second())
 	check_mouse_input()
 	clock += delta
-	if clock > 1/144.0:
+	if clock > 1/10.0:
 		clock = 0
-		pixula_compute.process_simulation()
+	pixula_compute.process_simulation()
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("SPAWN_WATER") or event.is_action_released("SPAWN_SAND"):

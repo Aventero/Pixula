@@ -85,25 +85,27 @@ func set_push_constants() -> void:
 	push_constants.encode_s32(20, randi_range(0, 100))
 	
 func setup_mouse_buffer() -> void:
-	# current_mouse_position_size = 4 byte
-	# mouse_positions themselves = POSITIONS * 8 bytes
 	var mouse_buffer_size = (4 + MAX_MOUSE_POSITIONS * 4 * 2)
 	var initial_data = PackedByteArray()
 	initial_data.resize(mouse_buffer_size)
 	mouse_buffer = rd.storage_buffer_create(mouse_buffer_size, initial_data)
 
 func setup_in_out_buffers() -> void:
-	var buffer_data = PackedInt32Array()
-	buffer_data.resize(PIXELS * 3)
-	for i in range(0, buffer_data.size(), 3):
-		buffer_data[i] = 0
-		buffer_data[i + 1] = 0
-		buffer_data[i + 2] = -1
+	var buffer_data := PackedByteArray()
+	# PIXELS * (3 ints + 2 floats) * 4 bytes per
+	buffer_data.resize(PIXELS * 5 * 4)
+	for i in range(PIXELS):
+		var offset = i * 5 * 4  # Each pixel takes 5 values * 4 bytes
+		buffer_data.encode_s32(offset, 0)         # material
+		buffer_data.encode_s32(offset + 4, 0)     # frame
+		buffer_data.encode_s32(offset + 8, -1)    # color_index
+		buffer_data.encode_float(offset + 12, 0.0)  # velocity_x
+		buffer_data.encode_float(offset + 16, 0.0)  # velocity_y
 	
-	var byte_buffer = buffer_data.to_byte_array()
-	input_buffer = rd.storage_buffer_create(byte_buffer.size(), byte_buffer)
-	output_buffer = rd.storage_buffer_create(byte_buffer.size(), byte_buffer)
-	buffer_size = byte_buffer.size()
+	input_buffer = rd.storage_buffer_create(buffer_data.size(), buffer_data)
+	output_buffer = rd.storage_buffer_create(buffer_data.size(), buffer_data)
+	buffer_size = buffer_data.size()
+
 
 func setup_output_texture() -> void:
 	# Create format for the texture
