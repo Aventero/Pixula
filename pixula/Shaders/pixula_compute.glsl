@@ -125,10 +125,10 @@ bool canSwap(int source_material, int destination_material) {
     return false;
 }
 
-// Locks the pixel no matter what is there as it will be overwritten anyway
-void lockPixelForced(uint index) {
-    atomicExchange(output_buffer.pixels[index].material, UNSWAPPABLE);
-}
+// // Locks the pixel no matter what is there as it will be overwritten anyway
+// void lockPixelForced(uint index) {
+//     atomicExchange(output_buffer.pixels[index].material, UNSWAPPABLE);
+// }
 
 // Locking via setting the material type
 bool lockPixel(uint index, int expected_material) {
@@ -354,9 +354,12 @@ void spawn_in_radius(uint source_index, ivec2 source, ivec2 center, int radius, 
     int distance_to_center = int(length(vec2(source - center)));
 	if (distance_to_center < radius) {
         int rand_val = random_range(source, p.random_spawning_value, 1, 100);
-        lockPixelForced(source_index);
-        Pixel pixel = Pixel(spawn_material, rand_val, -1, 0.0, 0.0, 0, 0.0, 0.0);
-        setPixelDataAndUnlock(source_index, pixel);
+
+        Pixel current_pixel = input_buffer.pixels[source_index];
+        if (!lockPixel(source_index, current_pixel.material)) return;
+        
+        Pixel spawn_pixel = Pixel(spawn_material, rand_val, -1, 0.0, 0.0, 0, 0.0, 0.0);
+        setPixelDataAndUnlock(source_index, spawn_pixel);
 	}
 }
 
