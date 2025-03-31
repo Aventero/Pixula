@@ -212,6 +212,10 @@ void moveWithVelocity(ivec2 source, Pixel source_pixel) {
     for (int x = 0; x != steps_x; x += dir_x) {
         ivec2 destination = current_pos + ivec2(dir_x, 0);
 
+        // TODO:
+        // SOMEHOW CALL THE SAME MECHANIC AGAIN
+        // So it doesn't just repeat the same action 
+
         if (!tryMove(current_pos, destination, source_pixel)) {
             // Bonked 
             source_pixel.velocity_x *= DRAG_X;
