@@ -57,14 +57,10 @@ func _ready() -> void:
 	setup_mouse_filter($"../Overlay/MainPanelContainer")
 	setup_ui()
 
-var clock: float = 0
 func _process(delta: float) -> void:
 	get_window().title = str(Engine.get_frames_per_second())
 	$"../Overlay/MainPanelContainer/MarginContainer/VBoxContainer/FPS_Label".text = str(Engine.get_frames_per_second())
 	check_mouse_input()
-	clock += delta
-	if clock > timestep:
-		clock = 0
 	pixula_compute.process_simulation()
 
 func _input(event: InputEvent) -> void:
@@ -164,10 +160,12 @@ func setup_ui() -> void:
 	# Setup Speed
 	speed_label.text = str(int(simulation_speed))
 	speed_slider.value = simulation_speed
+	Engine.max_fps = simulation_speed
 	speed_slider.value_changed.connect(on_speed_slider_changed)
 
 func on_speed_slider_changed(value: float) -> void:
 	simulation_speed = value
+	Engine.max_fps = simulation_speed
 	timestep = 1.0/simulation_speed
 	speed_label.text = str(int(simulation_speed))
 
