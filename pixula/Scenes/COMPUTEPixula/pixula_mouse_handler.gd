@@ -63,9 +63,9 @@ func _process(delta: float) -> void:
 	$"../Overlay/MainPanelContainer/MarginContainer/VBoxContainer/FPS_Label".text = str(Engine.get_frames_per_second())
 	check_mouse_input()
 	clock += delta
-	if clock > 1/10.0:
+	if clock > timestep:
 		clock = 0
-	pixula_compute.process_simulation()
+		pixula_compute.process_simulation()
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_released("SPAWN_WATER") or event.is_action_released("SPAWN_SAND"):

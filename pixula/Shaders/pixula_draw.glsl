@@ -11,6 +11,7 @@ struct Pixel {
     int color_index;
     float velocity_x;
     float velocity_y;
+    int anything;
 };
 
 layout(set = 0, binding = 0, std430) buffer SimulationBuffer {
