@@ -102,7 +102,7 @@ func setup_in_out_buffers() -> void:
 		buffer_data.encode_s32(offset + 8, -1)      # color_index
 		buffer_data.encode_float(offset + 12, 0.0)  # velocity_x
 		buffer_data.encode_float(offset + 16, 0.0)  # velocity_y
-		buffer_data.encode_s32(offset + 20, 0)    # anything
+		buffer_data.encode_s32(offset + 20, 0)    	# anything
 		buffer_data.encode_float(offset + 24, 0)    # acc velocity_x
 		buffer_data.encode_float(offset + 28, 0)    # acc velocity_y
 	

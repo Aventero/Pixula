@@ -58,12 +58,39 @@ const float DRAG_X = 0.90;
 const float DRAG_Y = 0.99;
 
 int getMaterialType(int material) {
-    if (material == AIR) return GAS;
+    // Basic materials
+    
     if (material == SAND) return SOLID;
+    if (material == ROCK) return SOLID;
+    if (material == WOOD) return SOLID;
+    
     if (material == WATER) return LIQUID;
+    if (material == LAVA) return LIQUID;
+    if (material == OIL) return LIQUID;
+    if (material == ACID) return LIQUID;
+    
+    if (material == AIR) return GAS;
+    if (material == FIRE) return GAS;
+    if (material == WATER_VAPOR) return GAS;
+    if (material == WATER_CLOUD) return GAS;
+    if (material == ACID_VAPOR) return GAS;
+    if (material == ACID_CLOUD) return GAS;
+    if (material == SMOKE) return GAS;
+    
+    // Special cases
+    if (material == SEED) return SOLID;
+    if (material == PLANT) return SOLID;
+    if (material == ASH) return SOLID;
+    if (material == EMBER) return SOLID;
+
     if (material == WALL) return UNSWAPPABLE;
+    if (material == VOID) return UNSWAPPABLE;
+    if (material == MIMIC) return UNSWAPPABLE;
+    if (material == POISON) return LIQUID;
+    
     return UNSWAPPABLE;
 }
+
 
 float getSolidsWeight(int material) {
     switch (material) {
@@ -149,16 +176,18 @@ bool tryMove(ivec2 source, ivec2 destination, Pixel source_pixel) {
         return false;
     }
 
-    // Set pixel data for source and destination (swaps it)
-    setPixelDataAndUnlock(source_index, destination_pixel);
-    setPixelDataAndUnlock(destination_index, source_pixel);
+    Pixel temp_source = source_pixel;
+    Pixel temp_dest = destination_pixel;
+
+    setPixelDataAndUnlock(source_index, temp_dest);
+    setPixelDataAndUnlock(destination_index, temp_source);
 
     return true;
 }
 
 bool updateVelocities(ivec2 source, Pixel pixel) {
     uint source_index = getIndexFromPosition(source);
-    if (!lockPixel(source_index, pixel.material)) return false; 
+    if (!lockPixel(source_index, pixel.material)) return false;
     output_buffer.pixels[source_index].velocity_x = pixel.velocity_x;
     output_buffer.pixels[source_index].velocity_y = pixel.velocity_y;
     output_buffer.pixels[source_index].accumulated_velocity_x = pixel.accumulated_velocity_x;
@@ -212,10 +241,6 @@ void moveWithVelocity(ivec2 source, Pixel source_pixel) {
     for (int x = 0; x != steps_x; x += dir_x) {
         ivec2 destination = current_pos + ivec2(dir_x, 0);
 
-        // TODO:
-        // SOMEHOW CALL THE SAME MECHANIC AGAIN
-        // So it doesn't just repeat the same action 
-
         if (!tryMove(current_pos, destination, source_pixel)) {
             // Bonked 
             source_pixel.velocity_x *= DRAG_X;
@@ -251,7 +276,6 @@ void moveWithVelocity(ivec2 source, Pixel source_pixel) {
     updateVelocities(current_pos, source_pixel);
 }
 
-
 bool canSwapWithDestination(ivec2 source, Pixel pixel, ivec2 destination) {
     if (!inBounds(source) || !inBounds(destination)) return false;
     int destination_material = input_buffer.pixels[getIndexFromPosition(destination)].material;
@@ -283,7 +307,7 @@ bool moveDiagonal(ivec2 source, Pixel pixel) {
         // Apply jump start for diagonal movement
         float speed = length(vec2(pixel.velocity_x, pixel.velocity_y));
         if (speed < BOOST_THRESHOLD) {
-            pixel.velocity_x = direction.x * INITIAL_BOOST * 0.7;
+            pixel.velocity_x = direction.x * INITIAL_BOOST * 0.3;
             pixel.velocity_y = direction.y * INITIAL_BOOST;
         } else {
             pixel.velocity_x += direction.x * ACCELERATION;
@@ -299,9 +323,9 @@ bool moveHorizontal(ivec2 source, Pixel pixel) {
     int dir = pixel.anything;
     if (canSwapWithDestination(source, pixel, source + ivec2(dir, 0))) {
         if (abs(pixel.velocity_x) < BOOST_THRESHOLD) {
-            pixel.velocity_x = dir * INITIAL_BOOST * 1.8;
+            pixel.velocity_x = dir * INITIAL_BOOST * 0.3;
         } else {
-            pixel.velocity_x += dir * ACCELERATION * 4.0;
+            pixel.velocity_x += dir * ACCELERATION * 2.0;
         }
         moveWithVelocity(source, pixel);
         return true;
@@ -366,8 +390,7 @@ void main() {
 
     Pixel pixel = input_buffer.pixels[index];
 
-    if (chance(pos, pixel.frame, 0.005)) return;
-
+    // if (chance(pos, pixel.frame, 0.005)) return;
     bool has_moved = doMechanics(pos, pixel);
     if (!has_moved) {
         pixel = applStationaryDrag(pixel);
