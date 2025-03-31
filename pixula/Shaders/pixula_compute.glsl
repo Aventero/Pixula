@@ -15,6 +15,8 @@ struct Pixel {
     float velocity_x;
     float velocity_y;
     int anything;
+    float accumulated_velocity_x; 
+    float accumulated_velocity_y;  
 };
 
 layout(set = 0, binding = 0, std430) restrict buffer InputBuffer {
@@ -121,6 +123,8 @@ void setPixelDataAndUnlock(uint source_index, Pixel other_pixel) {
     output_buffer.pixels[source_index].velocity_x = other_pixel.velocity_x;
     output_buffer.pixels[source_index].velocity_y = other_pixel.velocity_y;
     output_buffer.pixels[source_index].anything = other_pixel.anything;
+    output_buffer.pixels[source_index].accumulated_velocity_x = other_pixel.accumulated_velocity_x;
+    output_buffer.pixels[source_index].accumulated_velocity_y = other_pixel.accumulated_velocity_y;
 
     // UNLOCKS it
     atomicExchange(output_buffer.pixels[source_index].material, other_pixel.material);
@@ -152,11 +156,13 @@ bool tryMove(ivec2 source, ivec2 destination, Pixel source_pixel) {
     return true;
 }
 
-bool updateVelocity(ivec2 source, Pixel pixel) {
+bool updateVelocities(ivec2 source, Pixel pixel) {
     uint source_index = getIndexFromPosition(source);
     if (!lockPixel(source_index, pixel.material)) return false; 
     output_buffer.pixels[source_index].velocity_x = pixel.velocity_x;
     output_buffer.pixels[source_index].velocity_y = pixel.velocity_y;
+    output_buffer.pixels[source_index].accumulated_velocity_x = pixel.accumulated_velocity_x;
+    output_buffer.pixels[source_index].accumulated_velocity_y = pixel.accumulated_velocity_y;
     unlockPixel(source_index, pixel.material);
     return true;
 }
@@ -182,9 +188,14 @@ vec2 getAdditionalDrag(Pixel source_pixel, ivec2 destination) {
 }
 
 void moveWithVelocity(ivec2 source, Pixel source_pixel) {
-
-    int steps_x = int(source_pixel.velocity_x);
-    int steps_y = int(source_pixel.velocity_y);
+    source_pixel.accumulated_velocity_x += source_pixel.velocity_x;
+    source_pixel.accumulated_velocity_y += source_pixel.velocity_y;
+    
+    int steps_x = int(source_pixel.accumulated_velocity_x);
+    int steps_y = int(source_pixel.accumulated_velocity_y);
+    
+    source_pixel.accumulated_velocity_x -= float(steps_x);
+    source_pixel.accumulated_velocity_y -= float(steps_y);
     
     steps_x = clamp(steps_x, -30, 30);
     steps_y = clamp(steps_y, -30, 30);
@@ -195,15 +206,16 @@ void moveWithVelocity(ivec2 source, Pixel source_pixel) {
     ivec2 current_pos = source;
     bool any_movement = false;
     
-    updateVelocity(source, source_pixel);
+    updateVelocities(source, source_pixel);
     
     // X movement
     for (int x = 0; x != steps_x; x += dir_x) {
         ivec2 destination = current_pos + ivec2(dir_x, 0);
 
         if (!tryMove(current_pos, destination, source_pixel)) {
-            // Bonked.
-            source_pixel.velocity_y *= DRAG_X; 
+            // Bonked 
+            source_pixel.velocity_x *= DRAG_X;
+            source_pixel.accumulated_velocity_x = 0.0;
             break;
         }
 
@@ -211,7 +223,7 @@ void moveWithVelocity(ivec2 source, Pixel source_pixel) {
         vec2 additional_drag = getAdditionalDrag(source_pixel, destination);
         source_pixel.velocity_x *= DRAG_X * additional_drag.x;
         current_pos = destination;
-        updateVelocity(current_pos, source_pixel);
+        updateVelocities(current_pos, source_pixel);
     }
     
     // Y movement 
@@ -219,8 +231,9 @@ void moveWithVelocity(ivec2 source, Pixel source_pixel) {
         ivec2 destination = current_pos + ivec2(0, dir_y);
 
         if (!tryMove(current_pos, destination, source_pixel)) {
-            // Bonked.
-            source_pixel.velocity_y *= DRAG_Y; 
+            // Bonked
+            source_pixel.velocity_y *= DRAG_Y;
+            source_pixel.accumulated_velocity_y = 0.0;
             break;
         }
 
@@ -228,11 +241,12 @@ void moveWithVelocity(ivec2 source, Pixel source_pixel) {
         vec2 additional_drag = getAdditionalDrag(source_pixel, destination);
         source_pixel.velocity_y *= DRAG_Y * additional_drag.y; 
         current_pos = destination;
-        updateVelocity(current_pos, source_pixel);
+        updateVelocities(current_pos, source_pixel);
     }
 
-    updateVelocity(current_pos, source_pixel);
+    updateVelocities(current_pos, source_pixel);
 }
+
 
 bool canSwapWithDestination(ivec2 source, Pixel pixel, ivec2 destination) {
     if (!inBounds(source) || !inBounds(destination)) return false;
@@ -283,7 +297,7 @@ bool moveHorizontal(ivec2 source, Pixel pixel) {
         if (abs(pixel.velocity_x) < BOOST_THRESHOLD) {
             pixel.velocity_x = dir * INITIAL_BOOST * 1.8;
         } else {
-            pixel.velocity_x += dir * ACCELERATION * 2.0;
+            pixel.velocity_x += dir * ACCELERATION * 4.0;
         }
         moveWithVelocity(source, pixel);
         return true;
@@ -313,7 +327,7 @@ void spawn_in_radius(uint source_index, ivec2 source, ivec2 center, int radius, 
 	if (distance_to_center < radius) {
         int rand_val = random_range(source, p.random_spawning_value, 1, 100);
         lockPixelForced(source_index);
-        Pixel pixel = Pixel(spawn_material, rand_val, -1, 0.0, 0.0, 0);
+        Pixel pixel = Pixel(spawn_material, rand_val, -1, 0.0, 0.0, 0, 0.0, 0.0);
         setPixelDataAndUnlock(source_index, pixel);
 	}
 }
@@ -351,9 +365,8 @@ void main() {
     if (chance(pos, pixel.frame, 0.005)) return;
 
     bool has_moved = doMechanics(pos, pixel);
-
     if (!has_moved) {
         pixel = applStationaryDrag(pixel);
-        updateVelocity(pos, pixel);
+        updateVelocities(pos, pixel);
     }
 }

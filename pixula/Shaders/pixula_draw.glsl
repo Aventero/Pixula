@@ -12,6 +12,8 @@ struct Pixel {
     float velocity_x;
     float velocity_y;
     int anything;
+    float accumulated_velocity_x;  
+    float accumulated_velocity_y;  
 };
 
 layout(set = 0, binding = 0, std430) buffer SimulationBuffer {
@@ -86,7 +88,7 @@ uint getIndexFromPosition(ivec2 position) {
 void updateImage(ivec2 pos, ivec2 color_index) {
     uint index = getIndexFromPosition(pos);
     vec4 color = texelFetch(color_palette, color_index, 0);
-    vec4 linear_color = srgbToLinear(color) * (1.0 + (simulation_buffer.data[index].velocity_y / 4.0));
+    vec4 linear_color = srgbToLinear(color) * (1.0 + (simulation_buffer.data[index].velocity_y / 10.0));
     imageStore(output_image, pos, linear_color);
 }
 

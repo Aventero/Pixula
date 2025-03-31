@@ -93,7 +93,7 @@ func setup_mouse_buffer() -> void:
 func setup_in_out_buffers() -> void:
 	var buffer_data := PackedByteArray()
 	
-	var struct_size_bytes: int = 6 * 4
+	var struct_size_bytes: int = 8 * 4
 	buffer_data.resize(PIXELS * struct_size_bytes)
 	for i in range(PIXELS):
 		var offset = i * struct_size_bytes
@@ -103,6 +103,8 @@ func setup_in_out_buffers() -> void:
 		buffer_data.encode_float(offset + 12, 0.0)  # velocity_x
 		buffer_data.encode_float(offset + 16, 0.0)  # velocity_y
 		buffer_data.encode_s32(offset + 20, 0)    # anything
+		buffer_data.encode_float(offset + 24, 0)    # acc velocity_x
+		buffer_data.encode_float(offset + 28, 0)    # acc velocity_y
 	
 	input_buffer = rd.storage_buffer_create(buffer_data.size(), buffer_data)
 	output_buffer = rd.storage_buffer_create(buffer_data.size(), buffer_data)
