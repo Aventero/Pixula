@@ -38,7 +38,7 @@ layout(push_constant, std430) uniform Params {
 
 int getAirNeighbors(ivec2 pos) {
     int air_neighbors = 0;
-    for (int y = -5; y <= 0; y++) {
+    for (int y = -6; y <= 0; y++) {
         for (int x = -1; x <= 1; x++) {
             if (x == 0 && y == 0) continue;
             
@@ -56,7 +56,7 @@ int getAirNeighbors(ivec2 pos) {
 float calcDensity(ivec2 pos) {
     int liquids = 0;
     int cells = 0;
-    int area = 3;
+    int area = 4;
 
     for (int y = -area; y <= area; y++) {
         for (int x = -area; x <= area; x++) {
@@ -98,7 +98,7 @@ void calculatePressure(uint index, ivec2 pos) {
 
         // This is how the liquid would like to behave
         // Higher -> More attraction
-        float ideal_density = 0.1; 
+        float ideal_density = 0.2; 
 
         // Resulting in compression which "pushes liquid apart" to get "ideal" again (Alot of water around)
         // Or it might pull together in negative values (little water around)
@@ -107,7 +107,7 @@ void calculatePressure(uint index, ivec2 pos) {
         // Calculate the pressure that this pixel receives
         // positive is attraction towards the other pixel
         // negative is the repulsion of that pixel from 
-        int pressure_area = 3;
+        int pressure_area = 4;
         for (int y = -pressure_area; y <= pressure_area; y++) {
             for (int x = -pressure_area; x <= pressure_area; x++) {
                 if (x == 0 && y == 0) continue;
@@ -128,12 +128,13 @@ void calculatePressure(uint index, ivec2 pos) {
                     pressure_x -= float(x) * weight * attraction;
                     pressure_y -= float(y) * weight * attraction * 1.0/(air_neighbors + 1.0);
                 } 
-                else if (material_type == SOLID) {
+                else if (material_type == SOLID && material_type == UNSWAPPABLE) {
                     pressure_x -= float(x) * weight * 0.3;
                     pressure_y -= float(y) * weight * 0.3 * 1.0/(air_neighbors + 1.0);;
                 }
                 else if (getMaterialType(material) == GAS) {
                     pressure_x -= float(x) * weight * 0.01;
+                    pressure_y -= float(y) * weight * 0.01;
                 }
             }
         }

@@ -2,7 +2,7 @@ class_name PixulaCompute
 extends Node2D
 
 # Smallest width is 32 cause 16 work groups
-const WIDTH = 512
+const WIDTH = 1024
 const HEIGHT = WIDTH / 2
 const PIXELS = WIDTH * HEIGHT
 const WORK_GROUP = 16

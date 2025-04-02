@@ -1,7 +1,7 @@
 [gd_scene load_steps=42 format=3 uid="uid://deitx1xawyjvd"]
 
 [ext_resource type="Script" uid="uid://ck7tyjd8y4k8" path="res://Scenes/GPUPixula/pixula_shader_core.gd" id="1_p36e1"]
-[ext_resource type="Shader" path="res://Shaders/grid.gdshader" id="1_xco8e"]
+[ext_resource type="Shader" uid="uid://du48tuhl5af1k" path="res://Shaders/grid.gdshader" id="1_xco8e"]
 [ext_resource type="Shader" uid="uid://o84ya2kmw4n5" path="res://Shaders/core.gdshader" id="2_8rfut"]
 [ext_resource type="Script" uid="uid://bb05xct6pmpqs" path="res://Scripts/Pixula/GPU/framebuffer_swapper.gd" id="3_j1oxa"]
 [ext_resource type="Shader" path="res://Shaders/test.gdshader" id="4_pt3eu"]

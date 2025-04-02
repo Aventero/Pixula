@@ -90,14 +90,14 @@ void updateImage(ivec2 pos, ivec2 color_index) {
     float magnitude = length(pressure);
     float magnitude_vel = length(vel);
     
-    if (magnitude_vel > 0.001) {
+    if (false && magnitude_vel > 0.001) {
         // Normalize pressure to get direction
         vec2 direction = normalize(pressure);
         vec2 direction_vel = normalize(vel);
         
         float hue = (atan(direction.y, direction.x) / (2.0 * 3.14159) - 0.5) + 1.0;
         float hue_vel = (atan(direction_vel.y, direction_vel.x) / (2.0 * 3.14159) - 0.5) + 1.0;
-        vec3 directionColor = hsv2rgb(vec3(hue_vel, 1.0, 1.0)) * magnitude;
+        vec3 directionColor = hsv2rgb(vec3(hue_vel, 1.0, 1.0));// * magnitude;
 
         float intensity = clamp(magnitude_vel / 5.0, 0.0, 0.5);
         
