@@ -1,0 +1,14 @@
+[remap]
+
+importer="glsl"
+type="RDShaderFile"
+uid="uid://di6ydmfd21ofj"
+path="res://.godot/imported/pixula_pressure.glsl-c312d8b4ef9b47b3e9e75d93967a207f.res"
+
+[deps]
+
+source_file="res://Shaders/pixula_pressure.glsl"
+dest_files=["res://.godot/imported/pixula_pressure.glsl-c312d8b4ef9b47b3e9e75d93967a207f.res"]
+
+[params]
+

@@ -1,20 +1,9 @@
 #[compute]
 #version 450
 
-#include "compute_helper.gdshaderinc"
-
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-struct Pixel {
-    int material;
-    int frame;
-    int color_index;
-    float velocity_x;
-    float velocity_y;
-    int anything;
-    float accumulated_velocity_x;  
-    float accumulated_velocity_y;  
-};
+#include "compute_helper.gdshaderinc"
 
 layout(set = 0, binding = 0, std430) buffer SimulationBuffer {
     Pixel data[];
@@ -85,10 +74,37 @@ uint getIndexFromPosition(ivec2 position) {
     return position.y * p.width + position.x;
 }
 
+vec3 hsv2rgb(vec3 c) {
+    vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+    vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+    return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
 void updateImage(ivec2 pos, ivec2 color_index) {
     uint index = getIndexFromPosition(pos);
     vec4 color = texelFetch(color_palette, color_index, 0);
-    vec4 linear_color = srgbToLinear(color) * (1.0 + (simulation_buffer.data[index].velocity_y / 10.0));
+    
+    // Get pressure vector
+    vec2 pressure = vec2(simulation_buffer.data[index].pressure_x, simulation_buffer.data[index].pressure_y);
+    vec2 vel = vec2(simulation_buffer.data[index].velocity_x, simulation_buffer.data[index].velocity_y);
+    float magnitude = length(pressure);
+    float magnitude_vel = length(vel);
+    
+    if (magnitude_vel > 0.001) {
+        // Normalize pressure to get direction
+        vec2 direction = normalize(pressure);
+        vec2 direction_vel = normalize(vel);
+        
+        float hue = (atan(direction.y, direction.x) / (2.0 * 3.14159) - 0.5) + 1.0;
+        float hue_vel = (atan(direction_vel.y, direction_vel.x) / (2.0 * 3.14159) - 0.5) + 1.0;
+        vec3 directionColor = hsv2rgb(vec3(hue_vel, 1.0, 1.0)) * magnitude;
+
+        float intensity = clamp(magnitude_vel / 5.0, 0.0, 0.5);
+        
+        color.rgb = mix(color.rgb, directionColor, intensity);
+    }
+    
+    vec4 linear_color = srgbToLinear(color);
     imageStore(output_image, pos, linear_color);
 }
 

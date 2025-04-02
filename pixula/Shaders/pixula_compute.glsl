@@ -8,17 +8,6 @@
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
-struct Pixel {
-    int material;
-    int frame;
-    int color_index;
-    float velocity_x;
-    float velocity_y;
-    int anything;
-    float accumulated_velocity_x; 
-    float accumulated_velocity_y;  
-};
-
 layout(set = 0, binding = 0, std430) restrict buffer InputBuffer {
     Pixel pixels[];
 } input_buffer;
@@ -43,13 +32,8 @@ layout(push_constant, std430) uniform Params {
     int random_spawning_value;
 } p;
 
-const int SOLID = 100;
-const int LIQUID = 101;
-const int GAS = 102;
-const int UNSWAPPABLE = -999;
-
-const float STATIONARY_DRAG_X = 0.9;
-const float STATIONARY_DRAG_Y = 0.9;
+const float STATIONARY_DRAG_X = 0.95;
+const float STATIONARY_DRAG_Y = 0.95;
 
 const float BOOST_THRESHOLD = 0.1;
 const float INITIAL_BOOST = 1.0;     
@@ -57,94 +41,7 @@ const float ACCELERATION = 0.3;
 const float DRAG_X = 0.90;
 const float DRAG_Y = 0.99;
 
-int getMaterialType(int material) {
-    switch (material) {
-        case SAND:           return SOLID;
-        case ROCK:           return SOLID;
-        case WOOD:           return SOLID;
-        case SEED:           return SOLID;
-        case PLANT:          return SOLID;
-        case ASH:            return SOLID;
-        case EMBER:          return SOLID;
-        case WATER:          return LIQUID;
-        case LAVA:           return LIQUID;
-        case OIL:            return LIQUID;
-        case ACID:           return LIQUID;
-        case AIR:            return GAS;
-        case FIRE:           return GAS;
-        case WATER_VAPOR:    return GAS;
-        case WATER_CLOUD:    return GAS;
-        case ACID_VAPOR:     return GAS;
-        case ACID_CLOUD:     return GAS;
-        case SMOKE:          return GAS;
-        case WALL:           return UNSWAPPABLE;
-        case VOID:           return UNSWAPPABLE;
-        case MIMIC:          return UNSWAPPABLE;
-        case POISON:         return LIQUID;
-    }
-    
-    return UNSWAPPABLE;
-}
-
-
-// 1 is no change in acceleration
-// 0.5 is half as fast
-// 2 is twice as fast
-// -2 is reversed twice as fast
-float getMaterialWeight(int material) {
-    switch (material) {
-        case AIR:           return 1.0;
-        case FIRE:          return -4.0;
-        case WATER_VAPOR:   return -2.0;
-        case WATER_CLOUD:   return -1.0;
-        case ACID_VAPOR:    return -0.5; 
-        case ACID_CLOUD:    return -1.0; 
-        case SMOKE:         return -3.0;
-
-        case SAND:          return 1.0;
-        case ROCK:          return 3.0;
-        case WOOD:          return 3.0;
-        case EMBER:         return 2.0;
-        case ASH:           return 0.5; 
-        case SEED:          return 0.5; 
-        case PLANT:         return 0.5; 
-
-        case WATER:         return 1.0;
-        case POISON:        return 1.5; 
-        case LAVA:          return 2.0;
-        case ACID:          return 1.0; 
-        case OIL:           return 1.5;
-         
-        case MIMIC:         return 1.0; 
-        case WALL:          return 1.0;
-        case VOID:          return 1.0; 
-    }
-    return 1.0;
-}
-
-float getLiquidViscosity(int material) {
-    switch (material) {
-        case WATER:     return 0.1; // Basically drag, lower val = higher drag
-        case LAVA:      return 0.05; // Basically drag, lower val = higher drag
-    }
-    return 1.0;
-}
-
-float getGasDensity(int material) {
-    switch (material) {
-        case AIR:       return -1.0;
-        case FIRE:      return -2.0;
-    }
-    return 1.0;
-}
-
-uint getIndexFromPosition(ivec2 position) {
-    return position.y * p.width + position.x;
-}
-
-bool inBounds(ivec2 pos) {
-    return pos.x < p.width && pos.y < p.height && pos.x >= 0 && pos.y >= 0;
-}
+#include "compute_core.gdshaderinc"
 
 bool canSwap(int source_material, int destination_material) {
     if (source_material == destination_material) return false;
@@ -172,33 +69,6 @@ bool canSwap(int source_material, int destination_material) {
     }
 
     return false;
-}
-
-// Locking via setting the material type
-bool lockPixel(uint index, int expected_material) {
-    int original = atomicCompSwap(output_buffer.pixels[index].material, expected_material, UNSWAPPABLE);
-    return original == expected_material;
-}
-
-// Unlocking through setting the original material
-void unlockPixel(uint index, int original_material) {
-    atomicExchange(output_buffer.pixels[index].material, original_material);
-}
-
-// Order is important, as material is the lock
-void setPixelDataAndUnlock(uint source_index, Pixel other_pixel) {
-    
-    // Non atomic is fine, as the lock is still on the material
-    output_buffer.pixels[source_index].frame = other_pixel.frame;
-    output_buffer.pixels[source_index].color_index = other_pixel.color_index;
-    output_buffer.pixels[source_index].velocity_x = other_pixel.velocity_x;
-    output_buffer.pixels[source_index].velocity_y = other_pixel.velocity_y;
-    output_buffer.pixels[source_index].anything = other_pixel.anything;
-    output_buffer.pixels[source_index].accumulated_velocity_x = other_pixel.accumulated_velocity_x;
-    output_buffer.pixels[source_index].accumulated_velocity_y = other_pixel.accumulated_velocity_y;
-
-    // UNLOCKS it
-    atomicExchange(output_buffer.pixels[source_index].material, other_pixel.material);
 }
 
 bool trySwap(ivec2 source, ivec2 destination, Pixel source_pixel) {
@@ -274,13 +144,12 @@ vec2 getAdditionalDrag(Pixel source_pixel, ivec2 destination) {
 
     if (source_type == SOLID && destination_type == SOLID) {
         // Destination must be heavier! This is assumed
-        additional_drag.y = min(1.0, getMaterialWeight(destination_pixel.material) / (getMaterialWeight(source_pixel.material) * 50.0));
+        additional_drag.y = min(1.0, getMaterialWeight(destination_pixel.material) / (getMaterialWeight(source_pixel.material) * 10.0));
         additional_drag.x = min(1.0, additional_drag.y * 0.5);
     }
     
     return additional_drag;
 }
-
 
 void moveAlongAxis(inout ivec2 current_pos, inout Pixel source_pixel, int steps, bool is_x_axis) {
     if (steps == 0) return;
@@ -319,8 +188,8 @@ void moveWithVelocity(ivec2 source, Pixel source_pixel) {
     source_pixel.accumulated_velocity_x += source_pixel.velocity_x;
     source_pixel.accumulated_velocity_y += source_pixel.velocity_y;
     
-    int steps_x = int(source_pixel.accumulated_velocity_x);
-    int steps_y = int(source_pixel.accumulated_velocity_y);
+    int steps_x = clamp(int(source_pixel.accumulated_velocity_x), -4, 4);
+    int steps_y = clamp(int(source_pixel.accumulated_velocity_y), -4, 4);
     
     source_pixel.accumulated_velocity_x -= float(steps_x);
     source_pixel.accumulated_velocity_y -= float(steps_y);
@@ -333,7 +202,6 @@ void moveWithVelocity(ivec2 source, Pixel source_pixel) {
     moveAlongAxis(current_pos, source_pixel, steps_y, false);
     updateVelocities(current_pos, source_pixel);
 }
-
 
 bool canSwapWithDestination(ivec2 source, Pixel pixel, ivec2 destination) {
     if (!inBounds(source) || !inBounds(destination)) return false;
@@ -399,15 +267,22 @@ bool moveHorizontal(ivec2 source, Pixel pixel) {
 }
 
 bool waterMechanic(ivec2 source, Pixel pixel) {
-    if (pixel.anything == 0) {
-        pixel.anything = (source.y) % 2 == 0 ? -1 : 1;
-        updateAnything(source, pixel);
-    }
+    vec2 pressure_vec = vec2(pixel.pressure_x, pixel.pressure_y);
+    float pressure_magnitude = length(pressure_vec);
+    
+    if (pressure_magnitude < 0.005) return false;
+    
+    pressure_vec = normalize(pressure_vec);
 
-    if (moveDown(source, pixel)) return true;
-    return moveDiagonal(source, pixel) || moveHorizontal(source, pixel);
+    // Update velocities based on pressure direction
+    pixel.velocity_x += pressure_vec.x * ACCELERATION;
+    pixel.velocity_y += pressure_vec.y * ACCELERATION;
+    
+    // Move with velocity
+    moveWithVelocity(source, pixel);
+    
+    return true;
 }
-
 
 bool sandMechanic(ivec2 source, Pixel pixel) {
     return moveDown(source, pixel) || moveDiagonal(source, pixel);
@@ -417,29 +292,6 @@ bool rockMechanic(ivec2 source, Pixel pixel) {
     return moveDown(source, pixel) || moveDiagonal(source, pixel);
 }
 
-
-void spawn_in_radius(uint source_index, ivec2 source, ivec2 center, int radius, int spawn_material) {
-    int distance_to_center = int(length(vec2(source - center)));
-	if (distance_to_center < radius) {
-        int rand_val = random_range(source, p.random_spawning_value, 1, 100);
-
-        Pixel current_pixel = input_buffer.pixels[source_index];
-        Pixel spawn_pixel = Pixel(spawn_material, rand_val, -1, 0.0, 0.0, 0, 0.0, 0.0);
-        if (current_pixel.material == spawn_pixel.material) return;
-        if (!lockPixel(source_index, current_pixel.material)) return;
-        
-        setPixelDataAndUnlock(source_index, spawn_pixel);
-	}
-}
-
-void try_spawning(uint index, ivec2 pos) {
-    // Mouse Spawning
-    int count = min(mouse_buffer.count, MAX_MOUSE_POSITIONS);
-    for (int i = 0; i < count; i++) {
-        ivec2 mouse_pos = ivec2(mouse_buffer.x[i], mouse_buffer.y[i]);
-        spawn_in_radius(index, pos, mouse_pos, p.spawn_radius, p.spawn_material);
-    }
-}
 
 Pixel applStationaryDrag(Pixel pixel) {
     pixel.velocity_x *= STATIONARY_DRAG_X;
@@ -459,13 +311,13 @@ bool doMechanics(ivec2 pos, Pixel pixel) {
 void main() {
     ivec2 pos = ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y);
     uint index = getIndexFromPosition(pos);
-    try_spawning(index, pos);
 
     Pixel pixel = input_buffer.pixels[index];
 
     if (chance(pos, pixel.frame, 0.005)) return;
 
     bool has_moved = doMechanics(pos, pixel);
+    barrier();
     if (!has_moved) {
         pixel = applStationaryDrag(pixel);
         updateVelocities(pos, pixel);

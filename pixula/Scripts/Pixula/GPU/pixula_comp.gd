@@ -22,6 +22,10 @@ var simulation_shader: RID
 var simulation_pipeline: RID
 var simulation_uniform_set: RID
 
+var pressure_shader: RID
+var pressure_pipeline: RID
+var pressure_uniform_set: RID
+
 var visualization_shader: RID
 var visualization_pipeline: RID
 var visualization_uniform_set: RID
@@ -92,24 +96,29 @@ func setup_mouse_buffer() -> void:
 
 func setup_in_out_buffers() -> void:
 	var buffer_data := PackedByteArray()
-	
-	var struct_size_bytes: int = 8 * 4
+
+	var struct_size_bytes: int = 10 * 4
 	buffer_data.resize(PIXELS * struct_size_bytes)
 	for i in range(PIXELS):
 		var offset = i * struct_size_bytes
 		buffer_data.encode_s32(offset, 0)           # material
 		buffer_data.encode_s32(offset + 4, 0)       # frame
 		buffer_data.encode_s32(offset + 8, -1)      # color_index
+		
 		buffer_data.encode_float(offset + 12, 0.0)  # velocity_x
 		buffer_data.encode_float(offset + 16, 0.0)  # velocity_y
+		
 		buffer_data.encode_s32(offset + 20, 0)    	# anything
+		
 		buffer_data.encode_float(offset + 24, 0)    # acc velocity_x
 		buffer_data.encode_float(offset + 28, 0)    # acc velocity_y
-	
+		
+		buffer_data.encode_float(offset + 32, 0)    # pressure_x
+		buffer_data.encode_float(offset + 36, 0)    # pressure_y
+
 	input_buffer = rd.storage_buffer_create(buffer_data.size(), buffer_data)
 	output_buffer = rd.storage_buffer_create(buffer_data.size(), buffer_data)
 	buffer_size = buffer_data.size()
-
 
 func setup_output_texture() -> void:
 	# Create format for the texture
@@ -163,6 +172,12 @@ func _initial_setup() -> void:
 	# Set rendering device used for this compute shader
 	rd = RenderingServer.get_rendering_device()
 	
+	# Pressure Shader
+	var pressure_shader_file: Resource = load("res://Shaders/pixula_pressure.glsl")
+	var pressure_shader_bytecode: RDShaderSPIRV = pressure_shader_file.get_spirv()
+	pressure_shader = rd.shader_create_from_spirv(pressure_shader_bytecode)
+	pressure_pipeline = rd.compute_pipeline_create(pressure_shader)
+	
 	# Simulation Shader
 	var sim_shader_file: Resource = load("res://Shaders/pixula_compute.glsl")
 	var sim_shader_bytecode: RDShaderSPIRV = sim_shader_file.get_spirv()
@@ -190,38 +205,50 @@ func process_simulation() -> void:
 	RenderingServer.call_on_render_thread(update_simulation)
 
 func update_simulation() -> void:
-	rd.buffer_copy(input_buffer, output_buffer, 0, 0, buffer_size)
 	set_push_constants()
 	update_mouse_positions(pending_mouse_positions)
 	simulate()
-	draw_simulation()
-	swap_buffers()
-	
-	# Not exactly necessary to re-create them
-	create_simulation_uniform_set()
-	create_visualization_uniform_set()
 	
 func simulate() -> void:
+	# Pressure & Spawn mouse stuff
+	create_simulation_uniform_set()
 	var compute_list = rd.compute_list_begin()
+	rd.compute_list_bind_compute_pipeline(compute_list, pressure_pipeline)
+	rd.compute_list_bind_uniform_set(compute_list, pressure_uniform_set, 0)
+	rd.compute_list_set_push_constant(compute_list, push_constants, push_constants.size())
+	rd.compute_list_dispatch(compute_list, WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
+	rd.compute_list_end()
+	
+	swap_buffers()
+	rd.buffer_copy(input_buffer, output_buffer, 0, 0, buffer_size)
+	create_simulation_uniform_set()
+	
+	## Simulate
+	compute_list = rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, simulation_pipeline)
 	rd.compute_list_bind_uniform_set(compute_list, simulation_uniform_set, 0)
 	rd.compute_list_set_push_constant(compute_list, push_constants, push_constants.size())
 	rd.compute_list_dispatch(compute_list, WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
 	rd.compute_list_end()
 	
-func draw_simulation() -> void:
-	var compute_list = rd.compute_list_begin()
+	# Draw
+	create_visualization_uniform_set()
+	compute_list = rd.compute_list_begin()
 	rd.compute_list_bind_compute_pipeline(compute_list, visualization_pipeline)
 	rd.compute_list_bind_uniform_set(compute_list, visualization_uniform_set, 0)
-	set_push_constants()
 	rd.compute_list_set_push_constant(compute_list, push_constants, push_constants.size())
 	rd.compute_list_dispatch(compute_list,  WIDTH/WORK_GROUP, HEIGHT/WORK_GROUP, 1)
 	rd.compute_list_end()
+	
+	swap_buffers()
+	rd.buffer_copy(input_buffer, output_buffer, 0, 0, buffer_size)
+	
 	
 func swap_buffers() -> void:
 	var temp = input_buffer
 	input_buffer = output_buffer
 	output_buffer = temp
+	
 
 func create_simulation_uniform_set() -> void:	
 	var input_uniform: RefCounted = RDUniform.new()
@@ -243,6 +270,7 @@ func create_simulation_uniform_set() -> void:
 		rd.free_rid(simulation_uniform_set)
 
 	# bind the uniforms to slot 0
+	pressure_uniform_set = rd.uniform_set_create([input_uniform, output_uniform, mouse_uniform], pressure_shader, 0)
 	simulation_uniform_set = rd.uniform_set_create([input_uniform, output_uniform, mouse_uniform], simulation_shader, 0)
 
 func create_visualization_uniform_set() -> void:

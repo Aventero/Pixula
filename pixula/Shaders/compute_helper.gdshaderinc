@@ -41,3 +41,21 @@ const int ASH = 18;
 const int OIL = 19;
 const int EMBER = 20;
 const int SMOKE = 21;
+
+const int SOLID = 100;
+const int LIQUID = 101;
+const int GAS = 102;
+const int UNSWAPPABLE = -999;
+
+struct Pixel {
+    int material;
+    int frame;
+    int color_index;
+    float velocity_x;
+    float velocity_y;
+    int anything;
+    float accumulated_velocity_x;
+    float accumulated_velocity_y;
+    float pressure_x;
+    float pressure_y;
+};
