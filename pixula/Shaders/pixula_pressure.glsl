@@ -77,15 +77,9 @@ float calcDensity(ivec2 pos) {
 
 void calculatePressure(uint index, ivec2 pos) {
     Pixel pixel = input_buffer.pixels[index];
-    if (lockPixel(index, pixel.material)) {
-        output_buffer.pixels[index].pressure_x = 0.0;
-        output_buffer.pixels[index].pressure_y = 0.0;
-        unlockPixel(index, pixel.material);
-    }
-    
     if (getMaterialType(pixel.material) == LIQUID) {
-        float pressure_x = 0.0;
-        float pressure_y = 0.0;
+        float pressure_x = 0;
+        float pressure_y = 0;
         
         bool is_surface_particle = false;
         int depth = 0;
@@ -98,7 +92,7 @@ void calculatePressure(uint index, ivec2 pos) {
 
         // This is how the liquid would like to behave
         // Higher -> More attraction
-        float ideal_density = 0.2; 
+        float ideal_density = 0.001; 
 
         // Resulting in compression which "pushes liquid apart" to get "ideal" again (Alot of water around)
         // Or it might pull together in negative values (little water around)
@@ -116,26 +110,22 @@ void calculatePressure(uint index, ivec2 pos) {
                 if (!inBounds(check_pos)) continue;
                 
                 uint check_index = getIndexFromPosition(check_pos);
-                int material = input_buffer.pixels[check_index].material;
+                int other_material = input_buffer.pixels[check_index].material;
                 
                 // The further away, less power
                 float distance = length(vec2(x, y));
                 float weight = 1.0 / max(1.0, distance * 1.5);
                 
-                int material_type = getMaterialType(material);
-                if (material_type == LIQUID) {
-                    float attraction = compression * 0.8;
+                int other_material_type = getMaterialType(other_material);
+                if (other_material_type == LIQUID) {
+                    float attraction = compression;
                     pressure_x -= float(x) * weight * attraction;
                     pressure_y -= float(y) * weight * attraction * 1.0/(air_neighbors + 1.0);
-                } 
-                else if (material_type == SOLID && material_type == UNSWAPPABLE) {
+                }
+                else if (other_material_type == SOLID && other_material_type == UNSWAPPABLE) {
                     pressure_x -= float(x) * weight * 0.3;
-                    pressure_y -= float(y) * weight * 0.3 * 1.0/(air_neighbors + 1.0);;
-                }
-                else if (getMaterialType(material) == GAS) {
-                    pressure_x -= float(x) * weight * 0.01;
-                    pressure_y -= float(y) * weight * 0.01;
-                }
+                    pressure_y -= float(y) * weight * 0.3 * 1.0/(air_neighbors + 1.0);
+                } 
             }
         }
         pressure_y += 0.3;

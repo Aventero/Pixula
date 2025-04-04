@@ -106,7 +106,7 @@ float getMaterialWeight(int material) {
 
 float getLiquidViscosity(int material) {
     switch (material) {
-        case WATER:     return 0.1; // Basically drag, lower val = higher drag
+        case WATER:     return 0.9; // Basically drag, lower val = higher drag
         case LAVA:      return 0.05; // Basically drag, lower val = higher drag
     }
     return 1.0;

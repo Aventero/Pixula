@@ -38,7 +38,7 @@ const float STATIONARY_DRAG_Y = 0.95;
 const float BOOST_THRESHOLD = 0.1;
 const float INITIAL_BOOST = 1.0;     
 const float ACCELERATION = 0.3;     
-const float DRAG_X = 0.90;
+const float DRAG_X = 0.99;
 const float DRAG_Y = 0.99;
 
 #include "compute_core.gdshaderinc"
@@ -272,7 +272,7 @@ bool waterMechanic(ivec2 source, Pixel pixel) {
     
     if (pressure_magnitude < 0.005) return false;
     
-    pressure_vec = normalize(pressure_vec);
+    //pressure_vec = normalize(pressure_vec);
 
     // Update velocities based on pressure direction
     pixel.velocity_x += pressure_vec.x * ACCELERATION;
